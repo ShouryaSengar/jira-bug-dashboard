@@ -6,18 +6,59 @@ filters, markers and a sortable table. It works on phones.
 
 **Your Jira credentials never leave your computer.** They go only from your machine to your own Jira site.
 
-## Run it
+## Run it on your computer
 
-Requires Node 18+.
+Live demo (sample data only): https://shouryasengar.github.io/jira-bug-dashboard/
+Source code: https://github.com/ShouryaSengar/jira-bug-dashboard
+
+**1. Install Node.js 18 or newer** from https://nodejs.org (check with `node -v`).
+
+**2. Download the project.** Either:
+
+```sh
+git clone https://github.com/ShouryaSengar/jira-bug-dashboard.git
+cd jira-bug-dashboard
+```
+
+or click **Code → Download ZIP** on https://github.com/ShouryaSengar/jira-bug-dashboard, unzip it, and open a terminal in the unzipped folder.
+
+**3. Install and start:**
 
 ```sh
 npm install
-npm start          # builds, then serves http://localhost:4545
+npm start
 ```
 
-On first run the app asks for your Jira URL, account email and an
+**4. Open http://localhost:4545** (if the port is taken: `PORT=4546 npm start`).
+
+**5. Connect Jira.** On first run the app asks for your Jira URL, account email and an
 [API token](https://id.atlassian.com/manage-profile/security/api-tokens). The server verifies them with Jira before saving.
-Use `PORT=4546 npm start` if the port is taken. For development, run `npm run dev`.
+
+**6. Track an epic.** Type a key such as `ABC-123` or paste a Jira link, then press Track.
+
+To update later: `git pull && npm install && npm start`. For development, run `npm run dev`.
+
+### Let your AI assistant do it
+
+Paste this into Claude, ChatGPT, Kiro, Cursor or any AI assistant that can run terminal commands:
+
+```text
+Install and run the open-source "Jira Bug Dashboard" on my computer.
+
+Repository: https://github.com/ShouryaSengar/jira-bug-dashboard
+
+Steps:
+1. Check that Node.js 18+ is installed (`node -v`). If not, tell me how to install it and wait.
+2. Clone the repository into my current folder: `git clone https://github.com/ShouryaSengar/jira-bug-dashboard.git`
+3. In the project folder run `npm install`, then `npm start`.
+4. Tell me to open http://localhost:4545 in my browser. If the port is busy, use `PORT=4546 npm start`.
+
+Rules:
+- Do NOT ask me to paste my Jira API token, password or email into this chat. I will enter them myself
+  in the app's setup screen in my browser. The app stores them only on my computer.
+- Do not modify any files, and do not send any data to external services.
+- If a command fails, show me the error and suggest a fix before continuing.
+```
 
 ## What you get
 

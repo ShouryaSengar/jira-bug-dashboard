@@ -3,6 +3,8 @@
   "version": "0.2.0",
   "description": "Local-first, open-source dashboard for the bugs linked to a Jira issue. Your Jira credentials never leave your machine.",
   "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/ShouryaSengar/jira-bug-dashboard.git" },
+  "homepage": "https://github.com/ShouryaSengar/jira-bug-dashboard#readme",
   "private": true,
   "type": "module",
   "engines": {

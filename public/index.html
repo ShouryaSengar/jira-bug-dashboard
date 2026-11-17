@@ -25,6 +25,7 @@
       <button class="btn primary" type="submit">Track</button>
     </form>
     <div class="top-actions">
+      <button class="btn primary get" id="getBtn" type="button" hidden>Get the app</button>
       <button class="btn icon" id="refreshBtn" type="button" title="Refresh (r)" aria-label="Refresh">↻</button>
       <button class="btn icon" id="themeBtn" type="button" title="Switch theme" aria-label="Switch theme">◐</button>
       <button class="btn icon" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙</button>
@@ -42,6 +43,7 @@
     <div class="hero-actions">
       <button class="btn primary lg" id="heroDemo" type="button">Try with sample data</button>
       <button class="btn lg" id="heroConnect" type="button">Connect Jira</button>
+      <button class="btn lg" id="heroGet" type="button" hidden>Get the app (free)</button>
     </div>
   </section>
 
@@ -106,7 +108,7 @@
     <section id="connSection">
       <h3>Jira connection</h3>
       <div id="demoNote" class="note" hidden>
-        This is the hosted demo. It shows sample data only and cannot reach Jira. To use your own data, run the app on your computer (see the project README). Your credentials are then saved on your machine and never sent to any server except Jira.
+        This is the hosted demo. It shows sample data only and cannot reach Jira. To use your own data, run the app on your computer (<button type="button" class="link" data-open="getApp">download and setup steps</button>). Your credentials are then saved on your machine and never sent to any server except Jira.
       </div>
       <form id="connForm" autocomplete="off">
         <label>Jira URL<input id="fUrl" type="url" placeholder="https://your-company.atlassian.net" required /></label>
@@ -146,6 +148,46 @@
       <h3>Data on this device</h3>
       <p class="small muted">Tracked issues, filters, stars and cached results are kept in this browser only.</p>
       <button class="btn danger" id="wipe" type="button">Clear all local data</button>
+    </section>
+  </div>
+</dialog>
+
+<dialog id="getApp" aria-labelledby="getTitle">
+  <form method="dialog" class="dlg-head"><h2 id="getTitle">Get the app</h2><button class="btn icon" aria-label="Close">✕</button></form>
+  <div class="dlg-body">
+    <section>
+      <p class="muted">Free and open source (MIT). It runs on your computer, so your Jira credentials never leave it.</p>
+      <a class="btn primary" href="https://github.com/ShouryaSengar/jira-bug-dashboard" target="_blank" rel="noopener noreferrer">Open on GitHub</a>
+      <ol class="steps">
+        <li>Install <a href="https://nodejs.org" target="_blank" rel="noopener noreferrer">Node.js 18+</a>.</li>
+        <li>Download the project, either with git or via <b>Code → Download ZIP</b> on GitHub:
+          <div class="codebox"><pre id="cmdClone">git clone https://github.com/ShouryaSengar/jira-bug-dashboard.git
+cd jira-bug-dashboard</pre><button type="button" class="btn small" data-copy="cmdClone">Copy</button></div></li>
+        <li>Install and start:
+          <div class="codebox"><pre id="cmdRun">npm install
+npm start</pre><button type="button" class="btn small" data-copy="cmdRun">Copy</button></div></li>
+        <li>Open <code>http://localhost:4545</code> and enter your Jira URL, email and API token when asked.</li>
+        <li>Type an epic key such as <code>ABC-123</code> and press Track.</li>
+      </ol>
+    </section>
+    <section>
+      <h3>Or let your AI assistant do it</h3>
+      <p class="small muted">Paste this into Claude, ChatGPT, Kiro, Cursor or any assistant that can run terminal commands.</p>
+      <div class="codebox"><pre id="aiPrompt">Install and run the open-source "Jira Bug Dashboard" on my computer.
+
+Repository: https://github.com/ShouryaSengar/jira-bug-dashboard
+
+Steps:
+1. Check that Node.js 18+ is installed (`node -v`). If not, tell me how to install it and wait.
+2. Clone the repository into my current folder: `git clone https://github.com/ShouryaSengar/jira-bug-dashboard.git`
+3. In the project folder run `npm install`, then `npm start`.
+4. Tell me to open http://localhost:4545 in my browser. If the port is busy, use `PORT=4546 npm start`.
+
+Rules:
+- Do NOT ask me to paste my Jira API token, password or email into this chat. I will enter them myself
+  in the app's setup screen in my browser. The app stores them only on my computer.
+- Do not modify any files, and do not send any data to external services.
+- If a command fails, show me the error and suggest a fix before continuing.</pre><button type="button" class="btn small primary" data-copy="aiPrompt">Copy prompt</button></div>
     </section>
   </div>
 </dialog>

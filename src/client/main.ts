@@ -201,7 +201,7 @@ function showShell(): void {
   show('dash', has && data !== null);
   if (!has) {
     document.title = 'Jira Bug Dashboard';
-    if (mode === 'demo') showBanner('info', 'Demo mode: sample data only. Run the app locally to use your own Jira.');
+    if (mode === 'demo') showBanner('info', 'Demo mode: sample data only. Run the app locally to use your own Jira. <button class="link" data-action="get">Get the app</button>');
   }
 }
 
@@ -211,7 +211,7 @@ function renderDash(): void {
   show('dash', true);
   show('empty', false);
   if (mode === 'demo' && $('banner').hidden) {
-    showBanner('info', 'Demo mode: this is generated sample data, not real Jira data. Run the app locally to use your own Jira.');
+    showBanner('info', 'Demo mode: this is generated sample data, not real Jira data. Run the app locally to use your own Jira. <button class="link" data-action="get">Get the app</button>');
   }
   renderHeader();
   renderCharts();
@@ -559,6 +559,17 @@ function wire(): void {
   });
   $('settingsBtn').addEventListener('click', openSettings);
   $('heroConnect').addEventListener('click', openSettings);
+  $('heroGet').addEventListener('click', openGetApp);
+  $('getBtn').addEventListener('click', openGetApp);
+  document.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    if (t.closest('[data-open="getApp"]')) {
+      $<HTMLDialogElement>('settings').close();
+      openGetApp();
+    }
+    const copy = t.closest<HTMLElement>('[data-copy]')?.dataset['copy'];
+    if (copy) void copyText(copy);
+  });
   $('heroDemo').addEventListener('click', () => {
     // Demo keys are separate from real ones so sample data never mixes with Jira data.
     if (mode === 'local') location.href = '?demo&key=DEMO-1';
@@ -577,6 +588,7 @@ function wire(): void {
     const a = (e.target as HTMLElement).closest<HTMLElement>('[data-action]')?.dataset['action'];
     if (a === 'retry') void refreshData();
     if (a === 'settings') openSettings();
+    if (a === 'get') openGetApp();
   });
 
   $('kpis').addEventListener('click', (e) => {
@@ -743,6 +755,20 @@ function wire(): void {
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 }
 
+function openGetApp(): void {
+  const dlg = $<HTMLDialogElement>('getApp');
+  if (!dlg.open) dlg.showModal();
+}
+
+async function copyText(id: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText($(id).textContent ?? '');
+    toast('Copied');
+  } catch {
+    toast('Could not copy. Select the text and copy it manually.', 'error');
+  }
+}
+
 function closeMenus(): void {
   for (const m of document.querySelectorAll<HTMLDetailsElement>('details.menu[open]')) m.open = false;
 }
@@ -759,6 +785,8 @@ async function init(): Promise<void> {
   tracked = loadTracked();
 
   const urlKey = parseKey(new URLSearchParams(location.search).get('key') ?? '');
+  show('heroGet', mode === 'demo');
+  show('getBtn', mode === 'demo');
   scheduleAuto();
   if (urlKey) return void (await track(urlKey));
   const saved = loadActive();
