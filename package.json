@@ -1,0 +1,22 @@
+{
+  "name": "jira-bug-dashboard",
+  "version": "0.2.0",
+  "description": "Local-first, open-source dashboard for the bugs linked to a Jira issue. Your Jira credentials never leave your machine.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && node dist/server/index.js",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput & node --watch dist/server/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build:site": "npm run build && node scripts/build-site.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<meta name="description" content="Open-source, local-first dashboard for the bugs linked to a Jira epic or issue." />
+<title>Jira Bug Dashboard</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/app.css" />
+<script src="js/boot.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="top-row">
+    <a class="brand" href="./" aria-label="Jira Bug Dashboard home">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Bug Dashboard</span>
+    </a>
+    <form id="addForm" class="add" autocomplete="off">
+      <input id="addInput" type="text" inputmode="text" autocapitalize="characters" spellcheck="false" placeholder="Epic or issue key, e.g. ABC-123" aria-label="Jira issue key or URL" />
+      <button class="btn primary" type="submit">Track</button>
+    </form>
+    <div class="top-actions">
+      <button class="btn icon" id="refreshBtn" type="button" title="Refresh (r)" aria-label="Refresh">↻</button>
+      <button class="btn icon" id="themeBtn" type="button" title="Switch theme" aria-label="Switch theme">◐</button>
+      <button class="btn icon" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙</button>
+    </div>
+  </div>
+  <nav id="tabs" class="tabs" aria-label="Tracked issues" hidden></nav>
+</header>
+
+<main id="main">
+  <div id="banner" class="banner" hidden></div>
+
+  <section id="empty" class="hero" hidden>
+    <h1>See every bug behind an epic.</h1>
+    <p>Enter a Jira epic, story or any issue key. The dashboard gathers every linked or child bug and charts it. Your credentials stay on your machine.</p>
+    <div class="hero-actions">
+      <button class="btn primary lg" id="heroDemo" type="button">Try with sample data</button>
+      <button class="btn lg" id="heroConnect" type="button">Connect Jira</button>
+    </div>
+  </section>
+
+  <div id="loading" class="loading" hidden><div class="spinner"></div><span>Loading from Jira…</span></div>
+
+  <div id="dash" hidden>
+    <section class="parent" id="parentCard"></section>
+    <section class="kpis" id="kpis" aria-label="Summary"></section>
+
+    <section class="charts-head">
+      <h2>Charts</h2>
+      <button class="btn small" id="chartsToggle" type="button" aria-expanded="true">Hide</button>
+    </section>
+    <section id="charts" class="charts">
+      <article class="card"><h3>By status</h3><div id="cStatus"></div></article>
+      <article class="card"><h3>By severity</h3><div id="cSeverity"></div></article>
+      <article class="card"><h3>By priority</h3><div id="cPriority"></div></article>
+      <article class="card"><h3>Open by assignee</h3><div id="cAssignee"></div></article>
+      <article class="card wide"><h3>Weekly flow</h3><div id="cTrend"></div></article>
+      <article class="card"><h3>Open bug age</h3><div id="cAge"></div></article>
+    </section>
+
+    <section class="toolbar" aria-label="Filters">
+      <input id="search" type="search" placeholder="Search key, summary, people…  ( / )" aria-label="Search bugs" />
+      <select id="sortSel" aria-label="Sort by"></select>
+      <button class="btn icon" id="sortDir" type="button" aria-label="Toggle sort direction" title="Toggle sort direction">↓</button>
+      <button class="btn" id="filterBtn" type="button">Filters <span id="filterCount" class="badge" hidden></span></button>
+      <details class="menu" id="colsMenu"><summary class="btn">Columns</summary><div class="menu-pop" id="colsList"></div></details>
+      <details class="menu" id="moreMenu"><summary class="btn icon" aria-label="More actions">⋯</summary>
+        <div class="menu-pop right">
+          <button type="button" class="menu-item" id="exportCsv">Export CSV</button>
+          <button type="button" class="menu-item" id="markSeen">Mark all as seen</button>
+          <button type="button" class="menu-item" id="copyLink">Copy link</button>
+          <button type="button" class="menu-item danger" id="untrack">Stop tracking this issue</button>
+        </div></details>
+    </section>
+    <section class="quick" id="quick" aria-label="Quick filters"></section>
+    <section class="chips" id="chips" aria-label="Active filters"></section>
+    <p class="count" id="count" aria-live="polite"></p>
+
+    <div class="table-wrap">
+      <table id="tbl">
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="more-row"><button class="btn" id="moreBtn" type="button" hidden>Show more</button></div>
+    <p class="foot muted small" id="foot"></p>
+  </div>
+</main>
+
+<div id="scrim" class="scrim" hidden></div>
+<aside id="drawer" class="drawer" aria-label="Filters" hidden>
+  <header><h2>Filters</h2><button class="btn icon" id="drawerClose" type="button" aria-label="Close filters">✕</button></header>
+  <div id="drawerBody" class="drawer-body"></div>
+  <footer><button class="btn" id="clearFilters" type="button">Clear all</button><button class="btn primary" id="drawerDone" type="button">Show results</button></footer>
+</aside>
+
+<dialog id="settings" aria-labelledby="settingsTitle">
+  <form method="dialog" class="dlg-head"><h2 id="settingsTitle">Settings</h2><button class="btn icon" aria-label="Close">✕</button></form>
+  <div class="dlg-body">
+    <section id="connSection">
+      <h3>Jira connection</h3>
+      <div id="demoNote" class="note" hidden>
+        This is the hosted demo. It shows sample data only and cannot reach Jira. To use your own data, run the app on your computer (see the project README). Your credentials are then saved on your machine and never sent to any server except Jira.
+      </div>
+      <form id="connForm" autocomplete="off">
+        <label>Jira URL<input id="fUrl" type="url" placeholder="https://your-company.atlassian.net" required /></label>
+        <label>Atlassian account email<input id="fEmail" type="email" placeholder="you@company.com" required /></label>
+        <label>API token<input id="fToken" type="password" placeholder="" autocomplete="new-password" /></label>
+        <p class="small muted">Create a token at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener noreferrer">id.atlassian.com</a>. It is stored only in <code id="cfgPath">~/.jira-bug-dashboard/config.json</code> (readable by your user only) and is never shown here again.</p>
+        <details><summary>Advanced</summary>
+          <label>Severity field names or IDs (comma separated, first match wins)<input id="fSev" type="text" /></label>
+          <label>Issue types to include<input id="fTypes" type="text" /></label>
+        </details>
+        <p id="connMsg" class="msg" role="status" hidden></p>
+        <div class="row"><button class="btn primary" id="connSave" type="submit">Verify &amp; save</button><button class="btn danger" id="connOut" type="button" hidden>Sign out</button></div>
+      </form>
+    </section>
+
+    <section>
+      <h3>Appearance</h3>
+      <label>Theme
+        <select id="pTheme"><option value="system">System</option><option value="light">Light</option><option value="paper">Paper</option><option value="dark">Dark</option><option value="midnight">Midnight</option></select>
+      </label>
+      <div class="swatches" id="pAccent" role="radiogroup" aria-label="Accent colour"></div>
+    </section>
+
+    <section>
+      <h3>Markers &amp; refresh</h3>
+      <div class="grid3">
+        <label>Warn after (days)<input id="pWarn" type="number" min="1" max="365" /></label>
+        <label>Critical after (days)<input id="pCrit" type="number" min="1" max="365" /></label>
+        <label>Stale after (days)<input id="pStale" type="number" min="1" max="365" /></label>
+      </div>
+      <label>Auto refresh
+        <select id="pAuto"><option value="0">Off</option><option value="1">Every minute</option><option value="5">Every 5 minutes</option><option value="15">Every 15 minutes</option></select>
+      </label>
+    </section>
+
+    <section>
+      <h3>Data on this device</h3>
+      <p class="small muted">Tracked issues, filters, stars and cached results are kept in this browser only.</p>
+      <button class="btn danger" id="wipe" type="button">Clear all local data</button>
+    </section>
+  </div>
+</dialog>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
