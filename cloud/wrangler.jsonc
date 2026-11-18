@@ -42,7 +42,7 @@
       "name": "jira-bug-dashboard-cloud",
       "vars": {
         "APP_ORIGIN": "https://jira-bug-dashboard-cloud.shouryacode2021.workers.dev",
-        "ATLASSIAN_CLIENT_ID": "REPLACE_WITH_ATLASSIAN_CLIENT_ID",
+        "ATLASSIAN_CLIENT_ID": "9mYqz06Rr9DeE1FBk1Dcb4kLZcpGwXMX",
         "ATLASSIAN_AUTH_BASE": "https://auth.atlassian.com",
         "ATLASSIAN_API_BASE": "https://api.atlassian.com",
         "VAPID_PUBLIC_KEY": "BPF7ZVknIcFt37fPzlVyvhltQQ-fzy76OwYiacC4qhDNftqGdVUGRbzWe8cuEPsGubCZKpIA77iALaph7Kv38LI",
