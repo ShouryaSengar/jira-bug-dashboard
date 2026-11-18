@@ -7,9 +7,11 @@ import {
 import { columns, donut, hbars, trendChart } from './charts.js';
 import {
   DEFAULT_FILTERS, DEFAULT_PREFS, clearData, loadActive, loadBaseline, loadCache, loadFilters, loadPrefs, loadStars,
-  loadTracked, saveActive, saveBaseline, saveCache, saveFilters, savePrefs, saveStars, saveTracked, setNamespace,
-  type Accent, type Baseline, type ColumnId, type Filters, type Prefs, type SortCol, type ThemeName, type Tracked,
+  loadTracked, loadView, saveView, saveActive, saveBaseline, saveCache, saveFilters, savePrefs, saveStars, saveTracked, setNamespace,
+  type Accent, type Baseline, type ViewName, type ColumnId, type Filters, type Prefs, type SortCol, type ThemeName, type Tracked,
 } from './store.js';
+import { initForYou, onActivity, openIssueDetail, refreshForYou, showForYou } from './foryou.js';
+import { initJarvis, jarvisConfigChanged } from './jarvis.js';
 import { $, csvCell, debounce, download, esc, fmtAge, fmtDate, parseKey, safeUrl, timeAgo, toast } from './util.js';
 
 // ------------------------------------------------------------------ state
@@ -27,6 +29,7 @@ let visible = 100;
 let seq = 0;
 let autoTimer: number | undefined;
 let lastFetchAt = 0;
+let view: ViewName = 'epics';
 
 const PAGE = 100;
 type Group = 'status' | 'severity' | 'priority' | 'assignee';
@@ -90,10 +93,53 @@ function persistFilters(): void {
   if (activeKey) saveFilters(activeKey, filters);
 }
 
+// ------------------------------------------------------------------ views (Epics / For You)
+async function setView(v: ViewName, persist = true): Promise<void> {
+  view = v;
+  if (persist) saveView(v);
+  const fy = v === 'foryou';
+  show('epicView', !fy);
+  show('foryouView', fy);
+  show('tabs', !fy && tracked.length > 0);
+  $('addForm').classList.toggle('gone', fy);
+  for (const b of document.querySelectorAll<HTMLElement>('#viewNav [data-view]')) {
+    const on = b.dataset['view'] === v;
+    b.classList.toggle('on', on);
+    if (on) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  }
+  const url = new URL(location.href);
+  if (fy) {
+    url.searchParams.set('view', 'foryou');
+    url.searchParams.delete('key');
+    document.title = 'For You · Bug Dashboard';
+  } else {
+    url.searchParams.delete('view');
+    url.searchParams.delete('issue');
+  }
+  history.replaceState(null, '', url);
+  if (fy) await showForYou();
+  else if (activeKey && !data) await activate(activeKey);
+  else if (activeKey) {
+    document.title = `${activeKey} · Bug Dashboard`;
+    setUrl(activeKey);
+  } else {
+    document.title = 'Jira Bug Dashboard';
+    showShell();
+  }
+}
+
+const refreshCurrent = (): Promise<void> => (view === 'foryou' ? refreshForYou() : refreshData());
+
+/** Opens a bug in the For You detail view, from anywhere (notification click, history list). */
+function openIssueEverywhere(key: string): void {
+  void setView('foryou').then(() => openIssueDetail(key));
+}
+
 // ------------------------------------------------------------------ tracked issues & tabs
 function renderTabs(): void {
   const nav = $('tabs');
-  nav.hidden = tracked.length === 0;
+  nav.hidden = tracked.length === 0 || view === 'foryou';
   nav.innerHTML = tracked
     .map((t) => {
       const on = t.key === activeKey;
@@ -510,7 +556,9 @@ async function submitConnection(e: SubmitEvent): Promise<void> {
     show('connOut', true);
     hideBanner();
     toast('Jira connected');
-    if (activeKey) void refreshData();
+    jarvisConfigChanged(true);
+    if (view === 'foryou') void refreshForYou();
+    else if (activeKey) void refreshData();
   } catch (err) {
     msg.className = 'msg err';
     msg.textContent = (err as Error).message;
@@ -524,7 +572,7 @@ function scheduleAuto(): void {
   clearInterval(autoTimer);
   if (!prefs.autoRefreshMin) return;
   autoTimer = window.setInterval(() => {
-    if (!document.hidden && activeKey) void refreshData();
+    if (!document.hidden && (view === 'foryou' || activeKey)) void refreshCurrent();
   }, prefs.autoRefreshMin * 60_000);
 }
 
@@ -551,7 +599,11 @@ function wire(): void {
     input.blur();
     void track(key);
   });
-  $('refreshBtn').addEventListener('click', () => void refreshData());
+  $('refreshBtn').addEventListener('click', () => void refreshCurrent());
+  $('viewNav').addEventListener('click', (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>('[data-view]')?.dataset['view'] as ViewName | undefined;
+    if (v && v !== view) void setView(v);
+  });
   $('themeBtn').addEventListener('click', () => {
     const next = THEMES[(THEMES.indexOf(prefs.theme) + 1) % THEMES.length] ?? 'system';
     updatePrefs({ theme: next });
@@ -702,6 +754,7 @@ function wire(): void {
     if (!confirm('Delete the saved Jira credentials from this computer?')) return;
     try {
       config = await deleteConfig();
+      jarvisConfigChanged(false);
       openSettings();
       toast('Signed out');
     } catch (err) {
@@ -743,14 +796,14 @@ function wire(): void {
     if (e.key === 'Escape' && !$('drawer').hidden) closeDrawer();
     const t = e.target as HTMLElement;
     if (/input|select|textarea/i.test(t.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.key === '/' && data) {
+    if (e.key === '/' && (view === 'foryou' || data)) {
       e.preventDefault();
-      $('search').focus();
+      $(view === 'foryou' ? 'fySearch' : 'search').focus();
     }
-    if (e.key === 'r' && activeKey) void refreshData();
+    if (e.key === 'r' && (view === 'foryou' || activeKey)) void refreshCurrent();
   });
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && activeKey && prefs.autoRefreshMin && Date.now() - lastFetchAt > prefs.autoRefreshMin * 60_000) void refreshData();
+    if (!document.hidden && (view === 'foryou' || activeKey) && prefs.autoRefreshMin && Date.now() - lastFetchAt > prefs.autoRefreshMin * 60_000) void refreshCurrent();
   });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 }
@@ -784,14 +837,28 @@ async function init(): Promise<void> {
   setNamespace(mode === 'demo' ? 'demo.' : '');
   tracked = loadTracked();
 
-  const urlKey = parseKey(new URLSearchParams(location.search).get('key') ?? '');
-  show('heroGet', mode === 'demo');
-  show('getBtn', mode === 'demo');
+  const params = new URLSearchParams(location.search);
+  const urlKey = parseKey(params.get('key') ?? '');
+  const issueKey = parseKey(params.get('issue') ?? '');
+  const wantView: ViewName = urlKey ? 'epics' : params.get('view') === 'foryou' || issueKey ? 'foryou' : loadView();
+
+  initForYou({ mode: () => mode, configured: () => config.configured, prefs: () => prefs, openConnect: openSettings });
+  initJarvis(mode, config.configured, { openIssue: openIssueEverywhere, onActivity, openConnect: openSettings });
   scheduleAuto();
+  renderTabs();
+
+  if (wantView === 'foryou') {
+    const saved = loadActive();
+    activeKey = tracked.find((t) => t.key === saved)?.key ?? tracked[0]?.key ?? null;
+    await setView('foryou', !issueKey);
+    if (issueKey) openIssueDetail(issueKey);
+    if (mode === 'local' && !config.configured) openSettings();
+    return;
+  }
+  await setView('epics', false);
   if (urlKey) return void (await track(urlKey));
   const saved = loadActive();
   const start = tracked.find((t) => t.key === saved)?.key ?? tracked[0]?.key ?? null;
-  renderTabs();
   if (start) return void (await activate(start));
   showShell();
   if (mode === 'local' && !config.configured) openSettings(); // first run: ask for credentials

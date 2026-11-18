@@ -6,7 +6,8 @@ import type { Config } from './config.js';
 export class HttpError extends Error {
   constructor(
     public status: number,
-    message: string
+    message: string,
+    public retryAfter?: number
   ) {
     super(message);
   }
@@ -39,6 +40,10 @@ export async function jira(
   if (res.status === 401) {
     throw new HttpError(401, 'Jira rejected the credentials. Check the email and API token in Settings.');
   }
+  if (res.status === 429) {
+    const wait = Number(res.headers.get('retry-after'));
+    throw new HttpError(429, 'Jira is rate limiting requests. Backing off.', Number.isFinite(wait) && wait > 0 ? wait : 60);
+  }
   if (!res.ok) {
     let msg = `${res.status} ${res.statusText}`;
     try {
@@ -53,7 +58,7 @@ export async function jira(
   return res.json();
 }
 
-const split = (s: string): string[] =>
+export const split = (s: string): string[] =>
   String(s || '')
     .split(',')
     .map((x) => x.trim())
@@ -63,14 +68,47 @@ const split = (s: string): string[] =>
 const fieldCache = new Map<string, Json[]>();
 export const forgetFields = (jiraUrl?: string): void => (jiraUrl ? void fieldCache.delete(jiraUrl) : fieldCache.clear());
 
-async function resolveSeverityFieldIds(cfg: Config): Promise<string[]> {
-  const wanted = split(cfg.severityFields);
-  if (wanted.every((w) => /^customfield_\d+$/.test(w))) return wanted;
+export async function allFields(cfg: Config): Promise<Json[]> {
   let all = fieldCache.get(cfg.jiraUrl);
   if (!all) {
     all = (await jira(cfg, '/rest/api/3/field')) as Json[];
     fieldCache.set(cfg.jiraUrl, all);
   }
+  return all;
+}
+
+/** Jira sends "+0530"; Safari only parses "+05:30". Normalise so every browser can read the dates. */
+export const iso = (s: string | null | undefined): string => (s ? s.replace(/([+-]\d{2})(\d{2})$/, '$1:$2') : '');
+
+export const typesJql = (cfg: Config): string =>
+  split(cfg.issueTypes)
+    .map((t) => `"${t.replace(/["\\]/g, '')}"`)
+    .join(',');
+
+export function mapBug(cfg: Config, i: Json, severityIds: string[], relation: string): Bug {
+  const f = i.fields;
+  return {
+    key: i.key,
+    url: `${cfg.jiraUrl}/browse/${i.key}`,
+    summary: f.summary,
+    type: f.issuetype?.name,
+    status: f.status?.name ?? 'Unknown',
+    statusCategory: f.status?.statusCategory?.key as StatusCategory | undefined,
+    priority: f.priority?.name || null,
+    severity: severityOf(f, severityIds),
+    reporter: userOf(f.reporter),
+    assignee: userOf(f.assignee),
+    created: iso(f.created),
+    updated: iso(f.updated),
+    resolved: f.resolutiondate ? iso(f.resolutiondate) : null,
+    relation,
+  };
+}
+
+export async function resolveSeverityFieldIds(cfg: Config): Promise<string[]> {
+  const wanted = split(cfg.severityFields);
+  if (wanted.every((w) => /^customfield_\d+$/.test(w))) return wanted;
+  const all = await allFields(cfg);
   const ids: string[] = [];
   for (const w of wanted) {
     if (/^customfield_\d+$/.test(w)) ids.push(w);
@@ -79,9 +117,9 @@ async function resolveSeverityFieldIds(cfg: Config): Promise<string[]> {
   return [...new Set(ids)];
 }
 
-const userOf = (u: Json): Person | null => (u ? { name: u.displayName, email: u.emailAddress || null } : null);
+export const userOf = (u: Json): Person | null => (u ? { name: u.displayName, email: u.emailAddress || null } : null);
 
-function severityOf(fields: Json, ids: string[]): string | null {
+export function severityOf(fields: Json, ids: string[]): string | null {
   for (const id of ids) {
     const v = fields[id];
     if (v == null) continue;
@@ -106,9 +144,7 @@ export async function getBugs(cfg: Config, key: string): Promise<BugsResponse> {
 
   // 2) Every bug linked to it or parented by it. `key` is regex-validated; types are quoted.
   const severityIds = await resolveSeverityFieldIds(cfg);
-  const types = split(cfg.issueTypes)
-    .map((t) => `"${t.replace(/["\\]/g, '')}"`)
-    .join(',');
+  const types = typesJql(cfg);
   const jql = `(issue in linkedIssues("${key}") OR parent = "${key}") AND issuetype in (${types}) ORDER BY created DESC`;
   const fields = [
     'summary', 'status', 'priority', 'reporter', 'assignee', 'created', 'updated',
@@ -126,25 +162,9 @@ export async function getBugs(cfg: Config, key: string): Promise<BugsResponse> {
     nextPageToken = page.isLast ? undefined : page.nextPageToken;
   } while (nextPageToken && issues.length < 2000);
 
-  const bugs: Bug[] = issues.map((i) => {
-    const f = i.fields;
-    return {
-      key: i.key,
-      url: `${cfg.jiraUrl}/browse/${i.key}`,
-      summary: f.summary,
-      type: f.issuetype?.name,
-      status: f.status?.name ?? 'Unknown',
-      statusCategory: f.status?.statusCategory?.key as StatusCategory | undefined,
-      priority: f.priority?.name || null,
-      severity: severityOf(f, severityIds),
-      reporter: userOf(f.reporter),
-      assignee: userOf(f.assignee),
-      created: f.created,
-      updated: f.updated,
-      resolved: f.resolutiondate ?? null,
-      relation: relation[i.key] || (f.parent?.key === key ? 'child of' : 'linked'),
-    };
-  });
+  const bugs: Bug[] = issues.map((i) =>
+    mapBug(cfg, i, severityIds, relation[i.key] || (i.fields.parent?.key === key ? 'child of' : 'linked'))
+  );
 
   return {
     parent: {

@@ -1,12 +1,13 @@
 // Everything the app remembers lives in this browser's localStorage. Nothing is sent anywhere.
 
-import type { BugsResponse } from '../shared/types.js';
+import type { BugsResponse, JarvisEvent, JarvisServerPrefs, MyBugsResponse } from '../shared/types.js';
+import { DEFAULT_JARVIS_PREFS, type JarvisPrefs } from './jarvis-core.js';
 
 const P = 'jbd.v1.';
 let ns = '';
 /** Separates sample data from real data. Preferences are shared. */
 export const setNamespace = (n: string): void => void (ns = n);
-const K = (k: string): string => P + (k === 'prefs' ? '' : ns) + k;
+const K = (k: string): string => P + (k === 'prefs' || k === 'jarvis' || k === 'view' ? '' : ns) + k;
 
 function read<T>(k: string, fallback: T): T {
   try {
@@ -119,3 +120,53 @@ export function clearData(key?: string): void {
   }
   doomed.forEach((k) => localStorage.removeItem(k));
 }
+
+// ---- JARVIS (assistant preferences are shared by demo and real mode)
+export function loadJarvisPrefs(): JarvisPrefs {
+  const d = DEFAULT_JARVIS_PREFS;
+  const raw = readRaw<Partial<JarvisPrefs>>('jarvis', {});
+  return { ...d, ...raw, types: { ...d.types, ...raw.types }, quiet: { ...d.quiet, ...raw.quiet } };
+}
+export const saveJarvisPrefs = (p: JarvisPrefs): boolean => write('jarvis', p);
+
+/** Highest event id this browser has already announced or reviewed. */
+export const loadAnnounced = (): number => readRaw<number>('jarvis.announced', 0);
+export const saveAnnounced = (n: number): boolean => write('jarvis.announced', n);
+
+// Demo mode has no server, so the simulated assistant keeps its history and switches here.
+export const loadDemoEvents = (): JarvisEvent[] => readRaw<JarvisEvent[]>('jarvis.events', []);
+export const saveDemoEvents = (e: JarvisEvent[]): boolean => write('jarvis.events', e.slice(-200));
+export const DEFAULT_SIM: JarvisServerPrefs = { enabled: true, paused: false, intervalSec: 60, osNotify: false, closedWindowDays: 90 };
+export const loadSim = (): JarvisServerPrefs => ({ ...DEFAULT_SIM, ...readRaw<Partial<JarvisServerPrefs>>('jarvis.sim', {}) });
+export const saveSim = (p: JarvisServerPrefs): boolean => write('jarvis.sim', p);
+
+// ---- For You
+export type FySort = 'key' | 'summary' | 'project' | 'status' | 'severity' | 'priority' | 'reporter' | 'created' | 'updated' | 'age';
+export interface FyFilters {
+  q: string;
+  status: string[];
+  project: string[];
+  priority: string[];
+  severity: string[];
+  openOnly: boolean;
+  blocked: boolean;
+  stale: boolean;
+  recentAssigned: boolean;
+  recentUpdated: boolean;
+  inProgress: boolean;
+  closedOnly: boolean;
+  sort: FySort;
+  dir: 1 | -1;
+}
+export const DEFAULT_FY: FyFilters = {
+  q: '', status: [], project: [], priority: [], severity: [], openOnly: true, blocked: false, stale: false,
+  recentAssigned: false, recentUpdated: false, inProgress: false, closedOnly: false, sort: 'updated', dir: -1,
+};
+export const loadFy = (): FyFilters => ({ ...DEFAULT_FY, ...readRaw<Partial<FyFilters>>('fy.filters', {}) });
+export const saveFy = (f: FyFilters): boolean => write('fy.filters', f);
+export const loadMineCache = (): MyBugsResponse | null => readRaw<MyBugsResponse | null>('fy.cache', null);
+export const saveMineCache = (d: MyBugsResponse): boolean => write('fy.cache', d);
+
+export type ViewName = 'epics' | 'foryou';
+export const loadView = (): ViewName => (readRaw<string>('view', 'epics') === 'foryou' ? 'foryou' : 'epics');
+export const saveView = (v: ViewName): boolean => write('view', v);

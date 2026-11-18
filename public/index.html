@@ -20,12 +20,18 @@
       <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Bug Dashboard</span>
     </a>
+    <nav class="views" id="viewNav" aria-label="Views">
+      <button type="button" class="vbtn on" id="navEpics" data-view="epics">Epics</button>
+      <button type="button" class="vbtn" id="navForYou" data-view="foryou">For You</button>
+    </nav>
     <form id="addForm" class="add" autocomplete="off">
       <input id="addInput" type="text" inputmode="text" autocapitalize="characters" spellcheck="false" placeholder="Epic or issue key, e.g. ABC-123" aria-label="Jira issue key or URL" />
       <button class="btn primary" type="submit">Track</button>
     </form>
     <div class="top-actions">
-      <button class="btn primary get" id="getBtn" type="button" hidden>Get the app</button>
+      <span id="jarvisHint" class="jhint" hidden title="Browsers only allow speech after you interact with the page">Click anywhere to enable voice</span>
+      <button class="btn jarvis" id="jarvisBtn" type="button" data-tone="off" aria-haspopup="dialog" title="JARVIS"><span class="jdot" aria-hidden="true"></span><span class="jtxt">JARVIS</span><span id="jarvisBadge" class="jbadge" hidden></span></button>
+      <button class="btn primary get" id="getBtn" type="button">Get the app</button>
       <button class="btn icon" id="refreshBtn" type="button" title="Refresh (r)" aria-label="Refresh">↻</button>
       <button class="btn icon" id="themeBtn" type="button" title="Switch theme" aria-label="Switch theme">◐</button>
       <button class="btn icon" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙</button>
@@ -35,6 +41,7 @@
 </header>
 
 <main id="main">
+<div id="epicView">
   <div id="banner" class="banner" hidden></div>
 
   <section id="empty" class="hero" hidden>
@@ -43,7 +50,7 @@
     <div class="hero-actions">
       <button class="btn primary lg" id="heroDemo" type="button">Try with sample data</button>
       <button class="btn lg" id="heroConnect" type="button">Connect Jira</button>
-      <button class="btn lg" id="heroGet" type="button" hidden>Get the app (free)</button>
+      <button class="btn lg" id="heroGet" type="button">Get the app (free)</button>
     </div>
   </section>
 
@@ -93,6 +100,42 @@
     <div class="more-row"><button class="btn" id="moreBtn" type="button" hidden>Show more</button></div>
     <p class="foot muted small" id="foot"></p>
   </div>
+</div><!-- /epicView -->
+
+<div id="foryouView" hidden>
+  <section id="fyConnect" class="hero" hidden>
+    <h1>Your bugs, in one place.</h1>
+    <p>Connect Jira to see every bug assigned to you across all projects, and let JARVIS keep an eye on them.</p>
+    <div class="hero-actions"><button class="btn primary lg" id="fyConnectBtn" type="button">Connect Jira</button></div>
+  </section>
+  <div id="fyLoading" class="loading" hidden><div class="spinner"></div><span>Loading your bugs…</span></div>
+  <div id="fyError" class="banner error" hidden></div>
+  <div id="fyBody" hidden>
+    <section class="hello"><div><h1 id="fyHello"></h1><p id="fySub" class="muted"></p></div><p id="fyMeta" class="muted small"></p></section>
+    <section class="kpis" id="fyKpis" aria-label="Summary"></section>
+    <section class="charts" id="fyCharts">
+      <article class="card"><h3>By status</h3><div id="fyStatus"></div></article>
+      <article class="card"><h3>Open by project</h3><div id="fyProject"></div></article>
+      <article class="card"><h3>Open by priority</h3><div id="fyPriority"></div></article>
+      <article class="card"><h3>Open by severity</h3><div id="fySeverity"></div></article>
+      <article class="card"><h3>Open bug age</h3><div id="fyAge"></div></article>
+      <article class="card"><h3>Oldest unresolved</h3><div id="fyOldest"></div></article>
+      <article class="card"><h3>Stale, needs attention</h3><div id="fyStale"></div></article>
+      <article class="card"><div class="card-h"><h3>Latest from JARVIS</h3><button class="btn small" id="fyJarvisMore" type="button">History</button></div><div id="fyJarvis"></div></article>
+    </section>
+    <section class="toolbar" aria-label="Filters">
+      <input id="fySearch" type="search" placeholder="Search key, summary, project, parent…" aria-label="Search my bugs" />
+      <select id="fySort" aria-label="Sort by"></select>
+      <button class="btn icon" id="fyDir" type="button" aria-label="Toggle sort direction">↓</button>
+      <button class="btn" id="fyFilterBtn" type="button">Filters <span id="fyFilterCount" class="badge" hidden></span></button>
+    </section>
+    <section class="quick" id="fyQuick" aria-label="Quick filters"></section>
+    <section class="chips" id="fyChips" aria-label="Active filters"></section>
+    <p class="count" id="fyCount" aria-live="polite"></p>
+    <div class="table-wrap"><table id="fyTable"><thead><tr id="fyHead"></tr></thead><tbody id="fyBodyRows"></tbody></table></div>
+    <div class="more-row"><button class="btn" id="fyMore" type="button" hidden>Show more</button></div>
+  </div>
+</div>
 </main>
 
 <div id="scrim" class="scrim" hidden></div>
@@ -101,6 +144,26 @@
   <div id="drawerBody" class="drawer-body"></div>
   <footer><button class="btn" id="clearFilters" type="button">Clear all</button><button class="btn primary" id="drawerDone" type="button">Show results</button></footer>
 </aside>
+
+<div id="fyScrim" class="scrim" hidden></div>
+<aside id="fyDrawer" class="drawer" aria-label="Filters" hidden>
+  <header><h2>Filters</h2><button class="btn icon" id="fyDrawerClose" type="button" aria-label="Close filters">✕</button></header>
+  <div id="fyDrawerBody" class="drawer-body"></div>
+  <footer><button class="btn" id="fyClear" type="button">Clear all</button><button class="btn primary" id="fyDrawerDone" type="button">Show results</button></footer>
+</aside>
+
+<div id="detailScrim" class="scrim" hidden></div>
+<aside id="detail" class="drawer wide" aria-label="Issue details" hidden><div id="detailBody" class="detail"></div></aside>
+
+<dialog id="jarvisPanel" class="jdlg" aria-labelledby="jpTitle">
+  <form method="dialog" class="dlg-head"><h2 id="jpTitle">JARVIS</h2><button class="btn icon" aria-label="Close">✕</button></form>
+  <div class="jp-tabs" role="tablist" aria-label="JARVIS sections">
+    <button type="button" role="tab" id="jpTab-overview" class="on">Overview</button>
+    <button type="button" role="tab" id="jpTab-history">History</button>
+    <button type="button" role="tab" id="jpTab-settings">Settings</button>
+  </div>
+  <div id="jpBody" class="dlg-body jp-body"></div>
+</dialog>
 
 <dialog id="settings" aria-labelledby="settingsTitle">
   <form method="dialog" class="dlg-head"><h2 id="settingsTitle">Settings</h2><button class="btn icon" aria-label="Close">✕</button></form>

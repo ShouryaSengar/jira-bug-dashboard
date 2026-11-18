@@ -12,6 +12,8 @@ import { fileURLToPath } from 'node:url';
 import type { ConfigUpdate } from '../shared/types.js';
 import { CONFIG_FILE, DEFAULTS, clearConfigFile, loadConfig, publicConfig, saveConfig, type Config } from './config.js';
 import { HttpError, forgetFields, getBugs, jira } from './jira.js';
+import { forgetMine, getIssueDetail, getMyBugs } from './mine.js';
+import { monitor } from './jarvis.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -77,7 +79,9 @@ async function updateConfig(body: Partial<ConfigUpdate>): Promise<Config> {
   const me = await jira(next, '/rest/api/3/myself');
   const saved = { ...next, displayName: me.displayName as string, savedAt: new Date().toISOString() };
   forgetFields(jiraUrl);
+  forgetMine();
   saveConfig(saved);
+  monitor.configChanged();
   return { source: 'file', ...saved };
 }
 
@@ -173,12 +177,42 @@ const server = http.createServer(async (req, res) => {
       if (loadConfig()?.source === 'env') throw new HttpError(409, 'Credentials come from environment variables.');
       clearConfigFile();
       forgetFields();
+      forgetMine();
+      monitor.configChanged();
       return sendJson(res, 200, publicConfig(null));
     }
     if (route === 'GET /api/bugs') {
       const key = (url.searchParams.get('key') || '').trim().toUpperCase();
       if (!KEY_RE.test(key)) throw new HttpError(400, `"${key}" is not a valid Jira key (e.g. ABC-123)`);
       return sendJson(res, 200, await getBugs(requireConfig(), key));
+    }
+    if (route === 'GET /api/mine') {
+      return sendJson(res, 200, await getMyBugs(requireConfig(), monitor.prefs.closedWindowDays, (k) => monitor.lastActivityFor(k), (k) => monitor.wasAssignedRecently(k)));
+    }
+    if (route === 'GET /api/issue') {
+      const key = (url.searchParams.get('key') || '').trim().toUpperCase();
+      if (!KEY_RE.test(key)) throw new HttpError(400, `"${key}" is not a valid Jira key (e.g. ABC-123)`);
+      return sendJson(res, 200, await getIssueDetail(requireConfig(), key));
+    }
+    if (route === 'GET /api/jarvis/status') return sendJson(res, 200, monitor.status());
+    if (route === 'GET /api/jarvis/events') {
+      const after = Number(url.searchParams.get('after') || 0);
+      return sendJson(res, 200, { events: after > 0 ? monitor.eventsAfter(after) : monitor.recentEvents() });
+    }
+    if (route === 'GET /api/jarvis/stream') return monitor.addClient(req, res);
+    if (route === 'POST /api/jarvis/prefs') return sendJson(res, 200, { prefs: monitor.setPrefs(await readJson(req)), status: monitor.status() });
+    if (route === 'POST /api/jarvis/read') {
+      const b = await readJson<{ ids?: number[]; all?: boolean }>(req);
+      monitor.markRead(b.all ? 'all' : (b.ids ?? []).filter((n) => Number.isInteger(n)));
+      return sendJson(res, 200, monitor.status());
+    }
+    if (route === 'POST /api/jarvis/clear') {
+      monitor.clearEvents();
+      return sendJson(res, 200, monitor.status());
+    }
+    if (route === 'POST /api/jarvis/sync') {
+      monitor.syncNow();
+      return sendJson(res, 202, monitor.status());
     }
     if (req.method === 'GET' && !url.pathname.startsWith('/api/') && sendStatic(res, url.pathname)) return;
     sendJson(res, 404, { error: 'Not found' });
@@ -195,6 +229,7 @@ server.on('error', (e: NodeJS.ErrnoException) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
+  monitor.start();
   const cfg = loadConfig();
   console.log(`Jira bug dashboard: http://localhost:${PORT}`);
   console.log(
