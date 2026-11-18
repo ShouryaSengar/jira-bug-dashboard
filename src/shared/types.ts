@@ -132,6 +132,8 @@ export interface JarvisEvent {
   project: string;
   url: string;
   actor: string | null;
+  /** Atlassian account id of the actor (Cloud edition reports it to Atlassian's personal data API). */
+  actorId?: string | null;
   from: string | null;
   to: string | null;
   /** Comment excerpt or list of changed fields. */

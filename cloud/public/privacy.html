@@ -20,7 +20,7 @@
 <main class="policy">
   <p><a href="./">← Back to the dashboard</a></p>
   <h1>Privacy policy</h1>
-  <p class="muted">Jira Bug Dashboard, Cloud edition · Last updated 18 November 2026</p>
+  <p class="muted">Jira Bug Dashboard, Cloud edition · Last updated 19 November 2026</p>
 
   <p>Jira Bug Dashboard is an open-source tool that shows the Jira bugs assigned to you and notifies you when they
   change. This page explains what the hosted Cloud edition at
@@ -49,7 +49,7 @@
     <tr><td>Jira site name and URL</td><td>know which site to query</td><td>until you disconnect or delete</td></tr>
     <tr><td>Atlassian access and refresh tokens, <strong>encrypted</strong> (AES-256-GCM, key held separately from the database)</td><td>call Jira on your behalf</td><td>until you disconnect, delete, or Atlassian revokes them</td></tr>
     <tr><td>Monitoring checkpoint: keys, summaries and last-updated times of bugs assigned to you, plus ids of changes already seen</td><td>detect new activity without announcing it twice</td><td>until you disconnect or delete</td></tr>
-    <tr><td>Notification history: issue key, summary, change type, who made it, old/new value, up to 160 characters of a new comment</td><td>show your history and send notifications</td><td>30 days</td></tr>
+    <tr><td>Notification history: issue key, summary, change type, who made it (display name and Atlassian account id), old/new value, up to 160 characters of a new comment</td><td>show your history and send notifications</td><td>30 days</td></tr>
     <tr><td>Settings (site, issue types, interval, quiet hours, time zone, notification types)</td><td>apply your preferences</td><td>until you delete your account</td></tr>
     <tr><td>Push subscription per device (an address issued by your browser's push service, its encryption keys, a label such as "Chrome on macOS")</td><td>deliver notifications to that device</td><td>until you turn notifications off, the browser invalidates it, or you delete</td></tr>
     <tr><td>Sessions: a hash of your session cookie, browser user-agent</td><td>keep you signed in</td><td>up to 30 days, or 7 days without use</td></tr>
@@ -59,6 +59,14 @@
   fetched live from Jira when you open them and passed straight to your browser.</p>
   <p>Your browser also keeps a local copy of your settings and the last loaded results (in <code>localStorage</code>) so the page opens quickly.
   Signing out, disconnecting or deleting your account clears it. Tokens are never stored in the browser.</p>
+
+  <h2>Atlassian personal data reporting</h2>
+  <p>As Atlassian requires, the service regularly (by default every 7 days) reports to Atlassian which Atlassian account ids it
+  stores data for, and when that data was fetched. Atlassian shows this on each person's Atlassian account profile. When Atlassian
+  reports that an account was <strong>closed</strong>, everything stored about that person is erased, and their name is replaced with
+  "Former user" in other people's history. When Atlassian reports that our copy is <strong>out of date</strong>, it is cleared.</p>
+  <p>If you disconnect Jira or your access is revoked, the rest of your account (settings, history) is erased automatically
+  30 days after your last sign-in, unless you reconnect.</p>
 
   <h2>What is not done</h2>
   <ul>

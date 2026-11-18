@@ -31,6 +31,9 @@ export interface Env {
   /** "1" only in local tests: lets push endpoints use plain http. */
   ALLOW_INSECURE_PUSH?: string;
 
+  /** Optional: the Atlassian accountId that owns the OAuth app. Its token is preferred for personal data reporting. */
+  ATLASSIAN_APP_OWNER_ACCOUNT_ID?: string;
+
   // ---- secrets
   ATLASSIAN_CLIENT_SECRET: string;
   /** base64 of 32 random bytes. `npm run vapid` prints one. */

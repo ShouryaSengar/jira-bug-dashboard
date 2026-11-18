@@ -24,6 +24,7 @@ import { ReauthRequired, accessToken, cloudApi, type GrantRow } from './auth.js'
 import { Budget, BudgetExhausted } from './budget.js';
 import { budgetSize, maxUsersPerRun, type Env } from './env.js';
 import { sendPush, type PushTarget } from './push.js';
+import { runPersonalDataReporting, type PdrReport } from './privacy.js';
 
 const MIN = 60_000;
 const RECONCILE_MS = 6 * 3600_000;
@@ -92,6 +93,7 @@ export interface TickReport {
   retriedPush: number;
   subrequests: number;
   maintenance: boolean;
+  personalData?: PdrReport;
 }
 
 const DUE_SELECT = `
@@ -214,10 +216,26 @@ export async function runTick(env: Env, at = Date.now()): Promise<TickReport> {
   // Retry pushes that failed earlier, if there is budget left.
   if (budget.has(5)) report.retriedPush = await retryPendingPushes(env, budget, at);
 
+  // Personal data reporting to Atlassian: tried hourly at an off-peak minute, sends only what is due.
+  if (minute % 60 === 37 && budget.has(10)) {
+    try {
+      report.personalData = await runPersonalDataReporting(env, budget, at);
+    } catch (e) {
+      console.warn('personal data reporting error:', (e as Error).message?.slice(0, 200));
+    }
+  }
+
   // Hourly housekeeping.
   if (minute % 60 === 13 && budget.has(1)) {
     budget.take();
+    // Accounts whose Jira access ended (revoked or disconnected) more than 30 days ago are erased completely:
+    // that data is no longer needed (Atlassian privacy guide).
+    const gone = `(SELECT u.id FROM users u LEFT JOIN oauth_grants g ON g.user_id = u.id
+                   WHERE (g.user_id IS NULL OR g.status = 'revoked') AND u.last_seen_at < ${at - 30 * 864e5})`;
     await env.DB.batch([
+      ...['oauth_grants', 'jira_sites', 'monitor_state', 'push_subscriptions', 'events', 'user_settings', 'sessions'].map((t) =>
+        env.DB.prepare(`DELETE FROM ${t} WHERE user_id IN ${gone}`)),
+      env.DB.prepare(`DELETE FROM users WHERE id IN ${gone}`),
       env.DB.prepare('DELETE FROM sessions WHERE expires_at < ?1 OR last_used_at < ?2').bind(at, at - 7 * 864e5),
       env.DB.prepare('DELETE FROM rate_limits WHERE expires_at < ?').bind(at),
       env.DB.prepare('DELETE FROM events WHERE at < ?').bind(at - 30 * 864e5),
@@ -351,9 +369,9 @@ async function checkUser(env: Env, row: DueRow, budget: Budget, at: number): Pro
 
   const stmts: D1PreparedStatement[] = kept.map((d) =>
     env.DB.prepare(
-      `INSERT INTO events (user_id, type, at, occurred_at, issue_key, summary, project, url, actor, from_v, to_v, detail, escalated, importance, own, read, pushed)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
-    ).bind(row.user_id, d.type, at, d.occurredAt, d.key, d.summary.slice(0, 300), d.project, d.url, d.actor, d.from, d.to, d.detail, d.escalated ? 1 : 0, d.importance, d.own ? 1 : 0, d.own ? 1 : 0, pushable.has(d) ? 0 : 1)
+      `INSERT INTO events (user_id, type, at, occurred_at, issue_key, summary, project, url, actor, actor_id, from_v, to_v, detail, escalated, importance, own, read, pushed)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
+    ).bind(row.user_id, d.type, at, d.occurredAt, d.key, d.summary.slice(0, 300), d.project, d.url, d.actor, d.actor ? d.actorId ?? null : null, d.from, d.to, d.detail, d.escalated ? 1 : 0, d.importance, d.own ? 1 : 0, d.own ? 1 : 0, pushable.has(d) ? 0 : 1)
   );
   stmts.push(
     env.DB.prepare(

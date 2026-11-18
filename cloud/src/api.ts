@@ -15,6 +15,7 @@ import { minInterval, type Env } from './env.js';
 import { ApiError, KEY_RE, assertSameOrigin, json, rateLimit, readJson } from './http.js';
 import { checkOne, cleanIds, ensureSeverity, runTick, toEvent, type EventRow, type NotifyPrefs } from './monitor.js';
 import { endpointAllowed, sendPush } from './push.js';
+import { runPersonalDataReporting } from './privacy.js';
 
 const DONE_STATES = new Set(['off', 'paused']);
 
@@ -350,6 +351,9 @@ export async function handleApi(req: Request, env: Env, url: URL): Promise<Respo
     case 'POST /api/__dev/tick':
       if (env.ALLOW_INSECURE_PUSH !== '1') break;
       return json(await runTick(env));
+    case 'POST /api/__dev/pdr':
+      if (env.ALLOW_INSECURE_PUSH !== '1') break;
+      return json(await runPersonalDataReporting(env, new Budget(45)));
     default:
   }
   throw new ApiError(404, 'Not found');

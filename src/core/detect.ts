@@ -89,6 +89,7 @@ export function classifyNew(c: DetectCtx, i: Json, hist: Json[], lastSyncMs: num
   return [draft(c.siteUrl, i, 'assigned', {
     occurredAt: new Date(when).toISOString(),
     actor: h?.author?.displayName ?? null,
+    actorId: h?.author?.accountId ?? null,
     own: h?.author?.accountId === c.meId,
   })];
 }
@@ -102,6 +103,7 @@ export function classifyChanges(c: DetectCtx, i: Json, hist: Json[], comments: J
     if (!(created > since)) continue;
     const own = h.author?.accountId === c.meId;
     const actor = h.author?.displayName ?? null;
+    const actorId = h.author?.accountId ?? null;
     const occurredAt = new Date(created).toISOString();
     const other: string[] = [];
     for (const it of h.items || []) {
@@ -118,22 +120,22 @@ export function classifyChanges(c: DetectCtx, i: Json, hist: Json[], comments: J
         if (fc === 'done' && tc !== 'done') type = 'reopened';
         else if (/re-?open/i.test(to ?? '')) type = 'reopened';
         else if (tc === 'done' && fc !== 'done') type = /clos/i.test(to ?? '') ? 'closed' : 'resolved';
-        out.push(draft(c.siteUrl, i, type, { occurredAt, actor, from, to, own }));
+        out.push(draft(c.siteUrl, i, type, { occurredAt, actor, actorId, from, to, own }));
       } else if (fid === 'priority') {
         const up = c.priorityRank(to) < c.priorityRank(from);
-        out.push(draft(c.siteUrl, i, 'priority', { occurredAt, actor, from, to, own, escalated: up, importance: up ? 'high' : 'normal' }));
+        out.push(draft(c.siteUrl, i, 'priority', { occurredAt, actor, actorId, from, to, own, escalated: up, importance: up ? 'high' : 'normal' }));
       } else if (c.severityIds.has(fid) || c.severityNames.has(field.toLowerCase())) {
         const up = severityRank(to) < severityRank(from);
-        out.push(draft(c.siteUrl, i, 'severity', { occurredAt, actor, from, to, own, escalated: up, importance: up ? 'high' : 'normal' }));
+        out.push(draft(c.siteUrl, i, 'severity', { occurredAt, actor, actorId, from, to, own, escalated: up, importance: up ? 'high' : 'normal' }));
       } else if (fid === 'assignee') {
         // Handed to me while the bug was already in my list (it left and came back between two checks).
         // Handing it to someone else is detected from the issue list, not from here.
-        if (String(it.to) === c.meId && String(it.from) !== c.meId) out.push(draft(c.siteUrl, i, 'assigned', { occurredAt, actor, own }));
+        if (String(it.to) === c.meId && String(it.from) !== c.meId) out.push(draft(c.siteUrl, i, 'assigned', { occurredAt, actor, actorId, own }));
       } else if (!NOISY_FIELDS.has(field.toLowerCase())) {
         other.push(field);
       }
     }
-    if (other.length) out.push(draft(c.siteUrl, i, 'updated', { occurredAt, actor, own, detail: [...new Set(other)].join(', ') }));
+    if (other.length) out.push(draft(c.siteUrl, i, 'updated', { occurredAt, actor, actorId, own, detail: [...new Set(other)].join(', ') }));
   }
 
   let n = 0;
@@ -147,6 +149,7 @@ export function classifyChanges(c: DetectCtx, i: Json, hist: Json[], comments: J
     out.push(draft(c.siteUrl, i, 'comment', {
       occurredAt: new Date(created).toISOString(),
       actor: cm.author?.displayName ?? null,
+      actorId: cm.author?.accountId ?? null,
       own: cm.author?.accountId === c.meId,
       detail: adfToText(cm.body).replace(/\s+/g, ' ').trim().slice(0, 160),
     }));

@@ -86,7 +86,7 @@ const types = (es) => es.map((e) => `${e.type}:${e.key}${e.own ? '(own)' : ''}`)
 
 // ================================================================ tests
 // Start from an empty local database so the run is repeatable.
-sql('DELETE FROM events; DELETE FROM push_subscriptions; DELETE FROM monitor_state; DELETE FROM sessions; DELETE FROM jira_sites; DELETE FROM oauth_grants; DELETE FROM user_settings; DELETE FROM users; DELETE FROM rate_limits;');
+sql('DELETE FROM events; DELETE FROM push_subscriptions; DELETE FROM monitor_state; DELETE FROM sessions; DELETE FROM jira_sites; DELETE FROM oauth_grants; DELETE FROM user_settings; DELETE FROM users; DELETE FROM rate_limits; DELETE FROM pdr_reports; DELETE FROM app_meta;');
 const anon = new Browser();
 let r = await anon.json('/api/config');
 ok('config (signed out): cloud edition, not signed in, exposes only the VAPID public key', r.body.edition === 'cloud' && r.body.signedIn === false && !!r.body.vapidPublicKey && !JSON.stringify(r.body).match(/secret|token/i));
@@ -262,6 +262,26 @@ ok('account delete removes every row for that user', sql("SELECT COUNT(*) AS n F
   && sql('SELECT COUNT(*) AS n FROM events WHERE user_id NOT IN (SELECT id FROM users)')[0].n === 0
   && sql('SELECT COUNT(*) AS n FROM sessions WHERE user_id NOT IN (SELECT id FROM users)')[0].n === 0);
 ok("deleting one account leaves the other intact", (await me.json('/api/mine')).status === 200);
+
+// ---- Atlassian Personal Data Reporting API
+const pdr = async () => (await me.json('/api/__dev/pdr', { method: 'POST' })).body;
+const kim = new Browser(); await kim.signIn('kim');
+let rp = await pdr();
+let sent = (await mockState()).pdrRequests.flat();
+ok('reports every stored accountId (users + people in history) with RFC 3339 times', rp.reported >= 3 && ['acc-me', 'acc-kim', 'acc-bob'].every((id) => sent.some((a) => a.accountId === id)) && sent.every((a) => /T.*Z$/.test(a.updatedAt)) && !sent.some((a) => a.accountId === 'unknown'), JSON.stringify({ rp, sent }));
+ok('history rows carry the actor account id', sql("SELECT COUNT(*) AS n FROM events WHERE actor_id = 'acc-bob'")[0].n > 0);
+ok('respects the cycle: nothing due right after a report', (await pdr()).skipped === 'nothing due');
+sql('DELETE FROM pdr_reports');
+await mock('pdr-status', { statuses: { 'acc-bob': 'closed', 'acc-kim': 'closed', 'acc-me': 'updated' } });
+rp = await pdr();
+ok('Atlassian answers closed/updated -> the app acts on them', rp.closed === 2 && rp.updated === 1, JSON.stringify(rp));
+ok('closed account in history: name replaced with "Former user", id removed', sql("SELECT COUNT(*) AS n FROM events WHERE actor_id = 'acc-bob' OR actor = 'Bob Builder'")[0].n === 0
+  && sql("SELECT COUNT(*) AS n FROM events WHERE actor = 'Former user'")[0].n > 0);
+ok('closed signed-in account: erased completely', sql("SELECT COUNT(*) AS n FROM users WHERE atlassian_account_id = 'acc-kim'")[0].n === 0 && (await kim.json('/api/mine')).status === 401);
+ok('updated account: stale profile data cleared', (() => { const u = sql("SELECT name, email FROM users WHERE atlassian_account_id = 'acc-me'")[0]; return u.name === 'Jira user' && u.email === null; })());
+ok('closed accounts are not reported again', !sql("SELECT account_id FROM pdr_reports").some((r) => r.account_id === 'acc-bob' || r.account_id === 'acc-kim'));
+await mock('pdr-status', { statuses: {} });
+ok('the user whose profile was refreshed keeps working', (await me.json('/api/mine')).status === 200);
 
 console.log(fails ? `\n${fails} FAILED, ${passes} passed` : `\nAll ${passes} passed`);
 process.exit(fails ? 1 : 0);

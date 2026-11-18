@@ -113,6 +113,13 @@ Cloudflare does not enforce CPU limits in `wrangler dev`, so watch *Metrics → 
   speed bump rather than a global quota). If you put the Worker on your own domain, also add a Cloudflare WAF
   rate-limiting rule for `/auth/*` and `/api/*`; check your plan's rule allowance first.
 - **Headers**: strict CSP, `frame-ancestors 'none'`, HSTS, `nosniff`, no referrer (`public/_headers`).
+- **Atlassian Personal Data Reporting API** (required for apps that store personal data, `src/privacy.ts`): every stored
+  accountId (signed-in users, and people named in notification history) is reported to `POST /app/report-accounts/`
+  with the time its data was fetched, in batches of 90, once per cycle (default 7 days, or the `Cycle-Period` header).
+  It runs from the cron at minute :37 (not on the hour), resumes where it stopped, and honours `Retry-After`.
+  `closed` → the person is erased everywhere ("Former user" in history); `updated` → the stale copy is cleared.
+  Optional var `ATLASSIAN_APP_OWNER_ACCOUNT_ID` makes it use the app owner's token, as Atlassian recommends.
+- **Retention**: history 30 days; accounts whose Jira access ended (disconnected or revoked) are erased 30 days after the last sign-in.
 - **Data you can delete**: *Settings → Disconnect Jira* removes tokens, sites, devices and sessions; *Delete account*
   removes every row. To remove the grant on Atlassian's side too, use id.atlassian.com → Connected apps.
 
@@ -120,6 +127,7 @@ Cloudflare does not enforce CPU limits in `wrangler dev`, so watch *Metrics → 
 
 `migrations/0001_init.sql`: `users`, `sessions`, `oauth_grants`, `jira_sites`, `user_settings`, `monitor_state`,
 `events` (notification history with read state and push delivery state), `push_subscriptions`, `rate_limits`.
+`migrations/0002_personal_data_reporting.sql`: `users.profile_at`, `events.actor_id`, `pdr_reports`, `app_meta`.
 All user tables reference `users(id) ON DELETE CASCADE`. Schema changes go in new numbered files
 (`0002_...sql`) and are applied with `wrangler d1 migrations apply` (D1 records which ran).
 
@@ -142,7 +150,7 @@ Tests (with the mock and dev server running, on an empty local DB):
 
 ```sh
 node scripts/test-unit.mjs     # 16: encryption, Web Push crypto, rules, CPU measurements
-node scripts/test-e2e.mjs      # 73: OAuth flow and attacks, CSRF, isolation, monitoring, rotation, push, deletion
+node scripts/test-e2e.mjs      # 82: OAuth flow and attacks, CSRF, isolation, monitoring, rotation, push, deletion
 node scripts/test-ui.mjs       # 34: browser UI incl. service worker push → notification → voice (needs Playwright)
 ```
 
@@ -218,6 +226,7 @@ Never commit `.dev.vars`; it is in `.gitignore`. Rotating `TOKEN_ENC_KEY`: move 
 |---|---|
 | OAuth flow, state/replay/CSRF protection, sessions, encryption at rest, isolation between users | ✅ verified locally (workerd + local D1) against `mock-atlassian.mjs` |
 | Monitoring: baseline, all event types, dedup, reassignment, deferral under the cap | ✅ verified locally |
+| Personal Data Reporting API: reporting, cycle, closed/updated handling | ✅ verified locally against a mock of the documented contract; ⏳ first real report after deploying |
 | Refresh-token rotation, concurrency lease, revocation handling | ✅ verified locally against a mock that implements Atlassian's documented rotation and reuse rules |
 | Web Push: VAPID JWT, RFC 8291 encryption (decrypted independently), service worker notification, voice relay | ✅ verified locally; the push *service* was a mock |
 | CPU inside 10 ms | ✅ measured in Node; ⏳ confirm in Cloudflare metrics after deploying |

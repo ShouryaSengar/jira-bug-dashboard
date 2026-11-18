@@ -13,6 +13,7 @@ const CLOUD = 'cloud-1', SITE = 'https://mock.atlassian.net';
 const ACCOUNTS = {
   me: { accountId: 'acc-me', displayName: 'Me Tester', email: 'me@example.com' },
   zed: { accountId: 'acc-zed', displayName: 'Zed Other', email: 'zed@example.com' },
+  kim: { accountId: 'acc-kim', displayName: 'Kim Closing', email: 'kim@example.com' },
 };
 const BOB = { accountId: 'acc-bob', displayName: 'Bob Builder' };
 const STATUSES = { 1: ['To Do', 'new'], 2: ['In Progress', 'indeterminate'], 3: ['Done', 'done'], 4: ['Reopened', 'new'] };
@@ -23,6 +24,7 @@ const S = {
   codes: new Map(), access: new Map(), refresh: new Map(), // token -> { account, exp } / { account, family, used, usedAt }
   revokedFamilies: new Set(), counters: { token: 0, refresh: 0, api: 0, search: 0, breach: 0 }, lastAuthorize: null, pushes: [],
   apiLog: [],
+  pdrStatus: {}, pdrRequests: [], pdrCycle: null,
 };
 let clock = Date.now() - 3600_000;
 const ts = () => new Date((clock = Math.max(clock + 1000, Date.now()))).toISOString().replace('Z', '+0000');
@@ -122,6 +124,16 @@ http.createServer(async (req, res) => {
     }
     // ---------------- api.atlassian.com
     if (p === '/me') { const me = bearer(req); return me ? send(res, 200, { account_id: me.accountId, name: me.displayName, email: me.email, picture: 'https://example.com/p.png' }) : send(res, 401, {}); }
+    if (p === '/app/report-accounts/' && req.method === 'POST') {
+      if (!bearer(req)) return send(res, 401, {});
+      const b = JSON.parse((await readBody(req)).toString() || '{}');
+      S.pdrRequests.push(b.accounts);
+      if (!Array.isArray(b.accounts) || b.accounts.length > 90 || b.accounts.some((a) => !a.accountId || Number.isNaN(Date.parse(a.updatedAt)))) return send(res, 400, { errorType: 'bad', errorMessage: 'malformed' });
+      const actions = b.accounts.filter((a) => S.pdrStatus[a.accountId]).map((a) => ({ accountId: a.accountId, status: S.pdrStatus[a.accountId] }));
+      const h = S.pdrCycle ? { 'Cycle-Period': String(S.pdrCycle) } : {};
+      if (!actions.length) { res.writeHead(204, h); return res.end(); }
+      return send(res, 200, { accounts: actions }, h);
+    }
     if (p === '/oauth/token/accessible-resources') {
       return bearer(req) ? send(res, 200, [{ id: CLOUD, name: 'Mock Site', url: SITE, scopes: ['read:jira-work', 'read:jira-user'] }]) : send(res, 401, {});
     }
@@ -167,7 +179,7 @@ http.createServer(async (req, res) => {
       const a = req.method === 'POST' ? JSON.parse((await readBody(req)).toString() || '{}') : {};
       const i = issues.get(a.key);
       switch (m[1]) {
-        case 'state': return send(res, 200, { counters: S.counters, lastAuthorize: S.lastAuthorize, lastJql: S.lastJql, pushes: S.pushes, apiLog: S.apiLog.slice(-50), revoked: S.revokedFamilies.size });
+        case 'state': return send(res, 200, { pdrRequests: S.pdrRequests, counters: S.counters, lastAuthorize: S.lastAuthorize, lastJql: S.lastJql, pushes: S.pushes, apiLog: S.apiLog.slice(-50), revoked: S.revokedFamilies.size });
         case 'login-as': S.nextLogin = a.account; break;
         case 'deny-next': S.denyNext = true; break;
         case 'access-ttl': S.accessTtl = a.seconds; break;
@@ -175,6 +187,8 @@ http.createServer(async (req, res) => {
         case 'expire-access': for (const v of S.access.values()) v.exp = 0; break;
         case 'revoke': for (const v of S.refresh.values()) if (v.account === a.account) S.revokedFamilies.add(v.family); for (const v of S.access.values()) if (v.account === a.account) v.exp = 0; break;
         case 'push-gone': S.pushGone = { ...(S.pushGone || {}), [a.id]: true }; break;
+        case 'pdr-status': S.pdrStatus = a.statuses || {}; break;
+        case 'pdr-cycle': S.pdrCycle = a.seconds; break;
         case 'reset-counters': S.counters = { token: 0, refresh: 0, api: 0, search: 0, breach: 0 }; S.apiLog = []; S.pushes = []; break;
         case 'add': add(a.key, { ...a, assignee: a.assignee === 'me' ? ACCOUNTS.me : a.assignee === 'zed' ? ACCOUNTS.zed : null }); break;
         case 'assign': {

@@ -132,8 +132,8 @@ export async function finishLogin(req: Request, env: Env, budget: Budget): Promi
   const ua = (req.headers.get('User-Agent') ?? '').slice(0, 160);
   const stmts = [
     env.DB.prepare(
-      `INSERT INTO users (id, atlassian_account_id, name, email, picture, created_at, last_seen_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
-       ON CONFLICT(id) DO UPDATE SET name = ?3, email = ?4, picture = ?5, last_seen_at = ?6`
+      `INSERT INTO users (id, atlassian_account_id, name, email, picture, created_at, last_seen_at, profile_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6, ?6)
+       ON CONFLICT(id) DO UPDATE SET name = ?3, email = ?4, picture = ?5, last_seen_at = ?6, profile_at = ?6`
     ).bind(userId, me.account_id, me.name || me.nickname || 'Jira user', me.email ?? null, me.picture ?? null, t),
     env.DB.prepare(
       `INSERT INTO oauth_grants (user_id, enc_tokens, key_id, access_expires_at, scopes, version, lease_until, status, updated_at)
