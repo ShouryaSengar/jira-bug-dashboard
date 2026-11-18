@@ -221,6 +221,7 @@ Never commit `.dev.vars`; it is in `.gitignore`. Rotating `TOKEN_ENC_KEY`: move 
 | Refresh-token rotation, concurrency lease, revocation handling | ✅ verified locally against a mock that implements Atlassian's documented rotation and reuse rules |
 | Web Push: VAPID JWT, RFC 8291 encryption (decrypted independently), service worker notification, voice relay | ✅ verified locally; the push *service* was a mock |
 | CPU inside 10 ms | ✅ measured in Node; ⏳ confirm in Cloudflare metrics after deploying |
-| Real Atlassian OAuth, real Jira through `api.atlassian.com`, real FCM/Apple/Mozilla push | ⏳ needs live credentials and a deployment |
+| Real Atlassian OAuth (resource-level grant), token exchange, encrypted storage, real Jira data through `api.atlassian.com`, production cron baseline | ✅ verified on the live deployment (18 Nov 2026) |
+| Real FCM/Apple/Mozilla push, refresh-token rotation after the first hour, event detection on real Jira changes | ⏳ to confirm on the live deployment |
 | Atlassian app registration, Cloudflare D1 / secrets / deploy | 👤 manual (checklist above) |
 | Voice while the browser is closed | ❌ not possible in browsers (notifications are used instead) |
