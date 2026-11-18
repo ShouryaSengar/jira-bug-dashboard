@@ -10,15 +10,69 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="jarvis-voice">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>JARVIS: speech and notifications</h1>
-<p class="lede">How events become words and notifications: the templates, the grouping rules, quiet hours, voice selection, the browser's rules, and how several open tabs avoid talking over each other.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#lld">Low-level design (LLD)</a> › JARVIS</div><h1>JARVIS: speech and notifications</h1>
+<p class="lede">How events become words and notifications: the templates, the grouping rules, quiet hours, voice selection, the browser's rules, and how several open tabs avoid talking over each other.</p><div class="meta-line"><span>⏱ 10 min read</span><span>Guide 18 of 47</span></div>
 
-<h2>From events to announcements: <code>plan()</code></h2>
+<h2 id="from-events-to-announcements-plan">From events to announcements: <code>plan()</code></h2>
 <p><code>plan(batch, prefs, now)</code> in <code>src/client/jarvis-core.ts</code> is a pure function: given a batch of events and the user's preferences, it returns what to show and say. The browser and the Worker (for push text) both use it.</p>
 <ol class="steps-list">
   <li><strong>Silence checks</strong>: during quiet hours → nothing. Drop own actions and disabled event types. In "important only" mode keep only high-importance events plus resolutions.</li>
@@ -33,7 +87,7 @@
 "4 more updates on your bugs"         (notification)
 "Sir, a quick briefing. 6 updates across 4 bugs: 1 new assignment, 3 new comments, … Most notable: A B C 7, newly assigned."  (speech)</code></pre>
 
-<h2>The templates</h2>
+<h2 id="the-templates">The templates</h2>
 <p>Each event type has several hand-written variations; the same one is never used twice in a row (<code>pickVariant</code> remembers the last choice). Placeholders are filled from the event:</p>
 <table>
   <tr><th>Event</th><th>Example</th></tr>
@@ -53,7 +107,7 @@
 </ul>
 <div class="callout info"><span class="callout-title">No AI involved</span>All wording comes from fixed templates. There are no network calls, no model, no cost, and the output is predictable and testable (33 tests cover the rules).</div>
 
-<h2>The speaker (<code>speech.ts</code>)</h2>
+<h2 id="the-speaker-speech-ts">The speaker (<code>speech.ts</code>)</h2>
 <ul>
   <li><strong>One voice at a time</strong>: a queue of up to 5 lines; each waits for the previous one's <code>end</code> event, plus 350 ms of pause.</li>
   <li><strong>Stale lines are dropped</strong>: anything waiting more than 2 minutes (except test announcements).</li>
@@ -62,7 +116,7 @@
   <li><strong>The "click first" rule</strong>: Chrome and Edge refuse to speak until the user has interacted with the page once. Lines wait until the first click or key press; the header shows "Click anywhere to enable voice".</li>
 </ul>
 
-<h2>Notifications</h2>
+<h2 id="notifications">Notifications</h2>
 <ul>
   <li><strong>In-page</strong> (all editions): <code>new Notification(title, {body, tag})</code> while the tab is open, if permission is granted. Clicking opens the bug's detail. High-importance ones stay until dismissed.</li>
   <li><strong>Push</strong> (cloud): the service worker shows them, even with the browser closed. When a push already showed a notification, the page does not show a second one for the same events.</li>
@@ -70,7 +124,7 @@
   <li>Permission is only requested from a click (browsers require a user gesture).</li>
 </ul>
 
-<h2>Several tabs</h2>
+<h2 id="several-tabs">Several tabs</h2>
 <p>If you have three dashboard tabs open, only one should speak. Each tab writes a heartbeat to localStorage every 5 seconds, saying whether it is allowed to speak. When events arrive:</p>
 <ol>
   <li>A tab that cannot speak yet steps aside if another able tab is alive.</li>
@@ -78,10 +132,13 @@
   <li>Claims expire after 20 seconds; tabs remove their heartbeat when closed.</li>
 </ol>
 
-<h2>Server-side rules for push (cloud)</h2>
-<p>When the browser is closed, the browser's preferences are not available, so the page copies the relevant ones to the server (<code>POST /api/jarvis/notify</code>): enabled event types, frequency, quiet hours and your time zone. The Worker applies them with <code>pushPlan()</code>, computing "now" in your time zone with <code>Intl.DateTimeFormat</code>. Events silenced by quiet hours are still recorded as unread.</p>
+<h2 id="server-side-rules-for-push-cloud">Server-side rules for push (cloud)</h2>
+<p>When the browser is closed, the browser's preferences are not available, so the page copies the relevant ones to the server (<code>POST /api/jarvis/notify</code>): enabled event types, frequency, quiet hours and your time zone. The Worker applies them with <code>pushPlan()</code>, computing "now" in your time zone with <code>Intl.DateTimeFormat</code>. Events silenced by quiet hours are still recorded as unread.</p><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="jarvis-engine.html"><small>← Previous</small>JARVIS: how changes are detected</a><a class="next" href="flow-page-load.html"><small>Next →</small>Opening the app</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#from-events-to-announcements-plan">From events to announcements: plan()</a><a href="#the-templates">The templates</a><a href="#the-speaker-speech-ts">The speaker (speech.ts)</a><a href="#notifications">Notifications</a><a href="#several-tabs">Several tabs</a><a href="#server-side-rules-for-push-cloud">Server-side rules for push (cloud)</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

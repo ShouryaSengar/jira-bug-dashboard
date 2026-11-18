@@ -1,0 +1,61 @@
+<h1>Loading "For You"</h1>
+<p class="lede">What happens when you open For You on the Cloud edition: from the browser, through the Worker, D1 and Atlassian's gateway, to Jira and back, with the numbers that keep it inside the free plan.</p>
+
+<script type="application/json" class="diagram" data-kind="seq" data-caption="GET /api/mine. The browser shows a cached copy while this runs.">
+{"gap": 160, "actors": [
+  {"id": "b", "label": "Browser", "kind": "browser"},
+  {"id": "w", "label": "Worker", "kind": "cf"},
+  {"id": "d1", "label": "D1", "kind": "db"},
+  {"id": "gw", "label": "api.atlassian.com", "kind": "ext", "sub": "/ex/jira/{cloudId}"},
+  {"id": "j", "label": "Jira site", "kind": "ext"}
+ ],
+ "steps": [
+  {"from": "b", "to": "w", "text": "GET /api/mine + cookie", "accent": true},
+  {"from": "w", "to": "d1", "text": "session (hash)"},
+  {"from": "w", "to": "d1", "text": "site + settings"},
+  {"from": "w", "to": "d1", "text": "grant (decrypt token)"},
+  {"from": "w", "to": "gw", "text": "POST search/jql (assigned to me)"},
+  {"from": "gw", "to": "j", "text": "forward"},
+  {"from": "j", "to": "w", "text": "≤100 issues per page", "ret": true},
+  {"from": "w", "to": "gw", "text": "search: assigned in last 7 days"},
+  {"from": "gw", "to": "w", "text": "keys", "ret": true},
+  {"from": "w", "to": "d1", "text": "latest events per bug"},
+  {"from": "w", "to": "w", "text": "map → MyBug[]"},
+  {"from": "w", "to": "b", "text": "JSON", "ret": true},
+  {"from": "b", "to": "b", "text": "KPIs, charts, table"}
+ ]}
+</script>
+
+<h2>Inside the Worker</h2>
+<ol class="steps-list">
+  <li><strong>Security gate</strong>: <code>assertSameOrigin</code> (GET passes), <code>requireSession</code> (hash the cookie, look it up, check expiry), a per-user rate limit.</li>
+  <li><strong>Who and where</strong>: <code>activeSite()</code> and <code>settingsOf()</code> in parallel.</li>
+  <li><strong>Token</strong>: <code>accessToken()</code> decrypts the stored access token, or refreshes it if it expires within 2 minutes.</li>
+  <li><strong>Severity fields</strong>: resolved once with <code>/rest/api/3/field/search?query=Severity</code> (small) and cached in <code>user_settings</code>. The full field list is avoided because big sites have thousands of fields, which would cost too much CPU to parse.</li>
+  <li><strong>Search</strong>: <code>getMyBugs()</code> from the shared core: <code>assignee = currentUser() AND issuetype in ("Bug") AND (statusCategory != Done OR updated &gt;= -90d) ORDER BY updated DESC</code>, 100 per page, capped at 300 bugs.</li>
+  <li><strong>"Recently assigned"</strong>: a second search <code>assignee CHANGED TO currentUser() AFTER -7d</code>; if a site rejects it, the created date is used instead.</li>
+  <li><strong>Latest activity</strong>: one D1 query for the last 300 non-trivial events, used to label each row ("Comment by Bob · 2h ago").</li>
+  <li><strong>Mapping</strong>: each raw Jira issue (often several KB of nested JSON) becomes a small <code>MyBug</code> with only what the screen needs.</li>
+</ol>
+
+<h2>Why <code>api.atlassian.com</code> and not the site URL</h2>
+<p>OAuth tokens are not accepted at <code>https://yoursite.atlassian.net/rest/...</code>. They must be sent to Atlassian's gateway: <code>https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/...</code>. The <code>cloudId</code> comes from <code>accessible-resources</code> at sign-in. Links shown to you still use the friendly site URL (<code>/browse/ABC-1</code>).</p>
+
+<h2>Budget for one request</h2>
+<table>
+  <tr><th>Item</th><th>Subrequests</th></tr>
+  <tr><td>D1: session, site, settings, grant, events</td><td>5</td></tr>
+  <tr><td>Token refresh (rare)</td><td>0–3</td></tr>
+  <tr><td>Jira search pages (300 bugs max)</td><td>1–3</td></tr>
+  <tr><td>Recently-assigned search</td><td>1</td></tr>
+  <tr><td>Severity lookup (first time only)</td><td>0–3</td></tr>
+  <tr><td><strong>Total</strong></td><td><strong>about 7–15 of 50</strong></td></tr>
+</table>
+<p>CPU: about 0.9 ms per 100 bugs for parsing and mapping, so 300 bugs is about 2.5 ms of the 10 ms limit.</p>
+
+<h2>In the browser afterwards</h2>
+<ul>
+  <li>The result is cached in <code>jbd.v1.fy.cache</code> so the next visit renders instantly.</li>
+  <li>KPIs and charts are computed locally (<code>analysis.ts</code>), so clicking filters never calls the server again.</li>
+  <li>Clicking a bug calls <code>GET /api/issue?key=…</code> (issue + comments + changelog in parallel).</li>
+</ul>

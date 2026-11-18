@@ -10,13 +10,67 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="flow-signin">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>Signing in with Atlassian</h1>
-<p class="lede">The OAuth 2.0 authorization-code flow ("3LO") from start to finish. This is the most important security flow in the app, so every hop is explained, including what an attacker might try at each step.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#flows">End-to-end flows</a></div><h1>Signing in with Atlassian</h1>
+<p class="lede">The OAuth 2.0 authorization-code flow ("3LO") from start to finish. This is the most important security flow in the app, so every hop is explained, including what an attacker might try at each step.</p><div class="meta-line"><span>⏱ 12 min read</span><span>Guide 20 of 47</span></div>
 
 <div class="callout eli5"><span class="callout-title">Explained simply: the hotel key card</span>
 <p>You want a cleaner (the app) to enter your hotel room (your Jira) to tidy one thing. You do not give the cleaner your passport (your password). Instead:</p>
@@ -29,9 +83,8 @@
 <p>You never told the cleaner your password, you can cancel the key card at reception any time, and the card only opens what you agreed to.</p>
 </div>
 
-<h2>The sequence</h2>
-<script type="application/json" class="diagram" data-kind="seq" data-caption="Sign-in. Steps 1, 3-6 and 13 pass through your browser; steps 8-11 are server-to-server, so the browser never sees the code exchange or the tokens.">
-{"gap": 165, "actors": [
+<h2 id="the-sequence">The sequence</h2>
+<figure class="diagram" data-kind="seq"><svg class="dg" viewBox="0 0 820 566" width="820" role="img" aria-label="Sign-in. Steps 1, 3-6 and 13 pass through your browser; steps 8-11 are server-to-server, so the browser never sees the code exchange or the tokens."></svg><script type="application/json" class="diagram-spec">{"gap": 165, "actors": [
   {"id": "b", "label": "Browser", "kind": "browser"},
   {"id": "w", "label": "Worker", "kind": "cf"},
   {"id": "auth", "label": "auth.atlassian.com", "kind": "ext"},
@@ -53,31 +106,30 @@
   {"from": "api", "to": "w", "text": "profile, sites", "ret": true},
   {"from": "w", "to": "d1", "text": "batch: user, encrypted grant, sites, session"},
   {"from": "w", "to": "b", "text": "302 /?view=foryou + session cookie", "ret": true}
- ]}
-</script>
+ ]}</script><figcaption>Sign-in. Steps 1, 3-6 and 13 pass through your browser; steps 8-11 are server-to-server, so the browser never sees the code exchange or the tokens.</figcaption></figure>
 
-<h2>Each hop explained</h2>
-<h3>1–3. Starting the flow (<code>startLogin</code>)</h3>
+<h2 id="each-hop-explained">Each hop explained</h2>
+<h3 id="1-3-starting-the-flow-startlogin">1–3. Starting the flow (<code>startLogin</code>)</h3>
 <ul>
   <li>A per-IP counter in D1 allows 30 sign-in attempts per 10 minutes (the IP is stored only as a hash, and only for that window).</li>
   <li>A random <code>state</code> (24 random bytes) is generated and stored in the cookie <code>__Host-jbd_oauth</code> (HttpOnly, Secure, SameSite=Lax, 10 minutes).</li>
   <li>The redirect URL contains: <code>audience=api.atlassian.com</code>, the public <code>client_id</code>, <code>scope=read:jira-work read:jira-user read:me offline_access</code>, <code>redirect_uri=…/auth/callback</code>, the <code>state</code>, <code>response_type=code</code>, <code>prompt=consent</code>.</li>
 </ul>
-<h3>4–6. At Atlassian</h3>
+<h3 id="4-6-at-atlassian">4–6. At Atlassian</h3>
 <p>Atlassian authenticates you (password, SSO, two-factor: whatever your organisation uses; the app never sees it), shows the requested read-only permissions, and with a <em>resource-level</em> grant asks which site to share. Then it redirects back with a short-lived, one-time <code>code</code> and the same <code>state</code>.</p>
-<h3>7–8. Back at the Worker (<code>finishLogin</code>)</h3>
+<h3 id="7-8-back-at-the-worker-finishlogin">7–8. Back at the Worker (<code>finishLogin</code>)</h3>
 <ul>
   <li>The <code>state</code> in the URL must equal the one in the cookie (compared in constant time). Otherwise → <code>/?auth=state</code>.</li>
   <li>If you clicked Cancel → <code>/?auth=denied</code>.</li>
 </ul>
-<h3>9–10. The code exchange</h3>
+<h3 id="9-10-the-code-exchange">9–10. The code exchange</h3>
 <p>Server to server, the Worker posts the code, the <code>client_secret</code> (a Worker secret) and the same redirect URI to <code>/oauth/token</code>. It receives an access token (valid about an hour), a refresh token (because of <code>offline_access</code>) and the scopes actually granted. If a required scope is missing → <code>/?auth=scopes</code>.</p>
-<h3>11–12. Who and where</h3>
+<h3 id="11-12-who-and-where">11–12. Who and where</h3>
 <p><code>GET api.atlassian.com/me</code> gives your account id, name, email and picture. <code>GET /oauth/token/accessible-resources</code> gives the sites this token can reach, each with a <code>cloudId</code>. Sites without <code>read:jira-work</code> are ignored; none left → <code>/?auth=nosite</code>.</p>
-<h3>13–14. Saving, atomically</h3>
+<h3 id="13-14-saving-atomically">13–14. Saving, atomically</h3>
 <p>One D1 batch: upsert the user (by Atlassian account id), store the grant encrypted with AES-256-GCM (additional data <code>grant:&lt;userId&gt;</code>), replace the site list, create settings with a random monitoring slot, and insert a session whose id is the SHA-256 of a fresh 32-byte random cookie value. Then the browser gets <code>__Host-jbd_sid</code> (30 days) and is sent to For You.</p>
 
-<h2>What an attacker might try</h2>
+<h2 id="what-an-attacker-might-try">What an attacker might try</h2>
 <table>
   <tr><th>Attack</th><th>Why it fails</th></tr>
   <tr><td>Send you a link to <code>/auth/callback</code> with <em>their</em> code (login CSRF: you end up signed in to their Jira)</td><td>Your browser has no matching state cookie (or a different one) → refused</td></tr>
@@ -88,15 +140,18 @@
   <tr><td>Hammer the sign-in endpoint</td><td>Per-IP limit in D1</td></tr>
 </table>
 
-<h2>Signing out and reconnecting</h2>
+<h2 id="signing-out-and-reconnecting">Signing out and reconnecting</h2>
 <ul>
   <li><strong>Sign out</strong> deletes this session row and the cookie.</li>
   <li><strong>Disconnect Jira</strong> deletes the grant, sites, monitor state, push devices and all sessions.</li>
   <li><strong>Reconnect</strong> (after revocation or expiry) is the same flow; the existing user row is reused, so history and settings remain.</li>
 </ul>
-<p>Next: <a href="flow-token-refresh.html">how the access token is kept alive</a>.</p>
+<p>Next: <a href="flow-token-refresh.html">how the access token is kept alive</a>.</p><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="flow-page-load.html"><small>← Previous</small>Opening the app</a><a class="next" href="flow-foryou.html"><small>Next →</small>Loading &quot;For You&quot;</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#the-sequence">The sequence</a><a href="#each-hop-explained">Each hop explained</a><a href="#1-3-starting-the-flow-startlogin" class="h3">1–3. Starting the flow (startLogin)</a><a href="#4-6-at-atlassian" class="h3">4–6. At Atlassian</a><a href="#7-8-back-at-the-worker-finishlogin" class="h3">7–8. Back at the Worker (finishLogin)</a><a href="#9-10-the-code-exchange" class="h3">9–10. The code exchange</a><a href="#11-12-who-and-where" class="h3">11–12. Who and where</a><a href="#13-14-saving-atomically" class="h3">13–14. Saving, atomically</a><a href="#what-an-attacker-might-try">What an attacker might try</a><a href="#signing-out-and-reconnecting">Signing out and reconnecting</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

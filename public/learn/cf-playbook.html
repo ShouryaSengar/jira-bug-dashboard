@@ -10,15 +10,69 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="cf-playbook">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>Playbook: deploy any new app on Cloudflare</h1>
-<p class="lede">A reusable recipe for your next project, distilled from building this one. It takes you from an empty folder to a live app with a database, a schedule, secrets, two environments, tests, and a rollback plan.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#deploy">Deploy and operate</a> › Any app</div><h1>Playbook: deploy any new app on Cloudflare</h1>
+<p class="lede">A reusable recipe for your next project, distilled from building this one. It takes you from an empty folder to a live app with a database, a schedule, secrets, two environments, tests, and a rollback plan.</p><div class="meta-line"><span>⏱ 15 min read</span><span>Guide 42 of 47</span></div>
 
-<h2>0. Decide the shape</h2>
+<h2 id="0-decide-the-shape">0. Decide the shape</h2>
 <table>
   <tr><th>Your app is…</th><th>Use</th></tr>
   <tr><td>static only (HTML/CSS/JS)</td><td>a Worker with only <code>assets</code> (or Cloudflare Pages); no code needed</td></tr>
@@ -29,7 +83,7 @@
   <tr><td>background jobs with retries</td><td>Queues</td></tr>
 </table>
 
-<h2>1. Create the project</h2>
+<h2 id="1-create-the-project">1. Create the project</h2>
 <pre><code>mkdir my-app &amp;&amp; cd my-app
 npm init -y
 npm install -D wrangler typescript @cloudflare/workers-types
@@ -39,7 +93,7 @@ mkdir -p src public migrations</code></pre>
     "lib": ["ES2023"], "types": ["@cloudflare/workers-types"], "strict": true, "noEmit": true },
   "include": ["src"] }</code></pre>
 
-<h2>2. Write the Worker</h2>
+<h2 id="2-write-the-worker">2. Write the Worker</h2>
 <pre><code>// src/index.ts
 export interface Env { DB: D1Database; ASSETS: Fetcher; APP_ORIGIN: string; API_SECRET: string }
 
@@ -59,7 +113,7 @@ export default {
 <p><code>public/index.html</code>: any page. <code>migrations/0001_init.sql</code>:</p>
 <pre><code>CREATE TABLE visits (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL);</code></pre>
 
-<h2>3. Configure: <code>wrangler.jsonc</code></h2>
+<h2 id="3-configure-wrangler-jsonc">3. Configure: <code>wrangler.jsonc</code></h2>
 <pre><code>{
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "my-app",
@@ -84,14 +138,14 @@ export default {
 }</code></pre>
 <div class="callout warn"><span class="callout-title">Not inherited</span>Bindings, vars and triggers must be repeated inside each environment. Secrets are per environment too.</div>
 
-<h2>4. Run locally</h2>
+<h2 id="4-run-locally">4. Run locally</h2>
 <pre><code>echo "API_SECRET=dev-only-value" &gt; .dev.vars         # local secrets; add .dev.vars to .gitignore!
 npx wrangler d1 migrations apply DB --local --env dev
 npx wrangler dev --env dev --test-scheduled
 curl http://localhost:8787/api/hello
 curl "http://localhost:8787/__scheduled?cron=*/5+*+*+*+*"</code></pre>
 
-<h2>5. Go live</h2>
+<h2 id="5-go-live">5. Go live</h2>
 <pre><code>npx wrangler login
 npx wrangler d1 create my-app                        # copy the id into wrangler.jsonc
 npx wrangler d1 migrations apply DB --remote --env production
@@ -99,8 +153,8 @@ npx wrangler secret put API_SECRET --env production  # prompts, hidden
 npx wrangler deploy --env production
 npx wrangler tail --env production                   # watch it</code></pre>
 
-<h2>6. Make it production-grade</h2>
-<h3>Security</h3>
+<h2 id="6-make-it-production-grade">6. Make it production-grade</h2>
+<h3 id="security">Security</h3>
 <ul>
   <li>Secrets only via <code>wrangler secret put</code>; never in <code>wrangler.jsonc</code> or Git.</li>
   <li>Bound SQL parameters (<code>?</code>) always.</li>
@@ -109,31 +163,31 @@ npx wrangler tail --env production                   # watch it</code></pre>
   <li>If you call user-supplied URLs: allow-list hosts (SSRF).</li>
   <li>Fail closed when configuration is missing (this app answers 503 "not configured").</li>
 </ul>
-<h3>Limits (Free)</h3>
+<h3 id="limits-free">Limits (Free)</h3>
 <ul>
   <li>Count subrequests (50 per run, D1 included); batch D1 statements with <code>env.DB.batch()</code>.</li>
   <li>Keep CPU low (10 ms): small payloads, request only needed fields, cap work per cron run, defer the rest.</li>
   <li>Write to D1 only when something changed (100,000 rows/day).</li>
   <li>Make scheduled work idempotent and resumable: it can be cut off at any point.</li>
 </ul>
-<h3>Operations</h3>
+<h3 id="operations">Operations</h3>
 <ul>
   <li>Migrations: numbered, additive, never edited after running in production.</li>
   <li>Logs: <code>console.log</code> structured JSON summaries; never log secrets or personal data.</li>
   <li>Backups: <code>wrangler d1 export … --remote</code> before risky changes; D1 time travel exists.</li>
   <li>Rollback: <code>wrangler rollback</code> (code only: database changes are not rolled back, another reason to keep migrations additive).</li>
 </ul>
-<h3>Tests</h3>
+<h3 id="tests">Tests</h3>
 <ul>
   <li>A mock for every external service (start it on a local port, point a <code>vars</code> URL at it in <code>dev</code>).</li>
   <li>End-to-end tests against <code>wrangler dev</code> using plain <code>fetch</code> with a cookie jar.</li>
   <li>Unit tests by bundling modules with esbuild (ships with Wrangler) and importing them in Node.</li>
 </ul>
 
-<h2>7. Custom domain (optional)</h2>
+<h2 id="7-custom-domain-optional">7. Custom domain (optional)</h2>
 <p>Add your domain to Cloudflare (it becomes a <em>zone</em>), then in the Worker's settings add a <em>Custom Domain</em> (or a <code>routes</code> entry in <code>wrangler.jsonc</code>). Update <code>APP_ORIGIN</code> and any OAuth callback URLs. With a zone you can also add WAF and rate-limiting rules in front of the Worker.</p>
 
-<h2>Template checklist</h2>
+<h2 id="template-checklist">Template checklist</h2>
 <ul>
   <li>☐ <code>wrangler.jsonc</code> with <code>dev</code> and <code>production</code></li>
   <li>☐ <code>.gitignore</code>: <code>node_modules</code>, <code>.wrangler</code>, <code>.dev.vars</code>, build output</li>
@@ -143,9 +197,12 @@ npx wrangler tail --env production                   # watch it</code></pre>
   <li>☐ <code>npm run dev</code>, <code>npm run deploy</code>, <code>npm test</code> scripts</li>
   <li>☐ a mock + an end-to-end test</li>
   <li>☐ <code>wrangler tail</code> checked after the first deploy</li>
-</ul>
+</ul><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="github.html"><small>← Previous</small>Git, GitHub and GitHub Pages</a><a class="next" href="operate.html"><small>Next →</small>Operating in production</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#0-decide-the-shape">0. Decide the shape</a><a href="#1-create-the-project">1. Create the project</a><a href="#2-write-the-worker">2. Write the Worker</a><a href="#3-configure-wrangler-jsonc">3. Configure: wrangler.jsonc</a><a href="#4-run-locally">4. Run locally</a><a href="#5-go-live">5. Go live</a><a href="#6-make-it-production-grade">6. Make it production-grade</a><a href="#security" class="h3">Security</a><a href="#limits-free" class="h3">Limits (Free)</a><a href="#operations" class="h3">Operations</a><a href="#tests" class="h3">Tests</a><a href="#7-custom-domain-optional">7. Custom domain (optional)</a><a href="#template-checklist">Template checklist</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

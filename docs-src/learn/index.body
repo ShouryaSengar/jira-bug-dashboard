@@ -1,0 +1,30 @@
+<div class="learn-home">
+<h1>Learn how it all works</h1>
+<p class="lede">The complete, plain-language guide to Jira Bug Dashboard: the product, the architecture, every module, the database, Jira, Cloudflare, security, and step-by-step deployment, including how to put your own next app on Cloudflare.</p>
+<p class="muted" id="learnStats"></p>
+
+<h2>Pick a path</h2>
+<div class="paths">
+  <section class="path"><h3>🌱 I am new to all of this</h3><ol>
+    <li><a href="big-picture.html">The big picture</a></li>
+    <li><a href="glossary.html">Glossary</a></li>
+    <li><a href="web-http.html">HTTP, cookies and CORS</a></li>
+    <li><a href="cf-basics.html">What Cloudflare is</a></li>
+    <li><a href="hld-overview.html">High-level design</a></li></ol></section>
+  <section class="path"><h3>🏗 I want to understand the design</h3><ol>
+    <li><a href="hld-overview.html">High-level design</a></li>
+    <li><a href="decisions.html">Design decisions</a></li>
+    <li><a href="code-map.html">Code map</a></li>
+    <li><a href="database.html">Database design</a></li>
+    <li><a href="flow-cron.html">The background check</a></li></ol></section>
+  <section class="path"><h3>🚀 I want to deploy</h3><ol>
+    <li><a href="deploy-cloud.html">Deploy the Cloud edition</a></li>
+    <li><a href="cf-playbook.html">Deploy any new app</a></li>
+    <li><a href="cf-wrangler.html">Wrangler cheat sheet</a></li>
+    <li><a href="operate.html">Operating in production</a></li>
+    <li><a href="troubleshooting.html">Troubleshooting</a></li></ol></section>
+</div>
+
+<h2>All topics</h2>
+<div class="cats" id="learnCats"></div>
+</div>

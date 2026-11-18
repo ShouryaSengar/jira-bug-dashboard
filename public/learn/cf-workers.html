@@ -10,15 +10,69 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="cf-workers">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>Workers: how your code runs</h1>
-<p class="lede">What a Cloudflare Worker is, how it starts, what it may and may not do, and the handful of rules that shaped every design choice in the Cloud edition.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#cloudflare">Cloudflare</a></div><h1>Workers: how your code runs</h1>
+<p class="lede">What a Cloudflare Worker is, how it starts, what it may and may not do, and the handful of rules that shaped every design choice in the Cloud edition.</p><div class="meta-line"><span>⏱ 11 min read</span><span>Guide 29 of 47</span></div>
 
-<h2>A Worker is a function, not a server</h2>
+<h2 id="a-worker-is-a-function-not-a-server">A Worker is a function, not a server</h2>
 <p>A traditional server is a program that starts, then waits for requests forever. A Worker is different: Cloudflare keeps your code ready in every data centre, and <em>calls your function</em> when a request (or a cron tick) arrives. Your function returns a response and that is it.</p>
 <pre><code>export default {
   async fetch(request, env, ctx) {
@@ -31,7 +85,7 @@
   <li><code>ctx</code>: extras such as <code>ctx.waitUntil(promise)</code> to finish background work after responding.</li>
 </ul>
 
-<h2>Isolates: why it starts in milliseconds</h2>
+<h2 id="isolates-why-it-starts-in-milliseconds">Isolates: why it starts in milliseconds</h2>
 <div class="callout eli5"><span class="callout-title">Explained simply</span>A normal server is like renting a whole flat for each guest. Workers are like a hotel with many small rooms in one building: each guest (Worker) gets a sealed room (an <em>isolate</em>) inside the same JavaScript engine (V8, the one in Chrome). Opening a room takes milliseconds; building a flat takes seconds.</div>
 <ul>
   <li>No cold-start problem worth mentioning; startup must stay under 1 second (this app: 2 ms).</li>
@@ -39,7 +93,7 @@
   <li>The runtime is called <strong>workerd</strong>; <code>wrangler dev</code> runs the same runtime on your computer.</li>
 </ul>
 
-<h2>The handlers this app uses</h2>
+<h2 id="the-handlers-this-app-uses">The handlers this app uses</h2>
 <table>
   <tr><th>Handler</th><th>Called when</th><th>Here</th></tr>
   <tr><td><code>fetch(request, env, ctx)</code></td><td>an HTTP request reaches the Worker</td><td>API and sign-in</td></tr>
@@ -47,11 +101,11 @@
 </table>
 <p>Others exist (<code>queue</code>, <code>email</code>, <code>tail</code>…) but are not needed.</p>
 
-<h2>The web platform, not Node.js</h2>
+<h2 id="the-web-platform-not-node-js">The web platform, not Node.js</h2>
 <p>Workers implement web standards: <code>fetch</code>, <code>Request</code>/<code>Response</code>, <code>URL</code>, <code>crypto.subtle</code> (Web Crypto), <code>TextEncoder</code>, <code>atob</code>/<code>btoa</code>, streams. Many Node APIs exist behind a compatibility flag, but this project avoids them: the shared core uses only web standards, so the exact same code runs in Node and in workerd.</p>
 <div class="callout warn"><span class="callout-title">A real gotcha</span>Cloudflare's TypeScript types name the ECDH parameter <code>$public</code> instead of the standard <code>public</code> (because <code>public</code> is a reserved word in their generator). The runtime expects <code>public</code>. The code uses <code>public</code> with a type cast, and a test proves it works by decrypting the result with Node.</div>
 
-<h2>The limits that matter (Workers Free)</h2>
+<h2 id="the-limits-that-matter-workers-free">The limits that matter (Workers Free)</h2>
 <table>
   <tr><th>Limit</th><th>Value</th><th>What it means in practice</th></tr>
   <tr><td>Requests</td><td>100,000 per day (resets 00:00 UTC)</td><td>static asset requests do not count</td></tr>
@@ -64,7 +118,7 @@
 </table>
 <p>The free plan never bills you. Over a limit, requests fail (error 1027 for the daily limit, 1102 for CPU) until it resets. Numbers and capacity: <a href="cf-limits.html">The free tier and capacity maths</a>.</p>
 
-<h2>Why the Cloud edition looks the way it does</h2>
+<h2 id="why-the-cloud-edition-looks-the-way-it-does">Why the Cloud edition looks the way it does</h2>
 <ul>
   <li><strong>50 subrequests</strong> → a <code>Budget</code> object counts every call; D1 writes are batched; the due-users query returns everything in one row per user.</li>
   <li><strong>10 ms CPU</strong> → at most 12 users per cron run; avoid parsing large responses (field search instead of the full field list; statuses looked up one by one when unknown).</li>
@@ -72,10 +126,13 @@
   <li><strong>Runs can stop</strong> (limits, deploys, crashes) → every step is resumable and idempotent.</li>
 </ul>
 
-<h2>Versions and deployments</h2>
-<p>Every <code>wrangler deploy</code> creates a new <em>version</em> with an id (for example <code>bab7e433-…</code>) and makes it live within seconds worldwide. Old versions are kept, so you can roll back (<code>wrangler rollback</code>). During a deploy, running requests finish on the old version. See <a href="operate.html">Operating in production</a>.</p>
+<h2 id="versions-and-deployments">Versions and deployments</h2>
+<p>Every <code>wrangler deploy</code> creates a new <em>version</em> with an id (for example <code>bab7e433-…</code>) and makes it live within seconds worldwide. Old versions are kept, so you can roll back (<code>wrangler rollback</code>). During a deploy, running requests finish on the old version. See <a href="operate.html">Operating in production</a>.</p><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="cf-basics.html"><small>← Previous</small>What Cloudflare is and how the edge works</a><a class="next" href="cf-storage.html"><small>Next →</small>D1, assets, cron, secrets and environments</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#a-worker-is-a-function-not-a-server">A Worker is a function, not a server</a><a href="#isolates-why-it-starts-in-milliseconds">Isolates: why it starts in milliseconds</a><a href="#the-handlers-this-app-uses">The handlers this app uses</a><a href="#the-web-platform-not-node-js">The web platform, not Node.js</a><a href="#the-limits-that-matter-workers-free">The limits that matter (Workers Free)</a><a href="#why-the-cloud-edition-looks-the-way-it-does">Why the Cloud edition looks the way it does</a><a href="#versions-and-deployments">Versions and deployments</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

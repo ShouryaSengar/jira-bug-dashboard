@@ -1,0 +1,59 @@
+<h1>Run the Local edition</h1>
+<p class="lede">From nothing to a running dashboard on your computer in about ten minutes. No accounts other than your existing Jira.</p>
+
+<h2>What you need</h2>
+<ul>
+  <li><strong>Node.js 18 or newer</strong>: download from <a href="https://nodejs.org">nodejs.org</a>. Check with <code>node -v</code> in a terminal.</li>
+  <li><strong>Git</strong> (optional; you can download a ZIP instead). Check with <code>git --version</code>.</li>
+  <li>A <strong>Jira Cloud</strong> account (your company's <code>…atlassian.net</code>).</li>
+</ul>
+
+<h2>Steps</h2>
+<ol class="steps-list">
+  <li><strong>Get the code.</strong>
+<pre><code>git clone https://github.com/ShouryaSengar/jira-bug-dashboard.git
+cd jira-bug-dashboard</code></pre>
+  Or on GitHub: <em>Code → Download ZIP</em>, unzip, open a terminal in the folder.</li>
+  <li><strong>Install and start.</strong>
+<pre><code>npm install
+npm start</code></pre>
+  <code>npm install</code> downloads TypeScript (the only dependency). <code>npm start</code> compiles and starts the server. You should see <code>Jira bug dashboard: http://localhost:4545</code>.</li>
+  <li><strong>Create an API token.</strong> Open <a href="https://id.atlassian.com/manage-profile/security/api-tokens">id.atlassian.com → Security → API tokens</a> → <em>Create API token</em>, name it, copy it.</li>
+  <li><strong>Connect.</strong> Open <a href="http://localhost:4545">http://localhost:4545</a>. The settings dialog opens: enter your Jira URL (for example <code>https://yourcompany.atlassian.net</code>), your Atlassian email and the token. <em>Verify &amp; save</em> checks them against Jira before saving.</li>
+  <li><strong>Use it.</strong> Paste an epic key into <em>Track</em>, or open <em>For You</em>. Open <em>JARVIS</em> and press <em>Test announcement</em> (click the page once first, browsers require it).</li>
+</ol>
+
+<h2>Where things are saved</h2>
+<table>
+  <tr><th>What</th><th>Where</th></tr>
+  <tr><td>URL, email, token</td><td><code>~/.jira-bug-dashboard/config.json</code> (readable only by your user)</td></tr>
+  <tr><td>JARVIS snapshot and history</td><td><code>~/.jira-bug-dashboard/jarvis.json</code></td></tr>
+  <tr><td>Preferences, filters, caches</td><td>your browser's localStorage</td></tr>
+</table>
+<p>Nothing is stored in the project folder, so nothing secret can be committed to Git.</p>
+
+<h2>Useful variations</h2>
+<pre><code>PORT=4546 npm start                                  # another port
+JIRA_URL=https://x.atlassian.net JIRA_USERNAME=me@x.com JIRA_API_TOKEN=… npm start   # no saved file
+npm run dev                                          # recompile and restart on every change</code></pre>
+
+<h2>Updating</h2>
+<pre><code>git pull
+npm install
+npm start</code></pre>
+
+<h2>Stopping and removing</h2>
+<ul>
+  <li>Stop: <kbd>Ctrl</kbd>+<kbd>C</kbd> in the terminal (or close it).</li>
+  <li>Remove credentials: Settings → Sign out, or delete <code>~/.jira-bug-dashboard</code>.</li>
+  <li>Revoke the token at id.atlassian.com when you no longer need it.</li>
+</ul>
+
+<h2>If something goes wrong</h2>
+<table>
+  <tr><th>Symptom</th><th>Fix</th></tr>
+  <tr><td><code>Port 4545 is in use</code></td><td>another copy is running; stop it, or <code>PORT=4546 npm start</code></td></tr>
+  <tr><td>"Jira rejected the credentials"</td><td>wrong email or token, or the token expired; create a new one</td></tr>
+  <tr><td>No severity shown</td><td>Settings → Advanced → enter your site's severity field name</td></tr>
+  <tr><td>JARVIS silent</td><td>click the page once; check Voice is on; check the browser volume</td></tr>
+</table>

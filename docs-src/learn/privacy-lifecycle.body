@@ -1,0 +1,70 @@
+<h1>Privacy and the data life cycle</h1>
+<p class="lede">What personal data exists, where it is born, how long it lives, and every way it dies. Includes Atlassian's Personal Data Reporting API, which the Cloud edition implements.</p>
+
+<h2>Data inventory (Cloud edition)</h2>
+<table>
+  <tr><th>Data</th><th>Personal?</th><th>Where</th><th>Lives</th></tr>
+  <tr><td>Account id, name, email, avatar</td><td>yes</td><td><code>users</code></td><td>until account deletion (refreshed each sign-in)</td></tr>
+  <tr><td>OAuth tokens</td><td>credential</td><td><code>oauth_grants</code>, encrypted</td><td>until disconnect, deletion or revocation</td></tr>
+  <tr><td>Session hash, user agent</td><td>weakly</td><td><code>sessions</code></td><td>30 days, or 7 idle</td></tr>
+  <tr><td>Bug keys, summaries, updated times</td><td>work data</td><td><code>monitor_state.snapshot</code></td><td>while monitoring</td></tr>
+  <tr><td>Notification history incl. actor name and id, 160-char comment excerpt</td><td>yes (other people too)</td><td><code>events</code></td><td>30 days</td></tr>
+  <tr><td>Push subscription per device</td><td>device identifier</td><td><code>push_subscriptions</code></td><td>until turned off or invalid</td></tr>
+  <tr><td>Hashed IP</td><td>weakly</td><td><code>rate_limits</code></td><td>~10 minutes</td></tr>
+  <tr><td>Browser cache (settings, results)</td><td>work data</td><td>your browser's localStorage</td><td>until sign out / clear</td></tr>
+  <tr><td>Request logs</td><td>weakly</td><td>Cloudflare</td><td>short-lived, per Cloudflare</td></tr>
+</table>
+<p>Not stored: full issue descriptions, attachments, full comments (fetched live when you open a bug).</p>
+
+<h2>Life cycle</h2>
+<script type="application/json" class="diagram" data-kind="flow" data-caption="How a user's data is created, kept fresh, and erased.">
+{"w": 820, "h": 300,
+ "nodes": [
+  {"id": "in", "x": 20, "y": 120, "w": 150, "h": 44, "title": "Sign in", "icon": "🔑", "kind": "browser"},
+  {"id": "live", "x": 230, "y": 110, "w": 220, "title": "Active account", "kind": "db", "lines": ["profile refreshed at sign-in", "history pruned at 30 days", "weekly report to Atlassian"]},
+  {"id": "dis", "x": 510, "y": 20, "w": 150, "h": 50, "title": "Disconnect", "kind": "note", "sub": "tokens gone now"},
+  {"id": "rev", "x": 510, "y": 110, "w": 150, "h": 50, "title": "Revoked", "kind": "note", "sub": "at Atlassian"},
+  {"id": "closed", "x": 510, "y": 210, "w": 150, "h": 50, "title": "Account closed", "kind": "ext", "sub": "Atlassian says"},
+  {"id": "gone", "x": 720, "y": 110, "w": 100, "h": 50, "title": "Erased", "icon": "🗑", "kind": "ext"}
+ ],
+ "edges": [
+  {"from": "in", "to": "live"},
+  {"from": "live", "to": "dis"},
+  {"from": "live", "to": "rev"},
+  {"from": "live", "to": "closed"},
+  {"from": "dis", "to": "gone", "label": "30 days", "dashed": true},
+  {"from": "rev", "to": "gone", "label": "30 days", "dashed": true},
+  {"from": "closed", "to": "gone", "label": "at once"},
+  {"from": "live", "to": "gone", "label": "Delete account", "accent": true, "via": [[585, 185]], "lpos": [585, 200]}
+ ]}
+</script>
+
+<h2>Ways data is erased</h2>
+<ul>
+  <li><strong>Delete account</strong> (you): every row for you, immediately.</li>
+  <li><strong>Disconnect Jira</strong> (you): tokens, sites, monitor state, devices and sessions immediately; the rest 30 days after your last sign-in unless you reconnect.</li>
+  <li><strong>Revocation</strong> (you at Atlassian, or expiry): grant marked revoked; everything erased 30 days after your last sign-in.</li>
+  <li><strong>Atlassian says "closed"</strong>: that person's account erased, and their name replaced with "Former user" in everyone's history.</li>
+  <li><strong>Atlassian says "updated"</strong>: stale copy cleared (history names dropped; your profile fields cleared until next sign-in).</li>
+  <li><strong>Age</strong>: history older than 30 days, expired sessions and rate-limit rows, every hour.</li>
+</ul>
+
+<h2>The Personal Data Reporting job (<code>cloud/src/privacy.ts</code>)</h2>
+<ol class="steps-list">
+  <li><strong>When</strong>: tried at minute :37 every hour (Atlassian asks not to use the top of the hour), inside the normal cron run.</li>
+  <li><strong>What is due</strong>: every account id the app stores (signed-in users, and actors in history), whose last report is older than one cycle (7 days, or <code>Cycle-Period</code>). Each with the oldest time its data was fetched.</li>
+  <li><strong>Report</strong>: up to 3 requests of 90 accounts per run to <code>POST /app/report-accounts/</code>, using a valid access token (the app owner's if <code>ATLASSIAN_APP_OWNER_ACCOUNT_ID</code> is set).</li>
+  <li><strong>Act</strong>: <em>closed</em> → erase; <em>updated</em> → clear; record the report time for everyone else.</li>
+  <li><strong>Resume</strong>: progress lives in <code>pdr_reports</code>, so an interrupted cycle continues next hour. 429 → wait <code>Retry-After</code>; other errors → wait an hour.</li>
+</ol>
+<p>First live report: 18 November 2026, 19:37 UTC, accepted by Atlassian.</p>
+
+<h2>Principles applied</h2>
+<ul>
+  <li><strong>Minimisation</strong>: store only what monitoring and history need.</li>
+  <li><strong>Purpose limitation</strong>: data is used only to show and notify the same user.</li>
+  <li><strong>Storage limitation</strong>: explicit retention for every table.</li>
+  <li><strong>Transparency</strong>: the <a href="https://jira-bug-dashboard-cloud.shouryacode2021.workers.dev/privacy">privacy policy</a> (Cloud edition) describes all of this.</li>
+  <li><strong>User control</strong>: disconnect, delete, revoke.</li>
+</ul>
+<div class="callout info"><span class="callout-title">Local edition</span>Everything stays on your computer: <code>~/.jira-bug-dashboard/config.json</code> and <code>jarvis.json</code>. Delete the folder to remove all of it. No reporting applies, because no third party stores anything.</div>

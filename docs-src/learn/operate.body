@@ -1,0 +1,81 @@
+<h1>Operating in production</h1>
+<p class="lede">Keeping the live Cloud edition healthy: what to watch, how to read logs, how to roll back, back up, rotate keys and handle incidents.</p>
+
+<h2>Daily glance (2 minutes)</h2>
+<ul>
+  <li><strong>Dashboard → Workers &amp; Pages → jira-bug-dashboard-cloud → Metrics</strong>: requests, errors, CPU time (median and p99 well under 10 ms).</li>
+  <li><strong>Dashboard → D1 → jbd-cloud → Metrics</strong>: rows read/written per day against 5M/100k.</li>
+  <li>Open the app; the JARVIS dot should be green.</li>
+</ul>
+
+<h2>Logs</h2>
+<pre><code>cd cloud
+npx wrangler tail --env production --format pretty           # everything
+npx wrangler tail --env production --status error            # only failures</code></pre>
+<p>What normal looks like:</p>
+<pre><code>"* * * * *" @ …  - Ok
+  (log) {"tick":"…","due":2,"checked":2,"events":1,"deferred":0,"subrequests":9}
+GET https://…/api/mine - Ok
+POST https://…/api/jarvis/notify - Ok</code></pre>
+<table>
+  <tr><th>Field</th><th>Watch for</th></tr>
+  <tr><td><code>deferred</code></td><td>often &gt; 0 → more users than capacity; raise interval or upgrade</td></tr>
+  <tr><td><code>subrequests</code></td><td>close to 45 regularly → many busy users per minute</td></tr>
+  <tr><td><code>monitor: user check failed</code></td><td>repeated for one user → see <code>monitor_state.last_error</code></td></tr>
+  <tr><td><code>personal data reporting failed</code></td><td>non-200/204 from Atlassian → check the token / Atlassian status</td></tr>
+</table>
+<p>Cloudflare redacts OAuth <code>code</code> and <code>state</code> in logged URLs. The app never logs tokens or Jira content.</p>
+
+<h2>Useful read-only queries</h2>
+<pre><code>Q="npx wrangler d1 execute DB --remote --env production --command"
+$Q "SELECT COUNT(*) users FROM users"
+$Q "SELECT status, COUNT(*) FROM oauth_grants GROUP BY status"
+$Q "SELECT user_id, failures, last_error FROM monitor_state WHERE failures &gt; 0"
+$Q "SELECT COUNT(*) pending FROM events WHERE pushed = 0"
+$Q "SELECT COUNT(*) devices FROM push_subscriptions"
+$Q "SELECT * FROM app_meta"</code></pre>
+
+<h2>Deploying changes safely</h2>
+<ol class="steps-list">
+  <li>Run the test suites locally (<a href="testing.html">How this app is tested</a>).</li>
+  <li><code>npm run deploy:dry</code>: bundle, size, bindings.</li>
+  <li>New migration? Make it additive (new tables/columns with defaults).</li>
+  <li><code>npm run deploy</code>.</li>
+  <li>Watch <code>wrangler tail</code> for a few minutes and open the app.</li>
+</ol>
+
+<h2>Rolling back</h2>
+<pre><code>npx wrangler deployments list --env production
+npx wrangler rollback --env production                # previous version
+npx wrangler rollback &lt;version-id&gt; --env production   # a specific one</code></pre>
+<p>A rollback changes code only. Database migrations are not undone, which is why migrations must stay compatible with the previous code.</p>
+
+<h2>Backups</h2>
+<pre><code>npx wrangler d1 export jbd-cloud --remote --output backup-$(date +%F).sql
+npx wrangler d1 time-travel info jbd-cloud
+npx wrangler d1 time-travel restore jbd-cloud --timestamp 2026-11-18T19:00:00Z   # 7 days on Free</code></pre>
+<div class="callout warn"><span class="callout-title">Backups contain personal data</span>An export contains names, emails and encrypted tokens. Store it encrypted, delete it when no longer needed, and never commit it.</div>
+
+<h2>Rotating keys</h2>
+<table>
+  <tr><th>Key</th><th>How</th><th>Effect on users</th></tr>
+  <tr><td><code>TOKEN_ENC_KEY</code></td><td>put the old value in <code>TOKEN_ENC_KEY_OLD</code>, a new 32-byte value in <code>TOKEN_ENC_KEY</code>; wait for refreshes; remove the old one</td><td>none</td></tr>
+  <tr><td><code>ATLASSIAN_CLIENT_SECRET</code></td><td>regenerate in the Atlassian console, <code>wrangler secret put</code></td><td>none (refreshes use the new one)</td></tr>
+  <tr><td>VAPID keys</td><td>new pair; update public var and private secret</td><td>every device must enable notifications again</td></tr>
+</table>
+
+<h2>Incident playbook</h2>
+<table>
+  <tr><th>Situation</th><th>First steps</th></tr>
+  <tr><td>Everyone sees errors</td><td><code>wrangler tail --status error</code>; if it started after a deploy, roll back</td></tr>
+  <tr><td>Error 1027 / 429 everywhere</td><td>daily free limit reached; wait for 00:00 UTC; find the cause in metrics</td></tr>
+  <tr><td>CPU errors (1102)</td><td>lower <code>MONITOR_MAX_USERS_PER_RUN</code>; check for users with huge bug lists</td></tr>
+  <tr><td>Suspected secret leak</td><td>rotate the secret now (table above); for the client secret, regenerate at Atlassian; review logs</td></tr>
+  <tr><td>A user asks to be forgotten</td><td>they can delete their account in Settings; or delete by account id with the same statements <code>privacy.ts</code> uses</td></tr>
+  <tr><td>Atlassian revoked the app</td><td>every grant fails with <code>invalid_grant</code>; users see "Reconnect"; check the developer console</td></tr>
+</table>
+
+<h2>Turning it off</h2>
+<pre><code>npx wrangler delete --env production      # Worker + cron gone; the URL stops working
+npx wrangler d1 delete jbd-cloud          # data gone (irreversible; export first if needed)</code></pre>
+<p>Also set the Atlassian app's distribution to "Not sharing" or delete it in the developer console.</p>

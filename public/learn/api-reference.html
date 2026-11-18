@@ -10,15 +10,69 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="api-reference">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>API reference</h1>
-<p class="lede">Every HTTP endpoint of the backend, what it expects and what it returns. Both servers implement the shared ones with the same shapes; cloud-only endpoints are marked ☁️.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#lld">Low-level design (LLD)</a> › Data and APIs</div><h1>API reference</h1>
+<p class="lede">Every HTTP endpoint of the backend, what it expects and what it returns. Both servers implement the shared ones with the same shapes; cloud-only endpoints are marked ☁️.</p><div class="meta-line"><span>⏱ 12 min read</span><span>Guide 16 of 47</span></div>
 
-<h2>Conventions</h2>
+<h2 id="conventions">Conventions</h2>
 <ul>
   <li>All responses are JSON with security headers and <code>Cache-Control: no-store</code>.</li>
   <li>Errors: <code>{"error": "human readable message", "code": "machine_code"}</code>. Codes: <code>signin</code> (401, not signed in), <code>reauth</code> (401, Jira access revoked or expired), <code>rate_limited</code> (429), <code>not_configured</code> (503), <code>nosite</code> (409).</li>
@@ -26,7 +80,7 @@
   <li>☁️ Every endpoint except <code>/api/config</code> and <code>/auth/*</code> requires the session cookie. User ids are never accepted from the client.</li>
 </ul>
 
-<h2>Connection and configuration</h2>
+<h2 id="connection-and-configuration">Connection and configuration</h2>
 <table>
   <tr><th>Method and path</th><th>Purpose</th><th>Response</th></tr>
   <tr><td><code>GET /api/config</code></td><td>What the page needs to start</td><td>Local: <code>{configured, source, jiraUrl, email, displayName, severityFields, issueTypes, configFile}</code>. Cloud: also <code>edition: "cloud"</code>, <code>signedIn</code>, <code>needsReauth</code>, <code>user</code>, <code>site</code>, <code>sites[]</code>, <code>vapidPublicKey</code>, <code>minIntervalMin</code></td></tr>
@@ -39,7 +93,7 @@
 </table>
 <p>Sign-in failure reasons in <code>?auth=</code>: <code>state</code>, <code>denied</code>, <code>code</code>, <code>exchange</code>, <code>offline</code>, <code>scopes</code>, <code>profile</code>, <code>nosite</code>.</p>
 
-<h2>Jira data</h2>
+<h2 id="jira-data">Jira data</h2>
 <table>
   <tr><th>Method and path</th><th>Purpose</th><th>Response</th></tr>
   <tr><td><code>GET /api/bugs?key=ABC-123</code></td><td>Epics view: bugs linked to or under an issue</td><td><code>{parent, bugs: Bug[], severityFieldsUsed, jql, fetchedAt}</code></td></tr>
@@ -48,7 +102,7 @@
 </table>
 <p>Keys must match <code>^[A-Z][A-Z0-9_]+-\d+$</code>, otherwise 400.</p>
 
-<h2>JARVIS</h2>
+<h2 id="jarvis">JARVIS</h2>
 <table>
   <tr><th>Method and path</th><th>Purpose</th><th>Response</th></tr>
   <tr><td><code>GET /api/jarvis/status</code></td><td>Indicator and panel</td><td><code>{state, prefs, lastSyncAt, nextSyncAt, lastError, monitored, unread, lastEventId, clients, osNotifySupported}</code></td></tr>
@@ -66,7 +120,7 @@
   "actor": "Bob Builder", "actorId": "acc-bob", "from": "Done", "to": "Reopened", "detail": null,
   "escalated": false, "importance": "high", "own": false, "read": false }</code></pre>
 
-<h2>☁️ Web Push</h2>
+<h2 id="web-push">☁️ Web Push</h2>
 <table>
   <tr><th>Method and path</th><th>Purpose</th></tr>
   <tr><td><code>POST /api/push/subscribe</code></td><td>Body = <code>PushSubscription.toJSON()</code> + <code>label</code>; endpoint must be an allowed push service; max 5 devices</td></tr>
@@ -75,18 +129,21 @@
   <tr><td><code>POST /api/push/test</code></td><td>Send a test push to your devices (max 3 per minute); dead subscriptions are removed</td></tr>
 </table>
 
-<h2>Development only</h2>
+<h2 id="development-only">Development only</h2>
 <p><code>POST /api/__dev/tick</code> (run one cron tick and return its report) and <code>POST /api/__dev/pdr</code> (run the privacy report) exist only when <code>ALLOW_INSECURE_PUSH = "1"</code>, which is set in the <code>dev</code> environment and never in production. Locally you can also trigger the real scheduled handler with <code>curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"</code>.</p>
 
-<h2>Calling the API yourself</h2>
+<h2 id="calling-the-api-yourself">Calling the API yourself</h2>
 <pre><code># signed-out config (works on the live site)
 curl https://jira-bug-dashboard-cloud.shouryacode2021.workers.dev/api/config
 
 # anything else needs your session cookie; easiest from the browser console on the site:
 await (await fetch('/api/jarvis/status')).json()
-await (await fetch('/api/jarvis/sync', { method: 'POST', headers: { 'X-JBD': '1' } })).json()</code></pre>
+await (await fetch('/api/jarvis/sync', { method: 'POST', headers: { 'X-JBD': '1' } })).json()</code></pre><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="database.html"><small>← Previous</small>Database design (D1)</a><a class="next" href="jarvis-engine.html"><small>Next →</small>JARVIS: how changes are detected</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#conventions">Conventions</a><a href="#connection-and-configuration">Connection and configuration</a><a href="#jira-data">Jira data</a><a href="#jarvis">JARVIS</a><a href="#web-push">☁️ Web Push</a><a href="#development-only">Development only</a><a href="#calling-the-api-yourself">Calling the API yourself</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

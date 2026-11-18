@@ -1,0 +1,167 @@
+<h1>Code map: every folder and module</h1>
+<p class="lede">A guided walk through the repository. For each file: what it is for, what it exports, and who uses it. About 8,000 lines of TypeScript, HTML, CSS and SQL in total.</p>
+
+<h2>The folders</h2>
+<pre><code>jira-bug-dashboard/
+├── public/              the web page: HTML, CSS, icon, these Learn guides (served as-is)
+├── src/
+│   ├── client/          frontend TypeScript (runs in the browser)
+│   ├── server/          Local edition backend (Node.js)
+│   ├── core/            Jira logic shared by both backends (no Node, no Cloudflare APIs)
+│   └── shared/          TypeScript types shared by everyone
+├── scripts/             build the demo site, mock Jira, local tests
+├── cloud/               Cloud edition (its own package.json)
+│   ├── src/             the Cloudflare Worker
+│   ├── public/          files only the cloud needs: sw.js, _headers, privacy page
+│   ├── migrations/      D1 schema (numbered SQL files)
+│   ├── scripts/         mocks, tests, key generation, asset build
+│   └── wrangler.jsonc   Cloudflare configuration (dev + production)
+├── .github/workflows/   GitHub Actions: deploy the demo to Pages
+├── package.json         Local edition: build + start
+└── tsconfig.json        TypeScript settings for src/</code></pre>
+
+<h2>Module diagram</h2>
+<script type="application/json" class="diagram" data-kind="flow" data-wide="true" data-caption="Who imports whom (main links only; nearly every file also imports shared/types.ts, and util.ts is used across the browser code). Arrows point from a module to what it depends on; dashed arrows cross into another folder.">
+{"w": 900, "h": 700, "wide": true,
+ "zones": [
+  {"x": 10, "y": 10, "w": 880, "h": 220, "label": "Browser (src/client)", "kind": "browser"},
+  {"x": 10, "y": 254, "w": 280, "h": 226, "label": "Local server (src/server)", "kind": "server"},
+  {"x": 310, "y": 254, "w": 280, "h": 226, "label": "Shared (src/core, src/shared)", "kind": "db"},
+  {"x": 610, "y": 254, "w": 280, "h": 426, "label": "Cloud Worker (cloud/src)", "kind": "cf"}
+ ],
+ "nodes": [
+  {"id": "main", "x": 25, "y": 40, "w": 120, "h": 34, "title": "main.ts", "kind": "browser"},
+  {"id": "foryou", "x": 171, "y": 40, "w": 120, "h": 34, "title": "foryou.ts", "kind": "browser"},
+  {"id": "jarvis", "x": 317, "y": 40, "w": 120, "h": 34, "title": "jarvis.ts", "kind": "browser"},
+  {"id": "speech", "x": 463, "y": 40, "w": 120, "h": 34, "title": "speech.ts", "kind": "browser"},
+  {"id": "jcore", "x": 609, "y": 40, "w": 120, "h": 34, "title": "jarvis-core.ts", "kind": "browser"},
+  {"id": "api", "x": 25, "y": 110, "w": 120, "h": 34, "title": "api.ts", "kind": "browser"},
+  {"id": "charts", "x": 171, "y": 110, "w": 120, "h": 34, "title": "charts.ts", "kind": "browser"},
+  {"id": "analysis", "x": 317, "y": 110, "w": 120, "h": 34, "title": "analysis.ts", "kind": "browser"},
+  {"id": "store", "x": 463, "y": 110, "w": 120, "h": 34, "title": "store.ts", "kind": "browser"},
+  {"id": "util", "x": 755, "y": 110, "w": 120, "h": 34, "title": "util.ts", "kind": "browser"},
+  {"id": "demo", "x": 25, "y": 180, "w": 120, "h": 34, "title": "demo.ts", "kind": "browser"},
+  {"id": "sindex", "x": 30, "y": 284, "w": 115, "h": 34, "title": "index.ts", "kind": "server"},
+  {"id": "sconfig", "x": 155, "y": 284, "w": 115, "h": 34, "title": "config.ts", "kind": "server"},
+  {"id": "smine", "x": 30, "y": 354, "w": 115, "h": 34, "title": "mine.ts", "kind": "server"},
+  {"id": "sjarvis", "x": 155, "y": 354, "w": 115, "h": 34, "title": "jarvis.ts", "kind": "server"},
+  {"id": "sjira", "x": 30, "y": 424, "w": 115, "h": 34, "title": "jira.ts", "kind": "server"},
+  {"id": "detect", "x": 330, "y": 284, "w": 240, "h": 34, "title": "core/detect.ts", "kind": "db"},
+  {"id": "cjira", "x": 330, "y": 354, "w": 240, "h": 34, "title": "core/jira.ts", "kind": "db"},
+  {"id": "types", "x": 330, "y": 424, "w": 240, "h": 34, "title": "shared/types.ts", "kind": "db"},
+  {"id": "windex", "x": 630, "y": 274, "w": 240, "h": 34, "title": "index.ts (fetch + scheduled)", "kind": "cf"},
+  {"id": "wapi", "x": 630, "y": 350, "w": 115, "h": 34, "title": "api.ts", "kind": "cf"},
+  {"id": "wmon", "x": 755, "y": 350, "w": 115, "h": 34, "title": "monitor.ts", "kind": "cf"},
+  {"id": "wauth", "x": 630, "y": 420, "w": 115, "h": 34, "title": "auth.ts", "kind": "cf"},
+  {"id": "wpush", "x": 755, "y": 420, "w": 115, "h": 34, "title": "push.ts", "kind": "cf"},
+  {"id": "wcrypto", "x": 630, "y": 490, "w": 115, "h": 34, "title": "crypto.ts", "kind": "cf"},
+  {"id": "wpriv", "x": 755, "y": 490, "w": 115, "h": 34, "title": "privacy.ts", "kind": "cf"},
+  {"id": "whttp", "x": 630, "y": 560, "w": 115, "h": 34, "title": "http.ts", "kind": "cf"},
+  {"id": "wbudget", "x": 755, "y": 560, "w": 115, "h": 34, "title": "budget.ts", "kind": "cf"},
+  {"id": "wenv", "x": 630, "y": 630, "w": 115, "h": 34, "title": "env.ts", "kind": "cf"},
+  {"id": "sw", "x": 755, "y": 630, "w": 115, "h": 34, "title": "public/sw.js", "kind": "cf"}
+ ],
+ "edges": [
+  {"from": "main", "to": "foryou"},
+  {"from": "foryou", "to": "jarvis"},
+  {"from": "jarvis", "to": "speech"},
+  {"from": "speech", "to": "jcore"},
+  {"from": "main", "to": "api"},
+  {"from": "api", "to": "demo"},
+  {"from": "foryou", "to": "charts"},
+  {"from": "charts", "to": "analysis"},
+  {"from": "analysis", "to": "store"},
+  {"from": "store", "to": "jcore"},
+  {"from": "sindex", "to": "smine"},
+  {"from": "sindex", "to": "sjarvis"},
+  {"from": "smine", "to": "sjira"},
+  {"from": "sjarvis", "to": "detect", "dashed": true},
+  {"from": "sjira", "to": "cjira", "dashed": true},
+  {"from": "detect", "to": "cjira"},
+  {"from": "cjira", "to": "types"},
+  {"from": "windex", "to": "wapi"},
+  {"from": "windex", "to": "wmon"},
+  {"from": "wapi", "to": "wauth"},
+  {"from": "wmon", "to": "wpush"},
+  {"from": "wauth", "to": "wcrypto"},
+  {"from": "wmon", "to": "wpriv", "via": [[880, 374], [880, 507]]},
+  {"from": "wapi", "to": "cjira", "dashed": true},
+  {"from": "wmon", "to": "detect", "dashed": true, "via": [[812, 330]]},
+  {"from": "wmon", "to": "jcore", "dashed": true, "via": [[880, 360], [880, 242], [669, 242]]}
+ ]}
+</script>
+
+<h2>Frontend: <code>src/client/</code> and <code>public/</code></h2>
+<table>
+  <tr><th>File</th><th>Lines</th><th>Responsibility</th></tr>
+  <tr><td><code>public/index.html</code></td><td>288</td><td>The one page: header, Epics view, For You view, drawers, dialogs (settings, JARVIS, get-the-app). Strict CSP in a meta tag.</td></tr>
+  <tr><td><code>public/css/app.css</code></td><td>429</td><td>All styles. Themes are CSS variables switched by <code>&lt;html data-theme&gt;</code>; mobile rules below 760 px.</td></tr>
+  <tr><td><code>boot.ts</code></td><td>9</td><td>Runs before first paint; applies the saved theme so the page never flashes the wrong colours.</td></tr>
+  <tr><td><code>main.ts</code></td><td>993</td><td>App controller: detects the mode, switches views, the Epics dashboard (tabs, KPIs, charts, table, filters, export), settings dialog, cloud account actions, keyboard shortcuts.</td></tr>
+  <tr><td><code>api.ts</code></td><td>106</td><td>Every call to the backend, plus <code>detectMode()</code>. In demo mode returns generated data instead.</td></tr>
+  <tr><td><code>foryou.ts</code></td><td>503</td><td>The For You view: KPIs, charts, attention lists, filters, table, issue detail drawer.</td></tr>
+  <tr><td><code>jarvis.ts</code></td><td>816</td><td>JARVIS in the browser: receives events (SSE locally, push in the cloud, simulated in demo), decides what to announce, renders the indicator and control panel, Web Push subscription.</td></tr>
+  <tr><td><code>jarvis-core.ts</code></td><td>362</td><td>Pure rules: message templates, grouping/briefings, quiet hours, notification text. Also used by the Worker for push text.</td></tr>
+  <tr><td><code>speech.ts</code></td><td>192</td><td>Speech queue (one voice at a time), voice picking, the browser's "needs a click first" rule, desktop notifications.</td></tr>
+  <tr><td><code>analysis.ts</code></td><td>177</td><td>Pure maths on bugs: age, staleness, levels, colours, filters, sorting, weekly trend, histogram.</td></tr>
+  <tr><td><code>charts.ts</code></td><td>94</td><td>SVG/HTML chart builders: donut, bars, columns, trend chart.</td></tr>
+  <tr><td><code>store.ts</code></td><td>172</td><td>Everything kept in <code>localStorage</code>: preferences, tracked issues, filters, stars, baselines, caches, JARVIS settings. Separate namespace for demo data.</td></tr>
+  <tr><td><code>demo.ts</code></td><td>168</td><td>Deterministic sample data and simulated JARVIS events.</td></tr>
+  <tr><td><code>util.ts</code></td><td>73</td><td><code>$()</code>, HTML escaping, safe URLs, dates, debounce, key parsing, toasts, CSV cells.</td></tr>
+</table>
+<p>Deep dive: <a href="frontend.html">Frontend internals</a>.</p>
+
+<h2>Shared: <code>src/core/</code> and <code>src/shared/</code></h2>
+<table>
+  <tr><th>File</th><th>Exports (main)</th><th>Used by</th></tr>
+  <tr><td><code>core/jira.ts</code></td><td><code>JiraApi</code> interface, <code>HttpError</code>, <code>searchAll</code>, <code>getBugs</code>, <code>getMyBugs</code>, <code>getIssueDetail</code>, <code>recentChangelog</code>, <code>recentComments</code>, <code>blockedInfo</code>, <code>adfToText</code>, <code>makePriorityRank</code>, <code>severityRank</code></td><td>both servers</td></tr>
+  <tr><td><code>core/detect.ts</code></td><td><code>classifyNew</code>, <code>classifyChanges</code>, <code>classifyAway</code>, <code>eventLabel</code>, <code>IMPORTANCE</code></td><td>both monitors</td></tr>
+  <tr><td><code>shared/types.ts</code></td><td><code>Bug</code>, <code>MyBug</code>, <code>IssueDetail</code>, <code>JarvisEvent</code>, <code>JarvisStatus</code>, <code>PublicConfig</code>…</td><td>everyone</td></tr>
+</table>
+<p>Deep dive: <a href="core.html">The shared Jira core</a>.</p>
+
+<h2>Local server: <code>src/server/</code></h2>
+<table>
+  <tr><th>File</th><th>Responsibility</th></tr>
+  <tr><td><code>index.ts</code></td><td>HTTP server on 127.0.0.1: static files, routes, Host/Origin guard, JSON helpers</td></tr>
+  <tr><td><code>config.ts</code></td><td>Credentials file in <code>~/.jira-bug-dashboard/</code> (mode 0600), environment variable override</td></tr>
+  <tr><td><code>jira.ts</code></td><td>Basic-auth Jira client and its adapter to the core's <code>JiraApi</code></td></tr>
+  <tr><td><code>mine.ts</code></td><td>For You, issue detail, status and priority lookups (wrappers over the core)</td></tr>
+  <tr><td><code>jarvis.ts</code></td><td>The local monitor: timer, snapshot diff, persistence in <code>jarvis.json</code>, SSE stream, system notifications</td></tr>
+</table>
+<p>Deep dive: <a href="local-server.html">Local server internals</a>.</p>
+
+<h2>Cloud Worker: <code>cloud/src/</code></h2>
+<table>
+  <tr><th>File</th><th>Lines</th><th>Responsibility</th></tr>
+  <tr><td><code>index.ts</code></td><td>32</td><td>Entry point: <code>fetch</code> routes <code>/api/*</code> and <code>/auth/*</code> to the API, everything else to static assets; <code>scheduled</code> runs the monitor</td></tr>
+  <tr><td><code>api.ts</code></td><td>360</td><td>All HTTP endpoints, session checks, per-user scoping</td></tr>
+  <tr><td><code>auth.ts</code></td><td>328</td><td>OAuth sign-in, sessions, token storage and refresh (lease + version), the cloud <code>JiraApi</code></td></tr>
+  <tr><td><code>monitor.ts</code></td><td>510</td><td>The cron engine: due users, incremental check, events, push delivery, retries, housekeeping</td></tr>
+  <tr><td><code>push.ts</code></td><td>123</td><td>Web Push: endpoint allow-list, VAPID JWT, aes128gcm encryption, sending</td></tr>
+  <tr><td><code>privacy.ts</code></td><td>143</td><td>Atlassian Personal Data Reporting</td></tr>
+  <tr><td><code>crypto.ts</code></td><td>78</td><td>base64url, random tokens, SHA-256, constant-time compare, AES-GCM token encryption</td></tr>
+  <tr><td><code>http.ts</code></td><td>112</td><td>JSON/redirect responses, errors, cookies, CSRF check, body limits, rate limiter</td></tr>
+  <tr><td><code>budget.ts</code></td><td>27</td><td>Subrequest counter</td></tr>
+  <tr><td><code>env.ts</code></td><td>64</td><td>Typed bindings, vars and secrets; configuration check</td></tr>
+</table>
+<p>Deep dive: <a href="worker.html">Cloud Worker internals</a>.</p>
+
+<h2>Scripts</h2>
+<table>
+  <tr><th>File</th><th>What it does</th></tr>
+  <tr><td><code>scripts/build-site.mjs</code></td><td>Copies <code>public/</code> + compiled JS into <code>site/</code> for GitHub Pages</td></tr>
+  <tr><td><code>scripts/mock-jira.mjs</code>, <code>test-jarvis.mjs</code>, <code>test-core.mjs</code></td><td>Local edition: fake Jira, detection tests, announcement-rule tests</td></tr>
+  <tr><td><code>cloud/scripts/build-assets.mjs</code></td><td>Assembles <code>cloud/dist-assets</code> (shared frontend + sw.js + headers + privacy)</td></tr>
+  <tr><td><code>cloud/scripts/mock-atlassian.mjs</code></td><td>Fake Atlassian auth, API gateway, Jira, push service and privacy API</td></tr>
+  <tr><td><code>cloud/scripts/test-e2e.mjs</code>, <code>test-ui.mjs</code>, <code>test-unit.mjs</code></td><td>Cloud tests: 82 end-to-end, 34 browser, 16 unit</td></tr>
+  <tr><td><code>cloud/scripts/gen-vapid.mjs</code>, <code>set-prod-secrets.mjs</code></td><td>Generate keys for development / production</td></tr>
+  <tr><td><code>cloud/scripts/dev-server.sh</code></td><td>Starts <code>wrangler dev</code> with cron testing enabled</td></tr>
+</table>
+
+<h2>How code becomes something that runs</h2>
+<ul>
+  <li><strong>Local edition</strong>: <code>tsc</code> compiles <code>src/</code> to <code>dist/</code>; Node runs <code>dist/server/index.js</code>, which serves <code>public/</code> and <code>dist/client/</code>.</li>
+  <li><strong>Demo</strong>: the same compile, then <code>build-site.mjs</code> copies files into <code>site/</code>; GitHub Actions publishes it.</li>
+  <li><strong>Cloud</strong>: the same compile for the frontend; Wrangler's bundler (esbuild) bundles <code>cloud/src/index.ts</code> together with <code>src/core</code> into one Worker script; <code>build-assets.mjs</code> prepares the static files; <code>wrangler deploy</code> uploads both.</li>
+</ul>

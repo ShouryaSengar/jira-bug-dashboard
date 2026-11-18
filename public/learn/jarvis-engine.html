@@ -10,15 +10,69 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="jarvis-engine">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>JARVIS: how changes are detected</h1>
-<p class="lede">The algorithm that turns "something happened in Jira" into exactly one well-labelled event, never zero, never two. Shared by both editions.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#lld">Low-level design (LLD)</a> › JARVIS</div><h1>JARVIS: how changes are detected</h1>
+<p class="lede">The algorithm that turns "something happened in Jira" into exactly one well-labelled event, never zero, never two. Shared by both editions.</p><div class="meta-line"><span>⏱ 14 min read</span><span>Guide 17 of 47</span></div>
 
-<h2>The hard part</h2>
+<h2 id="the-hard-part">The hard part</h2>
 <p>Jira does not tell a private app "Bob just commented on ABC-1". The app has to look and work it out. Naive approaches fail:</p>
 <ul>
   <li><strong>Compare <code>updated</code> times only</strong>: you know <em>that</em> something changed, not <em>what</em>. A label edit and a reopen look the same.</li>
@@ -27,7 +81,7 @@
 </ul>
 <p>JARVIS combines four ideas: a <strong>baseline</strong>, a <strong>snapshot</strong>, the <strong>changelog</strong>, and a <strong>seen set</strong>.</p>
 
-<h2>The four ideas</h2>
+<h2 id="the-four-ideas">The four ideas</h2>
 <table>
   <tr><th>Idea</th><th>What it is</th><th>What it prevents</th></tr>
   <tr><td>Baseline</td><td>The first check only records what exists</td><td>announcing old history</td></tr>
@@ -36,9 +90,8 @@
   <tr><td>Seen set</td><td>Stable ids of every changelog item and comment already processed (<code>ABC-1:h10234:status</code>, <code>ABC-1:c55012</code>)</td><td>duplicates, across restarts and overlaps</td></tr>
 </table>
 
-<h2>One check, step by step (Cloud edition)</h2>
-<script type="application/json" class="diagram" data-kind="flow" data-caption="Decision flow for one user's check.">
-{"w": 840, "h": 560,
+<h2 id="one-check-step-by-step-cloud-edition">One check, step by step (Cloud edition)</h2>
+<figure class="diagram" data-kind="flow"><svg class="dg" viewBox="0 0 840 560" width="840" role="img" aria-label="Decision flow for one user&#39;s check."></svg><script type="application/json" class="diagram-spec">{"w": 840, "h": 560,
  "nodes": [
   {"id": "start", "x": 320, "y": 10, "w": 200, "h": 34, "title": "Check user", "kind": "cf"},
   {"id": "full", "x": 320, "y": 70, "w": 200, "h": 50, "title": "Baseline or 6 h passed?", "kind": "note"},
@@ -65,8 +118,7 @@
   {"from": "new", "to": "commit"},
   {"from": "chg", "to": "commit"},
   {"from": "commit", "to": "pushn"}
- ]}
-</script>
+ ]}</script><figcaption>Decision flow for one user&#39;s check.</figcaption></figure>
 
 <ol class="steps-list">
   <li><strong>Get a token</strong> (refresh it if it expires within 2 minutes).</li>
@@ -84,7 +136,7 @@
   <li><strong>Push</strong> the events that pass the user's rules (not their own, type enabled, not quiet hours).</li>
 </ol>
 
-<h2>How each event type is recognised</h2>
+<h2 id="how-each-event-type-is-recognised">How each event type is recognised</h2>
 <table>
   <tr><th>Event</th><th>Rule</th><th>Importance</th></tr>
   <tr><td><code>assigned</code></td><td>bug appears in my list; or a changelog item sets assignee to my account id while already in my list (it left and came back between checks)</td><td>high</td></tr>
@@ -99,10 +151,10 @@
 </table>
 <p><strong>Own actions</strong>: if the changelog author or comment author is me, the event is stored with <code>own = true</code> (and as read). It shows in history but is never pushed or spoken.</p>
 
-<h2>Why the Blocker bug existed (a real lesson)</h2>
+<h2 id="why-the-blocker-bug-existed-a-real-lesson">Why the Blocker bug existed (a real lesson)</h2>
 <p>The first version ranked priorities by Jira's list order. One real Jira site returned <code>Highest &gt; High &gt; Medium &gt; Low &gt; Lowest &gt; Blocker</code>, so raising a bug to <em>Blocker</em> would have been announced as a <em>downgrade</em>. Now, if every priority name is a familiar word, they are ranked by meaning; only custom names (P1, P2…) use Jira's order. A test covers it.</p>
 
-<h2>Guarantees and how they are achieved</h2>
+<h2 id="guarantees-and-how-they-are-achieved">Guarantees and how they are achieved</h2>
 <table>
   <tr><th>Guarantee</th><th>Mechanism</th></tr>
   <tr><td>Never announce old history</td><td>baseline on first check; on a new assignment, its whole earlier history is marked seen</td></tr>
@@ -112,13 +164,16 @@
   <tr><td>Cheap when nothing happens</td><td>one search returning nothing, no database write</td></tr>
 </table>
 
-<h2>The Local edition's variant</h2>
+<h2 id="the-local-edition-s-variant">The Local edition's variant</h2>
 <p>Locally there is one user and no 50-subrequest limit, so each check lists <em>all</em> assigned bugs and diffs against the snapshot (new, changed, missing). Missing bugs are looked up individually to tell "reassigned" from "aged out". The classification functions are the same ones.</p>
 
-<h2>Testing the engine</h2>
-<p>Both mocks (<code>mock-jira.mjs</code>, <code>mock-atlassian.mjs</code>) can create bugs, assign, change status and priority, comment, and edit, through control endpoints. The test suites then assert the exact event list after each step, for example <code>status:ABC-2, comment:ABC-2</code> for two changes in one check, and <code>(none)</code> for a repeated check. See <a href="testing.html">How this app is tested</a>.</p>
+<h2 id="testing-the-engine">Testing the engine</h2>
+<p>Both mocks (<code>mock-jira.mjs</code>, <code>mock-atlassian.mjs</code>) can create bugs, assign, change status and priority, comment, and edit, through control endpoints. The test suites then assert the exact event list after each step, for example <code>status:ABC-2, comment:ABC-2</code> for two changes in one check, and <code>(none)</code> for a repeated check. See <a href="testing.html">How this app is tested</a>.</p><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="api-reference.html"><small>← Previous</small>API reference</a><a class="next" href="jarvis-voice.html"><small>Next →</small>JARVIS: speech and notifications</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#the-hard-part">The hard part</a><a href="#the-four-ideas">The four ideas</a><a href="#one-check-step-by-step-cloud-edition">One check, step by step (Cloud edition)</a><a href="#how-each-event-type-is-recognised">How each event type is recognised</a><a href="#why-the-blocker-bug-existed-a-real-lesson">Why the Blocker bug existed (a real lesson)</a><a href="#guarantees-and-how-they-are-achieved">Guarantees and how they are achieved</a><a href="#the-local-edition-s-variant">The Local edition&#39;s variant</a><a href="#testing-the-engine">Testing the engine</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

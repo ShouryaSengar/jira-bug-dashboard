@@ -10,15 +10,69 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="privacy-lifecycle">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>Privacy and the data life cycle</h1>
-<p class="lede">What personal data exists, where it is born, how long it lives, and every way it dies. Includes Atlassian's Personal Data Reporting API, which the Cloud edition implements.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#security">Security and privacy</a></div><h1>Privacy and the data life cycle</h1>
+<p class="lede">What personal data exists, where it is born, how long it lives, and every way it dies. Includes Atlassian's Personal Data Reporting API, which the Cloud edition implements.</p><div class="meta-line"><span>⏱ 8 min read</span><span>Guide 38 of 47</span></div>
 
-<h2>Data inventory (Cloud edition)</h2>
+<h2 id="data-inventory-cloud-edition">Data inventory (Cloud edition)</h2>
 <table>
   <tr><th>Data</th><th>Personal?</th><th>Where</th><th>Lives</th></tr>
   <tr><td>Account id, name, email, avatar</td><td>yes</td><td><code>users</code></td><td>until account deletion (refreshed each sign-in)</td></tr>
@@ -33,9 +87,8 @@
 </table>
 <p>Not stored: full issue descriptions, attachments, full comments (fetched live when you open a bug).</p>
 
-<h2>Life cycle</h2>
-<script type="application/json" class="diagram" data-kind="flow" data-caption="How a user's data is created, kept fresh, and erased.">
-{"w": 820, "h": 300,
+<h2 id="life-cycle">Life cycle</h2>
+<figure class="diagram" data-kind="flow"><svg class="dg" viewBox="0 0 820 300" width="820" role="img" aria-label="How a user&#39;s data is created, kept fresh, and erased."></svg><script type="application/json" class="diagram-spec">{"w": 820, "h": 300,
  "nodes": [
   {"id": "in", "x": 20, "y": 120, "w": 150, "h": 44, "title": "Sign in", "icon": "🔑", "kind": "browser"},
   {"id": "live", "x": 230, "y": 110, "w": 220, "title": "Active account", "kind": "db", "lines": ["profile refreshed at sign-in", "history pruned at 30 days", "weekly report to Atlassian"]},
@@ -53,10 +106,9 @@
   {"from": "rev", "to": "gone", "label": "30 days", "dashed": true},
   {"from": "closed", "to": "gone", "label": "at once"},
   {"from": "live", "to": "gone", "label": "Delete account", "accent": true, "via": [[585, 185]], "lpos": [585, 200]}
- ]}
-</script>
+ ]}</script><figcaption>How a user&#39;s data is created, kept fresh, and erased.</figcaption></figure>
 
-<h2>Ways data is erased</h2>
+<h2 id="ways-data-is-erased">Ways data is erased</h2>
 <ul>
   <li><strong>Delete account</strong> (you): every row for you, immediately.</li>
   <li><strong>Disconnect Jira</strong> (you): tokens, sites, monitor state, devices and sessions immediately; the rest 30 days after your last sign-in unless you reconnect.</li>
@@ -66,7 +118,7 @@
   <li><strong>Age</strong>: history older than 30 days, expired sessions and rate-limit rows, every hour.</li>
 </ul>
 
-<h2>The Personal Data Reporting job (<code>cloud/src/privacy.ts</code>)</h2>
+<h2 id="the-personal-data-reporting-job-cloud-src-privacy-ts">The Personal Data Reporting job (<code>cloud/src/privacy.ts</code>)</h2>
 <ol class="steps-list">
   <li><strong>When</strong>: tried at minute :37 every hour (Atlassian asks not to use the top of the hour), inside the normal cron run.</li>
   <li><strong>What is due</strong>: every account id the app stores (signed-in users, and actors in history), whose last report is older than one cycle (7 days, or <code>Cycle-Period</code>). Each with the oldest time its data was fetched.</li>
@@ -76,7 +128,7 @@
 </ol>
 <p>First live report: 18 November 2026, 19:37 UTC, accepted by Atlassian.</p>
 
-<h2>Principles applied</h2>
+<h2 id="principles-applied">Principles applied</h2>
 <ul>
   <li><strong>Minimisation</strong>: store only what monitoring and history need.</li>
   <li><strong>Purpose limitation</strong>: data is used only to show and notify the same user.</li>
@@ -84,9 +136,12 @@
   <li><strong>Transparency</strong>: the <a href="https://jira-bug-dashboard-cloud.shouryacode2021.workers.dev/privacy">privacy policy</a> (Cloud edition) describes all of this.</li>
   <li><strong>User control</strong>: disconnect, delete, revoke.</li>
 </ul>
-<div class="callout info"><span class="callout-title">Local edition</span>Everything stays on your computer: <code>~/.jira-bug-dashboard/config.json</code> and <code>jarvis.json</code>. Delete the folder to remove all of it. No reporting applies, because no third party stores anything.</div>
+<div class="callout info"><span class="callout-title">Local edition</span>Everything stays on your computer: <code>~/.jira-bug-dashboard/config.json</code> and <code>jarvis.json</code>. Delete the folder to remove all of it. No reporting applies, because no third party stores anything.</div><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="security-crypto.html"><small>← Previous</small>The cryptography, simply</a><a class="next" href="run-local.html"><small>Next →</small>Run the Local edition</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#data-inventory-cloud-edition">Data inventory (Cloud edition)</a><a href="#life-cycle">Life cycle</a><a href="#ways-data-is-erased">Ways data is erased</a><a href="#the-personal-data-reporting-job-cloud-src-privacy-ts">The Personal Data Reporting job (cloud/src/privacy.ts)</a><a href="#principles-applied">Principles applied</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

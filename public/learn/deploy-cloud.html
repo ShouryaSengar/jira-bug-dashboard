@@ -10,19 +10,72 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="deploy-cloud">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>Deploy the Cloud edition, step by step</h1>
-<p class="lede">The exact path used to put this app on Cloudflare for free, in order, including every surprise along the way. Follow it top to bottom and you will have your own instance.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#deploy">Deploy and operate</a> › This app</div><h1>Deploy the Cloud edition, step by step</h1>
+<p class="lede">The exact path used to put this app on Cloudflare for free, in order, including every surprise along the way. Follow it top to bottom and you will have your own instance.</p><div class="meta-line"><span>⏱ 16 min read</span><span>Guide 40 of 47</span></div>
 
 <div class="callout info"><span class="callout-title">Time and cost</span>About 45 minutes the first time. Cost: zero (Cloudflare Workers Free, D1 Free, Atlassian developer console). You need a Cloudflare account and an Atlassian account.</div>
 
-<h2>The plan</h2>
-<script type="application/json" class="diagram" data-kind="flow" data-caption="Order matters: the Worker URL is needed for the Atlassian callback, and the client id/secret are needed for sign-in.">
-{"w": 840, "h": 260,
+<h2 id="the-plan">The plan</h2>
+<figure class="diagram" data-kind="flow"><svg class="dg" viewBox="0 0 840 260" width="840" role="img" aria-label="Order matters: the Worker URL is needed for the Atlassian callback, and the client id/secret are needed for sign-in."></svg><script type="application/json" class="diagram-spec">{"w": 840, "h": 260,
  "nodes": [
   {"id": "a", "x": 10, "y": 30, "w": 150, "h": 60, "title": "1. Prepare", "kind": "plain", "sub": "install, test locally"},
   {"id": "b", "x": 180, "y": 30, "w": 150, "h": 60, "title": "2. Login", "kind": "cf", "sub": "wrangler login"},
@@ -34,48 +87,47 @@
   {"id": "h", "x": 350, "y": 160, "w": 150, "h": 60, "title": "8. Deploy + sign in", "kind": "cf", "sub": "verify live"},
   {"id": "i", "x": 180, "y": 160, "w": 150, "h": 60, "title": "9. Share", "kind": "user", "sub": "distribution"}
  ],
- "edges": [{"from": "a", "to": "b"}, {"from": "b", "to": "c"}, {"from": "c", "to": "d"}, {"from": "d", "to": "e"}, {"from": "e", "to": "f"}, {"from": "f", "to": "g"}, {"from": "g", "to": "h"}, {"from": "h", "to": "i"}]}
-</script>
+ "edges": [{"from": "a", "to": "b"}, {"from": "b", "to": "c"}, {"from": "c", "to": "d"}, {"from": "d", "to": "e"}, {"from": "e", "to": "f"}, {"from": "f", "to": "g"}, {"from": "g", "to": "h"}, {"from": "h", "to": "i"}]}</script><figcaption>Order matters: the Worker URL is needed for the Atlassian callback, and the client id/secret are needed for sign-in.</figcaption></figure>
 
-<h2>1. Prepare</h2>
+<h2 id="1-prepare">1. Prepare</h2>
 <pre><code>git clone https://github.com/ShouryaSengar/jira-bug-dashboard.git
 cd jira-bug-dashboard
 npm install                       # root: TypeScript for the shared frontend
 cd cloud && npm install           # Cloud: wrangler + workers types (kept separate from the Local edition)</code></pre>
 <p>Optional but recommended: run it locally against the mock first (no accounts needed): see <a href="testing.html">How this app is tested</a>.</p>
 
-<h2>2. Log Wrangler in to Cloudflare</h2>
+<h2 id="2-log-wrangler-in-to-cloudflare">2. Log Wrangler in to Cloudflare</h2>
 <pre><code>npx wrangler login                 # or: npx wrangler login --browser=false
 npx wrangler whoami                # shows your account name and id</code></pre>
 <div class="callout warn"><span class="callout-title">What went wrong for us</span>The first link opened in the default browser (Edge) while we approved in another (Brave): Cloudflare answered "No CSRF value available in the session cookie". A stale tab then sent an old <code>state</code> ("query string parameter doesn't match"). Fix: <code>--browser=false</code>, open the printed link in the browser you are signed in with, approve once, close old tabs.</div>
 
-<h2>3. Create the database</h2>
+<h2 id="3-create-the-database">3. Create the database</h2>
 <pre><code>npx wrangler d1 create jbd-cloud</code></pre>
 <p>Copy the printed <code>database_id</code> into <code>cloud/wrangler.jsonc</code> under <code>env.production.d1_databases</code>, keeping <code>"binding": "DB"</code>. (Wrangler offers to add it itself with a different binding name; decline.) Then create the tables:</p>
 <pre><code>npm run build                                                   # shared frontend + dist-assets
 npx wrangler d1 migrations apply DB --remote --env production   # 0001, 0002…</code></pre>
 
-<h2>4. First deploy, to get your URL</h2>
+<h2 id="4-first-deploy-to-get-your-url">4. First deploy, to get your URL</h2>
 <pre><code>npx wrangler deploy --env production</code></pre>
 <div class="callout warn"><span class="callout-title">workers.dev subdomain</span>A new account must have a <code>workers.dev</code> subdomain. Wrangler asks interactively; in a non-interactive shell it fails and prints a dashboard link (which for us was a 404, the dashboard had moved). Check whether you already have one: <code>curl -H "Authorization: Bearer $TOKEN" https://api.cloudflare.com/client/v4/accounts/&lt;account-id&gt;/workers/subdomain</code>, or in the dashboard under Workers &amp; Pages. Ours already existed (<code>shouryacode2021</code>).</div>
 <p>Your URL is <code>https://jira-bug-dashboard-cloud.&lt;subdomain&gt;.workers.dev</code>. Put it in <code>env.production.vars.APP_ORIGIN</code>. Until configuration is complete, <code>/api/config</code> answers <em>503 "not configured: missing …"</em> and the page falls back to demo mode. That is intended.</p>
 
-<h2>5. Keys and secrets</h2>
+<h2 id="5-keys-and-secrets">5. Keys and secrets</h2>
 <pre><code>node scripts/set-prod-secrets.mjs mailto:you@example.com</code></pre>
 <p>This one script generates a VAPID key pair and a 32-byte token-encryption key in memory, pipes <code>TOKEN_ENC_KEY</code>, <code>VAPID_PRIVATE_KEY</code> and <code>VAPID_SUBJECT</code> straight into <code>wrangler secret put</code>, and writes only the public key into <code>wrangler.jsonc</code>. Check with <code>npx wrangler secret list --env production</code> (names only). Redeploy afterwards.</p>
 <div class="callout warn"><span class="callout-title">Run it once</span>Running it again replaces the keys: existing push subscriptions stop working and every user must sign in again.</div>
 
-<h2>6. Register the Atlassian app</h2>
+<h2 id="6-register-the-atlassian-app">6. Register the Atlassian app</h2>
 <p>At <a href="https://developer.atlassian.com/console/myapps/">developer.atlassian.com/console/myapps</a>: <em>Create → OAuth 2.0 integration</em>; Permissions: Jira API classic scopes <code>read:jira-work</code>, <code>read:jira-user</code>, and User identity API; Authorization: callback <code>https://&lt;your-url&gt;/auth/callback</code>, resource-level. Full details: <a href="atlassian-console.html">The developer console</a>.</p>
 
-<h2>7. Client id and secret</h2>
+<h2 id="7-client-id-and-secret">7. Client id and secret</h2>
 <ul>
   <li><strong>Client ID</strong> (public): into <code>env.production.vars.ATLASSIAN_CLIENT_ID</code>.</li>
   <li><strong>Secret</strong>: type it yourself, it never goes into a file:
 <pre><code>npx wrangler secret put ATLASSIAN_CLIENT_SECRET --env production</code></pre></li>
 </ul>
 
-<h2>8. Deploy and sign in</h2>
+<h2 id="8-deploy-and-sign-in">8. Deploy and sign in</h2>
 <pre><code>npx wrangler deploy --env production
 curl https://&lt;your-url&gt;/api/config          # {"edition":"cloud","configured":false,"signedIn":false,…}
 npx wrangler tail --env production --format pretty   # watch while you sign in</code></pre>
@@ -83,15 +135,15 @@ npx wrangler tail --env production --format pretty   # watch while you sign in</
 <pre><code>npx wrangler d1 execute DB --remote --env production --command \
   "SELECT (SELECT COUNT(*) FROM users) users, (SELECT status FROM oauth_grants) grant_status"</code></pre>
 
-<h2>9. Share with others</h2>
+<h2 id="9-share-with-others">9. Share with others</h2>
 <p>Set the app's <strong>Distribution</strong> to <em>Sharing within organization</em> or <em>Sharing with anyone</em>, add your privacy policy (<code>https://&lt;your-url&gt;/privacy</code>), declare that personal data is stored (the Personal Data Reporting API is implemented), and send colleagues the URL. Company admins may need to approve third-party apps.</p>
 
-<h2>Later deploys</h2>
+<h2 id="later-deploys">Later deploys</h2>
 <pre><code>cd cloud
 npm run deploy        # = build + remote migrations + wrangler deploy</code></pre>
 <p>Adding a new migration file? It runs automatically on the next <code>npm run deploy</code>. Want to check first? <code>npm run deploy:dry</code>.</p>
 
-<h2>Checklist</h2>
+<h2 id="checklist">Checklist</h2>
 <ul>
   <li>☐ <code>wrangler whoami</code> shows the right account</li>
   <li>☐ <code>database_id</code> set, migrations applied</li>
@@ -102,9 +154,12 @@ npm run deploy        # = build + remote migrations + wrangler deploy</code></pr
   <li>☐ Sign-in works; baseline appears in the tail</li>
   <li>☐ JARVIS → Enable notifications → Send a test push arrives</li>
   <li>☐ Privacy policy reachable; distribution set if sharing</li>
-</ul>
+</ul><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="run-local.html"><small>← Previous</small>Run the Local edition</a><a class="next" href="github.html"><small>Next →</small>Git, GitHub and GitHub Pages</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#the-plan">The plan</a><a href="#1-prepare">1. Prepare</a><a href="#2-log-wrangler-in-to-cloudflare">2. Log Wrangler in to Cloudflare</a><a href="#3-create-the-database">3. Create the database</a><a href="#4-first-deploy-to-get-your-url">4. First deploy, to get your URL</a><a href="#5-keys-and-secrets">5. Keys and secrets</a><a href="#6-register-the-atlassian-app">6. Register the Atlassian app</a><a href="#7-client-id-and-secret">7. Client id and secret</a><a href="#8-deploy-and-sign-in">8. Deploy and sign in</a><a href="#9-share-with-others">9. Share with others</a><a href="#later-deploys">Later deploys</a><a href="#checklist">Checklist</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

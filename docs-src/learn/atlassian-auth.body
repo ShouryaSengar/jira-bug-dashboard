@@ -1,0 +1,57 @@
+<h1>API tokens vs OAuth 2.0 (3LO)</h1>
+<p class="lede">The two ways a program can act as you in Jira, how they differ, why each edition uses the one it does, and what scopes, consent and grants mean.</p>
+
+<h2>Option 1: an API token (Local edition)</h2>
+<p>You create a token at <a href="https://id.atlassian.com/manage-profile/security/api-tokens">id.atlassian.com → Security → API tokens</a> and give it, with your email, to the program. Every request carries <code>Authorization: Basic base64(email:token)</code>.</p>
+<ul>
+  <li><strong>Power</strong>: the token can do everything <em>you</em> can do in every Atlassian product. No scopes.</li>
+  <li><strong>Fine for</strong>: a program running on your own computer, for you.</li>
+  <li><strong>Not fine for</strong>: a shared website. Asking strangers to paste all-powerful tokens into your server would make you a juicy target and them dependent on your honesty.</li>
+</ul>
+
+<h2>Option 2: OAuth 2.0 authorization code grant ("3LO", Cloud edition)</h2>
+<p>The user signs in at Atlassian and approves specific permissions for your app. Your server receives tokens that only allow those permissions, only on the sites the user chose, and that the user can revoke any time. The full flow is in <a href="flow-signin.html">Signing in with Atlassian</a>.</p>
+<table>
+  <tr><th></th><th>API token</th><th>OAuth 3LO</th></tr>
+  <tr><td>User shares</td><td>a secret equal to their full access</td><td>nothing secret; they click Accept</td></tr>
+  <tr><td>Permissions</td><td>everything</td><td>only the requested scopes</td></tr>
+  <tr><td>Sites</td><td>all</td><td>those chosen (resource-level grant)</td></tr>
+  <tr><td>Revocation</td><td>delete the token</td><td>id.atlassian.com → Connected apps</td></tr>
+  <tr><td>Expiry</td><td>until deleted (or a set expiry)</td><td>access ~1 hour; refresh rotates, 90-day inactivity</td></tr>
+  <tr><td>Setup for the app</td><td>none</td><td>register an app in the developer console</td></tr>
+</table>
+
+<h2>Scopes this app requests</h2>
+<table>
+  <tr><th>Scope</th><th>Allows</th><th>Why needed</th></tr>
+  <tr><td><code>read:jira-work</code></td><td>read projects, issues, comments, history, statuses, priorities, fields</td><td>everything you see</td></tr>
+  <tr><td><code>read:jira-user</code></td><td>read user names on issues</td><td>reporter, assignee, "comment by Bob"</td></tr>
+  <tr><td><code>read:me</code></td><td>your own profile (User Identity API)</td><td>identify you, show your name</td></tr>
+  <tr><td><code>offline_access</code></td><td>receive a refresh token</td><td>monitor while you are away</td></tr>
+</table>
+<p>There is no write scope: the app cannot change anything in Jira. These are "classic" scopes; Atlassian also offers finer "granular" scopes, which are not needed here.</p>
+
+<h2>Grants: resource-level vs account-level</h2>
+<p>When registering the app you choose:</p>
+<ul>
+  <li><strong>Resource-level</strong> (chosen for this app): the user picks one site on the consent screen; the token works only there. Least privilege.</li>
+  <li><strong>Account-level</strong>: the grant covers every site in the customer's account.</li>
+</ul>
+<p>Atlassian keeps one grant per app per Atlassian account. Consenting again for another site adds it to the same grant.</p>
+
+<h2>Finding the site: <code>accessible-resources</code></h2>
+<pre><code>GET https://api.atlassian.com/oauth/token/accessible-resources
+Authorization: Bearer &lt;access token&gt;
+→ [ { "id": "1324a887-…", "name": "axismaxlife", "url": "https://axismaxlife.atlassian.net",
+      "scopes": ["read:jira-work", "read:jira-user"] } ]</code></pre>
+<p>The <code>id</code> is the <strong>cloudId</strong> used in every API URL. The app stores the list in <code>jira_sites</code> and lets you switch the active site in settings.</p>
+
+<h2>Refresh tokens</h2>
+<p>With <code>offline_access</code>, the token response includes a refresh token. It is <em>rotating</em>: each use returns a new one and disables the old (10-minute reuse leeway; reuse outside it may revoke the grant). The app's concurrency-safe refresh is in <a href="flow-token-refresh.html">Refreshing and rotating tokens</a>.</p>
+
+<h2>Things organisations can control</h2>
+<ul>
+  <li><strong>Distribution</strong>: a new app works only for its developer until set to <em>Sharing</em> (see <a href="atlassian-console.html">The developer console</a>).</li>
+  <li><strong>Admin policies</strong>: organisation admins can block or require approval for third-party apps on their sites (admin.atlassian.com). A colleague may see "ask your admin" even though the app works.</li>
+  <li><strong>Revocation</strong>: users revoke at id.atlassian.com → Connected apps; admins uninstall the app from the site.</li>
+</ul>

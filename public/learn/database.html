@@ -10,19 +10,72 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="database">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>Database design (D1)</h1>
-<p class="lede">Every table, column, key and index of the Cloud edition's database, why it exists, and how changes to the structure are rolled out.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#lld">Low-level design (LLD)</a> › Data and APIs</div><h1>Database design (D1)</h1>
+<p class="lede">Every table, column, key and index of the Cloud edition's database, why it exists, and how changes to the structure are rolled out.</p><div class="meta-line"><span>⏱ 14 min read</span><span>Guide 15 of 47</span></div>
 
 <div class="callout eli5"><span class="callout-title">Explained simply</span>A relational database is a set of spreadsheets (tables). Each row is one thing (a user, a session). A column that points to a row in another table (like <code>user_id</code>) is a <em>foreign key</em>. "ON DELETE CASCADE" means: when the user row is deleted, every row pointing to it is deleted too, automatically.</div>
 
-<h2>Entity-relationship diagram</h2>
-<script type="application/json" class="diagram" data-kind="flow" data-wide="true" data-caption="All tables. Every user-owned table points to users(id) with ON DELETE CASCADE.">
-{"w": 940, "h": 600, "wide": true,
+<h2 id="entity-relationship-diagram">Entity-relationship diagram</h2>
+<figure class="diagram wide" data-kind="flow"><svg class="dg" viewBox="0 0 940 600" width="940" role="img" aria-label="All tables. Every user-owned table points to users(id) with ON DELETE CASCADE."></svg><script type="application/json" class="diagram-spec">{"w": 940, "h": 600, "wide": true,
  "nodes": [
   {"id": "users", "x": 360, "y": 230, "w": 220, "title": "users", "kind": "db", "lines": ["id  PK (random uuid)", "atlassian_account_id  UNIQUE", "name, email, picture", "created_at, last_seen_at", "profile_at"]},
   {"id": "sessions", "x": 20, "y": 20, "w": 230, "title": "sessions", "kind": "db", "lines": ["id_hash  PK (sha256 of cookie)", "user_id  FK", "created_at, expires_at", "last_used_at, user_agent"]},
@@ -39,26 +92,25 @@
  "edges": [
   {"from": "sessions", "to": "users"}, {"from": "grants", "to": "users"}, {"from": "sites", "to": "users"},
   {"from": "settings", "to": "users"}, {"from": "state", "to": "users"}, {"from": "events", "to": "users"}, {"from": "push", "to": "users"}
- ]}
-</script>
+ ]}</script><figcaption>All tables. Every user-owned table points to users(id) with ON DELETE CASCADE.</figcaption></figure>
 
-<h2>Table by table</h2>
-<h3><code>users</code></h3>
+<h2 id="table-by-table">Table by table</h2>
+<h3 id="users"><code>users</code></h3>
 <p>One row per Atlassian account that has signed in. <code>id</code> is a random UUID (internal, never shown); <code>atlassian_account_id</code> is unique and is how a returning user is recognised. <code>profile_at</code> records when name/email/picture were fetched, for the privacy reports.</p>
 
-<h3><code>sessions</code></h3>
+<h3 id="sessions"><code>sessions</code></h3>
 <p>A browser that is signed in. The primary key is the SHA-256 hash of the cookie value, so the database alone cannot be used to impersonate anyone. Expiry is checked on every request (30 days absolute, 7 days idle); expired rows are deleted hourly. Index on <code>user_id</code> (sign out everywhere) and <code>expires_at</code> (cleanup).</p>
 
-<h3><code>oauth_grants</code></h3>
+<h3 id="oauth-grants"><code>oauth_grants</code></h3>
 <p>The user's Atlassian tokens, encrypted. One per user because Atlassian issues one grant per app per account. <code>version</code> and <code>lease_until</code> implement safe refresh-token rotation. <code>status</code> becomes <code>revoked</code> when Atlassian refuses a refresh.</p>
 
-<h3><code>jira_sites</code></h3>
+<h3 id="jira-sites"><code>jira_sites</code></h3>
 <p>Sites the grant can reach, from <code>accessible-resources</code>. Composite primary key <code>(user_id, cloud_id)</code>. Replaced on each sign-in.</p>
 
-<h3><code>user_settings</code></h3>
+<h3 id="user-settings"><code>user_settings</code></h3>
 <p>Per-user preferences and monitor schedule. <code>slot</code> (0–59, random at sign-up) spreads users across minutes: a user is due when <code>(minute − slot) mod interval_min = 0</code>. <code>notify_prefs</code> holds the notification rules the server applies to pushes (event types, quiet hours, time zone, frequency, push on/off). <code>severity_ids</code> caches resolved custom field ids (<code>["none"]</code> means "looked up, nothing found").</p>
 
-<h3><code>monitor_state</code></h3>
+<h3 id="monitor-state"><code>monitor_state</code></h3>
 <p>The JARVIS checkpoint for the active site:</p>
 <ul>
   <li><code>snapshot</code>: <code>{"ABC-1": ["2026-11-18T10:00:00.000+0530", "Login fails", "ABC"], …}</code> (updated time, summary, project for each assigned bug)</li>
@@ -69,17 +121,17 @@
   <li><code>deferred</code>, <code>failures</code>, <code>backoff_until</code>, <code>last_error</code>: scheduling and error handling</li>
 </ul>
 
-<h3><code>events</code></h3>
+<h3 id="events"><code>events</code></h3>
 <p>Notification history, kept 30 days. <code>own</code> marks your own actions (recorded, never pushed, stored as read). <code>pushed</code> tracks delivery so failures are retried: 0 pending, 1 delivered or nothing to deliver, 2 gave up after 6 hours. <code>actor_id</code> lets the privacy job find and scrub names of people whose accounts closed. Indexes: <code>(user_id, id)</code> for history pages, a partial index <code>WHERE pushed = 0</code> for the retry sweep, and a partial index on <code>actor_id</code>.</p>
 
-<h3><code>push_subscriptions</code></h3>
+<h3 id="push-subscriptions"><code>push_subscriptions</code></h3>
 <p>One per browser/device that enabled background notifications (max 5 per user). <code>endpoint</code> is unique: if another account subscribes the same browser (shared computer), the subscription moves.</p>
 
-<h3><code>rate_limits</code>, <code>pdr_reports</code>, <code>app_meta</code></h3>
+<h3 id="rate-limits-pdr-reports-app-meta"><code>rate_limits</code>, <code>pdr_reports</code>, <code>app_meta</code></h3>
 <p>Fixed-window counters for sign-in attempts (bucket = hashed IP + 10-minute window); when each account id was last reported to Atlassian; small app-wide values (reporting cycle, back-off).</p>
 
-<h2>Important queries</h2>
-<h3>Who is due this minute (one query for all users)</h3>
+<h2 id="important-queries">Important queries</h2>
+<h3 id="who-is-due-this-minute-one-query-for-all-users">Who is due this minute (one query for all users)</h3>
 <pre><code>SELECT s.user_id, u.atlassian_account_id, s.active_cloud_id, j.url, …, g.enc_tokens, …, st.snapshot, st.seen, …
 FROM user_settings s
 JOIN users u        ON u.id = s.user_id
@@ -92,17 +144,17 @@ ORDER BY COALESCE(st.deferred, 0) DESC, ((s.slot * 7919 + :minute) % 1009)
 LIMIT 60</code></pre>
 <p>Everything a check needs (token, site, snapshot, settings) arrives in this single row, saving subrequests. The odd ordering formula rotates who goes first, so no user is always last.</p>
 
-<h3>Atomic sign-in</h3>
+<h3 id="atomic-sign-in">Atomic sign-in</h3>
 <p><code>finishLogin()</code> sends the user upsert, grant upsert, site replacement, settings upsert and session insert as one <code>DB.batch()</code>. D1 runs a batch as a transaction: all succeed or none do.</p>
 
-<h3>Safe rotation</h3>
+<h3 id="safe-rotation">Safe rotation</h3>
 <pre><code>UPDATE oauth_grants SET lease_until = :now+30s
 WHERE user_id = :u AND version = :v AND lease_until &lt; :now RETURNING version;
 -- … refresh at Atlassian …
 UPDATE oauth_grants SET enc_tokens = :new, version = version + 1, lease_until = 0
 WHERE user_id = :u AND version = :v;</code></pre>
 
-<h2>Migrations</h2>
+<h2 id="migrations">Migrations</h2>
 <p>The structure is defined by numbered SQL files in <code>cloud/migrations/</code>:</p>
 <ul>
   <li><code>0001_init.sql</code>: all tables above (except the reporting ones).</li>
@@ -112,10 +164,13 @@ WHERE user_id = :u AND version = :v;</code></pre>
 npx wrangler d1 migrations apply DB --remote --env production  # Cloudflare</code></pre>
 <p>D1 records applied migrations in its own table, so re-running applies only new files. Rules: never edit a migration that already ran in production; add a new numbered file instead; prefer additive changes (new columns with defaults) so old and new code can run side by side during a deploy.</p>
 
-<h2>Write budget</h2>
-<p>D1's free plan allows 100,000 rows written per day. An idle check writes nothing; a heartbeat writes one row every 20 minutes (~72/day/user); each event writes a row (plus index entries); token refreshes write about 24/day/user. Roughly 100–150 rows per active user per day, so about 700–1000 users before writes become the limit, well beyond the CPU limit (~60 users). See <a href="cf-limits.html">The free tier and capacity maths</a>.</p>
+<h2 id="write-budget">Write budget</h2>
+<p>D1's free plan allows 100,000 rows written per day. An idle check writes nothing; a heartbeat writes one row every 20 minutes (~72/day/user); each event writes a row (plus index entries); token refreshes write about 24/day/user. Roughly 100–150 rows per active user per day, so about 700–1000 users before writes become the limit, well beyond the CPU limit (~60 users). See <a href="cf-limits.html">The free tier and capacity maths</a>.</p><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="worker.html"><small>← Previous</small>Cloud Worker internals</a><a class="next" href="api-reference.html"><small>Next →</small>API reference</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#entity-relationship-diagram">Entity-relationship diagram</a><a href="#table-by-table">Table by table</a><a href="#users" class="h3">users</a><a href="#sessions" class="h3">sessions</a><a href="#oauth-grants" class="h3">oauth_grants</a><a href="#jira-sites" class="h3">jira_sites</a><a href="#user-settings" class="h3">user_settings</a><a href="#monitor-state" class="h3">monitor_state</a><a href="#events" class="h3">events</a><a href="#push-subscriptions" class="h3">push_subscriptions</a><a href="#rate-limits-pdr-reports-app-meta" class="h3">rate_limits, pdr_reports, app_meta</a><a href="#important-queries">Important queries</a><a href="#who-is-due-this-minute-one-query-for-all-users" class="h3">Who is due this minute (one query for all users)</a><a href="#atomic-sign-in" class="h3">Atomic sign-in</a><a href="#safe-rotation" class="h3">Safe rotation</a><a href="#migrations">Migrations</a><a href="#write-budget">Write budget</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

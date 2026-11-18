@@ -1,0 +1,67 @@
+<h1>Local, Cloud and Demo editions</h1>
+<p class="lede">One web app, three ways to run it. They share almost all their code; what differs is who holds the Jira credentials and where the "waiter" runs.</p>
+
+<script type="application/json" class="diagram" data-kind="flow" data-caption="The same frontend (top) talks to three different backends.">
+{"w": 820, "h": 355,
+ "nodes": [
+  {"id": "fe", "x": 260, "y": 20, "w": 300, "title": "Shared frontend", "icon": "🖥", "kind": "browser", "sub": "public/ + src/client (modes: local, cloud, demo)"},
+  {"id": "local", "x": 20, "y": 150, "w": 230, "title": "Local edition", "icon": "💻", "kind": "server", "lines": ["Node.js on your computer", "src/server/*", "token: ~/.jira-bug-dashboard"]},
+  {"id": "cloud", "x": 295, "y": 150, "w": 230, "title": "Cloud edition", "icon": "☁️", "kind": "cf", "lines": ["Cloudflare Worker + D1", "cloud/src/*", "OAuth, tokens encrypted"]},
+  {"id": "demo", "x": 570, "y": 150, "w": 230, "title": "Demo edition", "icon": "🎲", "kind": "note", "lines": ["GitHub Pages (static)", "src/client/demo.ts", "no Jira at all"]},
+  {"id": "core", "x": 160, "y": 270, "w": 260, "h": 40, "title": "src/core: shared Jira logic", "kind": "db"},
+  {"id": "jira", "x": 470, "y": 270, "w": 200, "h": 40, "title": "Jira Cloud", "icon": "🐞", "kind": "ext"}
+ ],
+ "edges": [
+  {"from": "fe", "to": "local", "label": "/api/*"},
+  {"from": "fe", "to": "cloud", "label": "/api/* + /auth/*"},
+  {"from": "fe", "to": "demo", "label": "no server", "dashed": true},
+  {"from": "local", "to": "core", "dashed": true},
+  {"from": "cloud", "to": "core", "dashed": true},
+  {"from": "cloud", "to": "jira", "accent": true},
+  {"from": "local", "to": "jira", "accent": true, "via": [[135, 338], [570, 338]]}
+ ]}
+</script>
+
+<h2>Side by side</h2>
+<table>
+  <tr><th></th><th>Local</th><th>Cloud</th><th>Demo</th></tr>
+  <tr><td>Install</td><td>Node.js, then <code>npm start</code></td><td>nothing (open a URL)</td><td>nothing</td></tr>
+  <tr><td>Sign-in</td><td>email + API token you create</td><td>"Sign in with Atlassian" (OAuth)</td><td>none</td></tr>
+  <tr><td>Where secrets live</td><td><code>~/.jira-bug-dashboard/config.json</code>, file mode 0600</td><td>D1, AES-256-GCM encrypted; key is a Worker secret</td><td>none exist</td></tr>
+  <tr><td>Users</td><td>one: you</td><td>many, isolated from each other</td><td>everyone, sample data</td></tr>
+  <tr><td>Background monitoring</td><td>while the local server runs (default every 60 s)</td><td>always, Cloudflare cron (default every 5 min)</td><td>simulated</td></tr>
+  <tr><td>Live delivery to the page</td><td>Server-Sent Events stream</td><td>Web Push → service worker → page</td><td>in-page simulation</td></tr>
+  <tr><td>Notifications when browser closed</td><td>optional macOS/Linux system notification</td><td>Web Push</td><td>no</td></tr>
+  <tr><td>Hosting cost</td><td>your electricity</td><td>Cloudflare free tier</td><td>GitHub Pages, free</td></tr>
+  <tr><td>Best for</td><td>an individual who wants maximum privacy</td><td>teams and colleagues, zero setup</td><td>trying it out</td></tr>
+</table>
+
+<h2>How the page knows which edition it is in</h2>
+<p>When the page loads, <code>detectMode()</code> in <code>src/client/api.ts</code> runs:</p>
+<ol>
+  <li>If the URL contains <code>?demo</code> → <strong>demo</strong>.</li>
+  <li>Otherwise it fetches <code>api/config</code>. If the answer is JSON with <code>"edition": "cloud"</code> → <strong>cloud</strong>; any other JSON → <strong>local</strong>.</li>
+  <li>If there is no server (GitHub Pages returns a 404 HTML page) → <strong>demo</strong>.</li>
+</ol>
+<pre><code>export async function detectMode() {
+  if (new URLSearchParams(location.search).has('demo')) return { mode: 'demo', config: { configured: false } };
+  try {
+    const res = await fetch('api/config', { cache: 'no-store' });
+    if (res.ok &amp;&amp; (res.headers.get('content-type') || '').includes('application/json')) {
+      const config = await res.json();
+      return { mode: config.edition === 'cloud' ? 'cloud' : 'local', config };
+    }
+  } catch { /* no server: static hosting */ }
+  return { mode: 'demo', config: { configured: false } };
+}</code></pre>
+<p>The rest of the frontend asks <code>mode</code> before doing anything edition-specific: which settings form to show, whether to open a live stream (local) or register a service worker (cloud), whether data is real or generated.</p>
+
+<h2>Why one codebase for three editions</h2>
+<ul>
+  <li><strong>One product</strong>: a fix or feature lands everywhere at once.</li>
+  <li><strong>One API contract</strong>: both servers answer the same paths with the same JSON shapes, so the page does not care which one it talks to.</li>
+  <li><strong>One Jira brain</strong>: <code>src/core</code> holds the Jira logic for both servers. It was verified to give byte-identical results to the original Local code against a real Jira site.</li>
+</ul>
+
+<h2>Choosing</h2>
+<div class="callout tip"><span class="callout-title">Rule of thumb</span>Individual who cares most about privacy: Local. A team that wants zero installation: Cloud (your own instance, or one shared URL). Curious visitors: Demo. A company that does not want a personal account holding its tokens: deploy its own Cloud instance with the <a href="cf-playbook.html">playbook</a>.</div>

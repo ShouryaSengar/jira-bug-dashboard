@@ -1,0 +1,62 @@
+<h1>Troubleshooting</h1>
+<p class="lede">Symptoms, likely causes and fixes, grouped by where you see the problem. Many of these happened during the build of this app.</p>
+
+<h2>Signing in (Cloud)</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+  <tr><td><code>?auth=state</code> banner</td><td>sign-in took over 10 minutes, cookies blocked, or started in another tab</td><td>try again in one tab; allow cookies for the site</td></tr>
+  <tr><td><code>?auth=denied</code></td><td>Cancel on the consent screen</td><td>sign in again and Accept</td></tr>
+  <tr><td><code>?auth=exchange</code></td><td>wrong client secret, or callback URL mismatch</td><td>re-enter <code>ATLASSIAN_CLIENT_SECRET</code>; compare the callback URL character by character</td></tr>
+  <tr><td><code>?auth=nosite</code></td><td>no Jira Cloud site chosen or available</td><td>choose a site on the consent screen</td></tr>
+  <tr><td>Atlassian error before returning</td><td>app not shared (only you can sign in), or org admin blocks third-party apps</td><td>set Distribution to Sharing; ask the admin</td></tr>
+  <tr><td>"Jira access was revoked"</td><td>you revoked the app, 90 days inactive, or token reuse detected</td><td>Reconnect with Atlassian</td></tr>
+</table>
+
+<h2>Deploying</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+  <tr><td><code>You are not authenticated</code></td><td>Wrangler not logged in</td><td><code>npx wrangler login</code></td></tr>
+  <tr><td>"No CSRF value available in the session cookie" during login</td><td>link opened in one browser, approved in another</td><td><code>wrangler login --browser=false</code>, open the link in the right browser</td></tr>
+  <tr><td>"register a workers.dev subdomain"</td><td>new account</td><td>check if one exists (API or dashboard); create one in the dashboard</td></tr>
+  <tr><td>API answers 503 "not configured: missing X"</td><td>a variable still <code>REPLACE_…</code> or a secret missing</td><td>set X, redeploy (secrets apply without redeploy)</td></tr>
+  <tr><td>Migration error</td><td>already applied by hand, or SQL error</td><td><code>wrangler d1 migrations list</code>; fix in a new migration</td></tr>
+  <tr><td>Page loads but stays in demo mode</td><td><code>/api/config</code> not returning 200 JSON</td><td><code>curl …/api/config</code> and read the error</td></tr>
+</table>
+
+<h2>JARVIS</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+  <tr><td>No voice</td><td>browser needs one click first; voice off; muted</td><td>click the page; JARVIS → Settings → Voice; Test announcement</td></tr>
+  <tr><td>A voice I like is missing on another computer</td><td>voices come from the browser/OS</td><td>use Edge for Microsoft Natural voices; pick another voice</td></tr>
+  <tr><td>Nothing announced for my own change</td><td>by design: own actions are silent</td><td>ask someone else to change it, or use Simulate</td></tr>
+  <tr><td>Change took minutes to arrive</td><td>checks run every interval (cloud 5 min default)</td><td>"Check now"; lower the interval (min 5 in cloud)</td></tr>
+  <tr><td>No background notifications</td><td>not enabled on this device; permission denied; OS focus mode</td><td>JARVIS → Enable; site settings → allow notifications; check OS settings</td></tr>
+  <tr><td>iPhone gets nothing</td><td>iOS requires Home Screen install</td><td>Share → Add to Home Screen, open from there, enable</td></tr>
+  <tr><td>Same announcement in several tabs</td><td>should not happen (tab coordination)</td><td>close extra tabs; report it</td></tr>
+  <tr><td>"Retrying" status</td><td>Jira errors or rate limit</td><td>the panel shows the last error; it retries automatically</td></tr>
+</table>
+
+<h2>Local edition</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+  <tr><td><code>Port 4545 is in use</code></td><td>another copy (maybe an old version) is running</td><td>stop it (<code>lsof -i :4545</code> shows the process), or use <code>PORT=4546</code></td></tr>
+  <tr><td>Changes not visible after <code>git pull</code></td><td>old server still running, or browser cache</td><td>restart <code>npm start</code>; hard refresh (<kbd>Cmd/Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>)</td></tr>
+  <tr><td>500 errors after moving files</td><td>server serves files from its folder</td><td>restart from the project folder</td></tr>
+</table>
+
+<h2>Data looks wrong</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+  <tr><td>No severity</td><td>your site names the field differently</td><td>Settings → Advanced → field name or <code>customfield_…</code> id</td></tr>
+  <tr><td>Bugs missing</td><td>issue type is not "Bug" on your site</td><td>Settings → Advanced → issue types (e.g. <code>Bug, Defect</code>)</td></tr>
+  <tr><td>"Showing the first 300 bugs"</td><td>cloud cap for CPU</td><td>filter by project/epic, or use the Local edition</td></tr>
+  <tr><td>Wrong times on Safari</td><td>(fixed) Jira's <code>+0530</code> offsets</td><td>update to the latest version</td></tr>
+</table>
+
+<h2>Still stuck?</h2>
+<ol>
+  <li>Open the browser's developer tools (<kbd>F12</kbd>) → Console and Network tabs; look for red entries.</li>
+  <li>Cloud: <code>npx wrangler tail --env production --status error</code>.</li>
+  <li>Local: read the terminal running <code>npm start</code>.</li>
+  <li>Open an issue on GitHub with the symptom and the error text (never include tokens).</li>
+</ol>

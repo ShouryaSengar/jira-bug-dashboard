@@ -10,31 +10,85 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="home">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
 <div class="learn-home">
 <h1>Learn how it all works</h1>
 <p class="lede">The complete, plain-language guide to Jira Bug Dashboard: the product, the architecture, every module, the database, Jira, Cloudflare, security, and step-by-step deployment, including how to put your own next app on Cloudflare.</p>
-<p class="muted" id="learnStats"></p>
+<p class="muted" id="learnStats" data-base="47 guides in 11 categories, about 8 hours of reading.">47 guides in 11 categories, about 8 hours of reading. 0 done so far.</p>
 
-<h2>Pick a path</h2>
+<h2 id="pick-a-path">Pick a path</h2>
 <div class="paths">
-  <section class="path"><h3>🌱 I am new to all of this</h3><ol>
+  <section class="path"><h3 id="i-am-new-to-all-of-this">🌱 I am new to all of this</h3><ol>
     <li><a href="big-picture.html">The big picture</a></li>
     <li><a href="glossary.html">Glossary</a></li>
     <li><a href="web-http.html">HTTP, cookies and CORS</a></li>
     <li><a href="cf-basics.html">What Cloudflare is</a></li>
     <li><a href="hld-overview.html">High-level design</a></li></ol></section>
-  <section class="path"><h3>🏗 I want to understand the design</h3><ol>
+  <section class="path"><h3 id="i-want-to-understand-the-design">🏗 I want to understand the design</h3><ol>
     <li><a href="hld-overview.html">High-level design</a></li>
     <li><a href="decisions.html">Design decisions</a></li>
     <li><a href="code-map.html">Code map</a></li>
     <li><a href="database.html">Database design</a></li>
     <li><a href="flow-cron.html">The background check</a></li></ol></section>
-  <section class="path"><h3>🚀 I want to deploy</h3><ol>
+  <section class="path"><h3 id="i-want-to-deploy">🚀 I want to deploy</h3><ol>
     <li><a href="deploy-cloud.html">Deploy the Cloud edition</a></li>
     <li><a href="cf-playbook.html">Deploy any new app</a></li>
     <li><a href="cf-wrangler.html">Wrangler cheat sheet</a></li>
@@ -42,11 +96,14 @@
     <li><a href="troubleshooting.html">Troubleshooting</a></li></ol></section>
 </div>
 
-<h2>All topics</h2>
-<div class="cats" id="learnCats"></div>
+<h2 id="all-topics">All topics</h2>
+<div class="cats" id="learnCats"><section class="cat" id="start"><h3>Start here</h3><p>What this app is, how to read these guides, and every term explained.</p><ul><li><span class="mark" data-slug="welcome">▫️</span> <a href="welcome.html">Welcome: how to use these guides</a> <small class="muted">4 min</small></li><li><span class="mark" data-slug="big-picture">▫️</span> <a href="big-picture.html">The big picture, explained simply</a> <small class="muted">8 min</small></li><li><span class="mark" data-slug="glossary">▫️</span> <a href="glossary.html">Glossary: every term in plain words</a> <small class="muted">15 min</small></li></ul></section><section class="cat" id="product"><h3>The product</h3><p>What the app does for its users and the three editions.</p><ul><li><span class="mark" data-slug="features">▫️</span> <a href="features.html">Feature tour</a> <small class="muted">10 min</small></li><li><span class="mark" data-slug="journeys">▫️</span> <a href="journeys.html">User journeys and use cases</a> <small class="muted">8 min</small></li><li><span class="mark" data-slug="editions">▫️</span> <a href="editions.html">Local, Cloud and Demo editions</a> <small class="muted">7 min</small></li></ul></section><section class="cat" id="hld"><h3>Architecture (HLD)</h3><p>High-level design: the big boxes, how data flows, and why it was built this way.</p><ul><li><span class="mark" data-slug="hld-overview">▫️</span> <a href="hld-overview.html">High-level design</a> <small class="muted">12 min</small></li><li><span class="mark" data-slug="decisions">▫️</span> <a href="decisions.html">Design decisions and trade-offs</a> <small class="muted">12 min</small></li><li><span class="mark" data-slug="nfr">▫️</span> <a href="nfr.html">Quality goals: security, speed, cost, reliability</a> <small class="muted">8 min</small></li></ul></section><section class="cat" id="lld"><h3>Low-level design (LLD)</h3><p>Every module, table, endpoint and algorithm in detail.</p><ul><li><span class="mark" data-slug="code-map">▫️</span> <a href="code-map.html">Code map: every folder and module</a> <small class="muted">10 min</small></li><li><span class="mark" data-slug="frontend">▫️</span> <a href="frontend.html">Frontend internals</a> <small class="muted">14 min</small></li><li><span class="mark" data-slug="core">▫️</span> <a href="core.html">The shared Jira core</a> <small class="muted">10 min</small></li><li><span class="mark" data-slug="local-server">▫️</span> <a href="local-server.html">Local server internals</a> <small class="muted">10 min</small></li><li><span class="mark" data-slug="worker">▫️</span> <a href="worker.html">Cloud Worker internals</a> <small class="muted">16 min</small></li><li><span class="mark" data-slug="database">▫️</span> <a href="database.html">Database design (D1)</a> <small class="muted">14 min</small></li><li><span class="mark" data-slug="api-reference">▫️</span> <a href="api-reference.html">API reference</a> <small class="muted">12 min</small></li><li><span class="mark" data-slug="jarvis-engine">▫️</span> <a href="jarvis-engine.html">JARVIS: how changes are detected</a> <small class="muted">14 min</small></li><li><span class="mark" data-slug="jarvis-voice">▫️</span> <a href="jarvis-voice.html">JARVIS: speech and notifications</a> <small class="muted">10 min</small></li></ul></section><section class="cat" id="flows"><h3>End-to-end flows</h3><p>Step-by-step sequence diagrams of what happens when you click.</p><ul><li><span class="mark" data-slug="flow-page-load">▫️</span> <a href="flow-page-load.html">Opening the app</a> <small class="muted">7 min</small></li><li><span class="mark" data-slug="flow-signin">▫️</span> <a href="flow-signin.html">Signing in with Atlassian</a> <small class="muted">12 min</small></li><li><span class="mark" data-slug="flow-foryou">▫️</span> <a href="flow-foryou.html">Loading &quot;For You&quot;</a> <small class="muted">8 min</small></li><li><span class="mark" data-slug="flow-cron">▫️</span> <a href="flow-cron.html">The background check (cron)</a> <small class="muted">12 min</small></li><li><span class="mark" data-slug="flow-push">▫️</span> <a href="flow-push.html">A notification&#39;s journey</a> <small class="muted">10 min</small></li><li><span class="mark" data-slug="flow-token-refresh">▫️</span> <a href="flow-token-refresh.html">Refreshing and rotating tokens</a> <small class="muted">9 min</small></li></ul></section><section class="cat" id="jira"><h3>Jira and Atlassian</h3><p>How Jira&#39;s API works and how apps get permission to use it.</p><ul><li><span class="mark" data-slug="jira-api">▫️</span> <a href="jira-api.html">How Jira&#39;s REST API works</a> <small class="muted">12 min</small></li><li><span class="mark" data-slug="atlassian-auth">▫️</span> <a href="atlassian-auth.html">API tokens vs OAuth 2.0 (3LO)</a> <small class="muted">10 min</small></li><li><span class="mark" data-slug="atlassian-console">▫️</span> <a href="atlassian-console.html">The developer console, sharing and privacy duties</a> <small class="muted">9 min</small></li></ul></section><section class="cat" id="cloudflare"><h3>Cloudflare</h3><p>What Cloudflare is, how Workers run your code, and the free tier.</p><ul><li><span class="mark" data-slug="cf-basics">▫️</span> <a href="cf-basics.html">What Cloudflare is and how the edge works</a> <small class="muted">9 min</small></li><li><span class="mark" data-slug="cf-workers">▫️</span> <a href="cf-workers.html">Workers: how your code runs</a> <small class="muted">11 min</small></li><li><span class="mark" data-slug="cf-storage">▫️</span> <a href="cf-storage.html">D1, assets, cron, secrets and environments</a> <small class="muted">12 min</small></li><li><span class="mark" data-slug="cf-limits">▫️</span> <a href="cf-limits.html">The free tier and capacity maths</a> <small class="muted">9 min</small></li><li><span class="mark" data-slug="cf-wrangler">▫️</span> <a href="cf-wrangler.html">Wrangler cheat sheet</a> <small class="muted">8 min</small></li></ul></section><section class="cat" id="web"><h3>Web fundamentals</h3><p>The browser and internet basics that everything else stands on.</p><ul><li><span class="mark" data-slug="web-http">▫️</span> <a href="web-http.html">HTTP, cookies, CORS and same-origin</a> <small class="muted">12 min</small></li><li><span class="mark" data-slug="web-push">▫️</span> <a href="web-push.html">Service workers and Web Push</a> <small class="muted">11 min</small></li><li><span class="mark" data-slug="web-speech">▫️</span> <a href="web-speech.html">Speech, notifications and browser rules</a> <small class="muted">7 min</small></li></ul></section><section class="cat" id="security"><h3>Security and privacy</h3><p>The threats, the defences, the cryptography and your data&#39;s life cycle.</p><ul><li><span class="mark" data-slug="security-threats">▫️</span> <a href="security-threats.html">Threat model and defences</a> <small class="muted">13 min</small></li><li><span class="mark" data-slug="security-crypto">▫️</span> <a href="security-crypto.html">The cryptography, simply</a> <small class="muted">11 min</small></li><li><span class="mark" data-slug="privacy-lifecycle">▫️</span> <a href="privacy-lifecycle.html">Privacy and the data life cycle</a> <small class="muted">8 min</small></li></ul></section><section class="cat" id="deploy"><h3>Deploy and operate</h3><p>Hands-on guides: run, deploy, ship any new app, and keep it healthy.</p><ul><li><span class="mark" data-slug="run-local">▫️</span> <a href="run-local.html">Run the Local edition</a> <small class="muted">6 min</small></li><li><span class="mark" data-slug="deploy-cloud">▫️</span> <a href="deploy-cloud.html">Deploy the Cloud edition, step by step</a> <small class="muted">16 min</small></li><li><span class="mark" data-slug="github">▫️</span> <a href="github.html">Git, GitHub and GitHub Pages</a> <small class="muted">9 min</small></li><li><span class="mark" data-slug="cf-playbook">▫️</span> <a href="cf-playbook.html">Playbook: deploy any new app on Cloudflare</a> <small class="muted">15 min</small></li><li><span class="mark" data-slug="operate">▫️</span> <a href="operate.html">Operating in production</a> <small class="muted">10 min</small></li><li><span class="mark" data-slug="troubleshooting">▫️</span> <a href="troubleshooting.html">Troubleshooting</a> <small class="muted">8 min</small></li></ul></section><section class="cat" id="quality"><h3>Quality and growth</h3><p>How the app is tested and how to extend it.</p><ul><li><span class="mark" data-slug="testing">▫️</span> <a href="testing.html">How this app is tested</a> <small class="muted">9 min</small></li><li><span class="mark" data-slug="extending">▫️</span> <a href="extending.html">How to add a feature</a> <small class="muted">9 min</small></li><li><span class="mark" data-slug="roadmap">▫️</span> <a href="roadmap.html">Roadmap and ideas</a> <small class="muted">4 min</small></li></ul></section></div>
 </div>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#pick-a-path">Pick a path</a><a href="#i-am-new-to-all-of-this" class="h3">🌱 I am new to all of this</a><a href="#i-want-to-understand-the-design" class="h3">🏗 I want to understand the design</a><a href="#i-want-to-deploy" class="h3">🚀 I want to deploy</a><a href="#all-topics">All topics</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

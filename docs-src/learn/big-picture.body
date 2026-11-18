@@ -1,0 +1,73 @@
+<h1>The big picture, explained simply</h1>
+<p class="lede">The whole system as a story, with no jargon. If you only read one guide, read this one.</p>
+
+<h2>The problem the app solves</h2>
+<p>At work, bugs live in <strong>Jira</strong>, a website where teams track tasks. A big project (an "epic") can have dozens of bugs attached, and every developer has bugs assigned to them across many projects. Jira can show these, but it takes many clicks, and it does not tap you on the shoulder when something important changes.</p>
+<p>Jira Bug Dashboard does three things:</p>
+<ol>
+  <li><strong>Collects</strong> the bugs you care about (all bugs of an epic, or all bugs assigned to you) on one screen.</li>
+  <li><strong>Visualises</strong> them: charts, counts, age, filters, markers for what is new or stale.</li>
+  <li><strong>Watches</strong> them for you. When something changes (a new assignment, a comment, a reopen), an assistant called <strong>JARVIS</strong> tells you with a notification and a voice.</li>
+</ol>
+
+<h2>The story of one click</h2>
+<div class="callout eli5"><span class="callout-title">Explained simply: a restaurant</span>
+<p>Think of the app as a restaurant.</p>
+<ul>
+  <li><strong>You</strong> sit at a table. Your <strong>browser</strong> is the table: it is where the food (data) is served and where you look at the menu (the page).</li>
+  <li>The <strong>waiter</strong> is the <strong>server</strong>. You never walk into the kitchen yourself. You tell the waiter what you want, and the waiter goes and gets it.</li>
+  <li>The <strong>kitchen</strong> is <strong>Jira</strong>, where the real data lives. The kitchen only serves waiters who show the right <strong>badge</strong> (a token).</li>
+  <li>The waiter keeps a small <strong>notebook</strong>: the <strong>database</strong>. It remembers your preferences and what it already told you, so it does not repeat itself.</li>
+  <li>Every minute, the waiter walks past the kitchen and checks whether anything changed for you. If it did, the waiter sends you a <strong>note</strong> (a push notification), even if you went home.</li>
+</ul>
+</div>
+
+<script type="application/json" class="diagram" data-kind="flow" data-caption="The whole system on one page (Cloud edition).">
+{"w": 820, "h": 375,
+ "zones": [
+  {"x": 250, "y": 20, "w": 300, "h": 290, "label": "Cloudflare (the restaurant)", "kind": "cf"}
+ ],
+ "nodes": [
+  {"id": "you", "x": 20, "y": 60, "w": 180, "title": "You", "icon": "🙂", "kind": "user", "sub": "click, read, listen"},
+  {"id": "br", "x": 20, "y": 190, "w": 180, "title": "Browser", "icon": "🖥", "kind": "browser", "sub": "the page + service worker"},
+  {"id": "w", "x": 290, "y": 70, "w": 220, "title": "Worker (the waiter)", "icon": "⚙️", "kind": "cf", "sub": "your code, runs on Cloudflare"},
+  {"id": "db", "x": 290, "y": 200, "w": 220, "title": "D1 database (notebook)", "icon": "🗄", "kind": "db", "sub": "users, settings, history"},
+  {"id": "cron", "x": 20, "y": 290, "w": 180, "h": 34, "title": "Cron: every minute", "icon": "⏰", "kind": "cf"},
+  {"id": "atl", "x": 600, "y": 60, "w": 200, "title": "Atlassian sign-in", "icon": "🔑", "kind": "ext", "sub": "gives the badge (token)"},
+  {"id": "jira", "x": 600, "y": 170, "w": 200, "title": "Jira (the kitchen)", "icon": "🐞", "kind": "ext", "sub": "where bugs really live"},
+  {"id": "push", "x": 600, "y": 280, "w": 200, "title": "Push service", "icon": "📮", "kind": "ext", "sub": "Google / Apple / Mozilla"}
+ ],
+ "edges": [
+  {"from": "you", "to": "br", "label": "uses", "both": true},
+  {"from": "br", "to": "w", "label": "asks", "both": true, "accent": true},
+  {"from": "w", "to": "db", "label": "remembers", "both": true},
+  {"from": "w", "to": "atl", "label": "badge"},
+  {"from": "w", "to": "jira", "label": "data", "both": true, "accent": true},
+  {"from": "cron", "to": "w", "dashed": true, "label": "wakes"},
+  {"from": "w", "to": "push", "label": "note", "dashed": true},
+  {"from": "push", "to": "br", "label": "delivers", "dashed": true, "via": [[640, 350], [230, 350], [230, 230]], "lseg": 1}
+ ]}
+</script>
+
+<h2>Why there has to be a waiter</h2>
+<p>You might ask: why not let the browser talk to Jira directly? Two reasons.</p>
+<ol>
+  <li><strong>Browsers are not allowed to.</strong> A safety rule called <em>CORS</em> stops a web page from one website reading data from another website unless that other website explicitly agrees. Jira does not agree. So a page on <code>workers.dev</code> simply cannot read <code>atlassian.net</code>. (Full story: <a href="web-http.html">HTTP, cookies, CORS and same-origin</a>.)</li>
+  <li><strong>Badges must stay secret.</strong> The token that unlocks your Jira data is as powerful as your password. If it lived in the page, any bug in the page, or any browser extension, could steal it. A server can keep it locked away.</li>
+</ol>
+
+<h2>Three ways to run the same app</h2>
+<p>The same web page can run in three settings (called <em>editions</em>):</p>
+<table>
+  <tr><th>Edition</th><th>Who is the waiter?</th><th>Where is the badge kept?</th></tr>
+  <tr><td><strong>Local</strong></td><td>A small program on your own computer (Node.js)</td><td>A file in your home folder that only you can read</td></tr>
+  <tr><td><strong>Cloud</strong></td><td>A Cloudflare Worker on the internet</td><td>Encrypted in Cloudflare's database, the key kept separately</td></tr>
+  <tr><td><strong>Demo</strong></td><td>Nobody: the page makes up sample data</td><td>There is no badge; it never touches Jira</td></tr>
+</table>
+<p>Details: <a href="editions.html">Local, Cloud and Demo editions</a>.</p>
+
+<h2>What happens every minute</h2>
+<p>In the Cloud edition, Cloudflare wakes the Worker every minute (a <em>cron trigger</em>). The Worker picks the users whose turn it is, asks Jira "what changed for this person since I last looked?", writes anything new into the database, and sends a push notification to the person's devices. The browser's <em>service worker</em> (a tiny helper that lives in the browser even when the tab is closed) shows the notification. If the dashboard tab is open, JARVIS also speaks it. The full journey: <a href="flow-cron.html">The background check</a> and <a href="flow-push.html">A notification's journey</a>.</p>
+
+<h2>The words you just learned</h2>
+<p>Browser, server, Worker, database, token, CORS, cron, push, service worker, edition. Every one of them has a plain-language entry in the <a href="glossary.html">Glossary</a>. When you are ready for real detail, continue with the <a href="hld-overview.html">High-level design</a>.</p>

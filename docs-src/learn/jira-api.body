@@ -1,0 +1,89 @@
+<h1>How Jira's REST API works</h1>
+<p class="lede">The parts of Jira Cloud's REST API this app uses: issues and fields, JQL search, pagination, changelogs, comments, rich text, statuses and priorities, and rate limits.</p>
+
+<h2>Issues and fields</h2>
+<p>Everything in Jira is an <strong>issue</strong> (a bug, a story, an epic) identified by a <strong>key</strong> like <code>ABC-123</code> (project <code>ABC</code>, number 123). An issue is a bag of <strong>fields</strong>:</p>
+<pre><code>GET /rest/api/3/issue/ABC-123?fields=summary,status,priority,assignee,updated
+{
+  "key": "ABC-123",
+  "fields": {
+    "summary": "Login fails on Safari",
+    "status":   { "id": "3", "name": "In Progress", "statusCategory": { "key": "indeterminate" } },
+    "priority": { "name": "High" },
+    "assignee": { "accountId": "5b10…", "displayName": "Ava Chen" },
+    "updated":  "2026-11-18T10:58:09.000+0530",
+    "customfield_12039": { "value": "2 - Major" }
+  }
+}</code></pre>
+<ul>
+  <li><strong>System fields</strong> have names (<code>summary</code>, <code>status</code>…). <strong>Custom fields</strong> are added by admins and have ids like <code>customfield_12039</code>. "Severity" is a custom field, so the app finds its id by name (settings: <em>Severity field names or IDs</em>).</li>
+  <li>Always ask only for the fields you need (<code>fields=…</code>); full issues are large.</li>
+  <li>People are identified by an opaque <code>accountId</code>, not by email (privacy rules).</li>
+</ul>
+
+<h2>JQL: searching</h2>
+<p>JQL looks like SQL for issues. The searches this app runs:</p>
+<table>
+  <tr><th>Purpose</th><th>JQL</th></tr>
+  <tr><td>Epics view</td><td><code>(issue in linkedIssues("ABC-1") OR parent = "ABC-1") AND issuetype in ("Bug") ORDER BY created DESC</code></td></tr>
+  <tr><td>For You</td><td><code>assignee = currentUser() AND issuetype in ("Bug") AND (statusCategory != Done OR updated &gt;= -90d) ORDER BY updated DESC</code></td></tr>
+  <tr><td>Recently assigned</td><td><code>assignee = currentUser() AND assignee CHANGED TO currentUser() AFTER -7d</code></td></tr>
+  <tr><td>JARVIS incremental</td><td><code>issuetype in ("Bug") AND ((assignee = currentUser() AND updated &gt;= -12m) OR assignee CHANGED FROM currentUser() AFTER -12m) ORDER BY updated ASC</code></td></tr>
+</table>
+<ul>
+  <li><code>currentUser()</code> means "whoever owns the token", so the same JQL works for every user.</li>
+  <li><code>-12m</code>, <code>-90d</code> are relative dates. Absolute dates (<code>"2026-11-18 10:00"</code>) are interpreted in the user's Jira time zone, a classic source of bugs; relative ones avoid it.</li>
+  <li><code>CHANGED FROM … AFTER</code> searches field history, which is how the app spots bugs taken away from you.</li>
+  <li>Values from settings (issue types) are quoted and stripped of quotes/backslashes before being put into JQL, so a setting cannot change the query's meaning.</li>
+</ul>
+
+<h2>Pagination</h2>
+<p>The search endpoint returns at most 100 issues per page:</p>
+<pre><code>POST /rest/api/3/search/jql
+{ "jql": "…", "fields": ["summary","status",…], "maxResults": 100, "nextPageToken": "…" }
+
+→ { "issues": [ … ], "isLast": false, "nextPageToken": "CAEaAggD" }</code></pre>
+<p><code>searchAll()</code> keeps asking with the returned <code>nextPageToken</code> until <code>isLast</code> is true or a cap is reached (1000 locally, 300 for For You in the cloud, 500 for the monitor's full list).</p>
+
+<h2>Changelog: the issue's history</h2>
+<pre><code>GET /rest/api/3/issue/ABC-1/changelog?startAt=0&amp;maxResults=100
+{ "total": 13, "isLast": true, "values": [
+  { "id": "10234", "author": { "accountId": "…", "displayName": "Bob" }, "created": "2026-11-18T12:16:39.000+0530",
+    "items": [ { "field": "status", "fieldId": "status", "from": "10001", "fromString": "Needs Information",
+                 "to": "11330", "toString": "Bug Fix" } ] }
+] }</code></pre>
+<ul>
+  <li>Entries are <em>oldest first</em>. For long histories the app jumps to the last page (<code>startAt = total − 100</code>).</li>
+  <li>For <code>status</code>, <code>from</code>/<code>to</code> are status ids; for <code>assignee</code>, account ids. <code>fromString</code>/<code>toString</code> are display names.</li>
+  <li><code>id</code> + <code>fieldId</code> together identify one change forever: the basis of JARVIS's de-duplication.</li>
+</ul>
+
+<h2>Comments and rich text</h2>
+<pre><code>GET /rest/api/3/issue/ABC-1/comment?orderBy=-created&amp;maxResults=15</code></pre>
+<p>Comment bodies and descriptions are in <strong>Atlassian Document Format</strong> (ADF): a JSON tree of paragraphs, text, mentions, lists, code blocks, tables and media. <code>adfToText()</code> walks the tree and produces readable text, for example a bullet list becomes lines starting with "•", a mention becomes "@Name", an attachment becomes "[attachment]".</p>
+
+<h2>Statuses, categories and priorities</h2>
+<ul>
+  <li>Every site invents its own statuses ("Bug Fix", "Retest", "Needs Information"). Each belongs to one of three <strong>categories</strong>: <code>new</code>, <code>indeterminate</code>, <code>done</code>. The app reasons with categories: done → not done = reopened.</li>
+  <li><code>GET /rest/api/3/status/{id}</code> gives one status with its category (the cloud looks up unknown ones lazily; one real site has 662 statuses, too many to load every time).</li>
+  <li><code>GET /rest/api/3/priority</code> lists priorities in the admin's order, which is not always urgency (see the Blocker story in <a href="jarvis-engine.html">JARVIS engine</a>).</li>
+</ul>
+
+<h2>Errors and rate limits</h2>
+<table>
+  <tr><th>Status</th><th>Meaning</th><th>App behaviour</th></tr>
+  <tr><td>400</td><td>bad JQL or parameters</td><td>message from <code>errorMessages</code> shown</td></tr>
+  <tr><td>401</td><td>token invalid / expired</td><td>cloud: refresh once, then <code>reauth</code>; local: "check email and API token"</td></tr>
+  <tr><td>403 / 404</td><td>no permission / does not exist (Jira often answers 404 for both, to avoid leaking existence)</td><td>shown; monitor ignores that issue</td></tr>
+  <tr><td>429</td><td>rate limited; <code>Retry-After</code> says how long to wait</td><td>back off at least that long</td></tr>
+</table>
+<p>Jira Cloud's rate limits are per user and app, based on cost over time. The monitor's incremental design (one small search per user per interval) keeps far below them.</p>
+
+<h2>Two ways to reach the same API</h2>
+<table>
+  <tr><th></th><th>Local edition</th><th>Cloud edition</th></tr>
+  <tr><td>Base URL</td><td><code>https://yoursite.atlassian.net</code></td><td><code>https://api.atlassian.com/ex/jira/{cloudId}</code></td></tr>
+  <tr><td>Header</td><td><code>Authorization: Basic base64(email:apiToken)</code></td><td><code>Authorization: Bearer &lt;access token&gt;</code></td></tr>
+  <tr><td>Paths</td><td colspan="2">identical: <code>/rest/api/3/…</code></td></tr>
+</table>
+<p>Next: <a href="atlassian-auth.html">API tokens vs OAuth 2.0 (3LO)</a>.</p>

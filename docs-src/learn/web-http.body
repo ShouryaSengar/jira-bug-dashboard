@@ -1,0 +1,77 @@
+<h1>HTTP, cookies, CORS and same-origin</h1>
+<p class="lede">The browser's rules of the road. Understanding them explains why this app needs a server, how sign-in stays secure, and why some attacks simply cannot work.</p>
+
+<h2>HTTP: the conversation</h2>
+<p>Every interaction is a <strong>request</strong> and a <strong>response</strong>:</p>
+<pre><code>GET /api/mine HTTP/1.1                         ← method + path
+Host: jira-bug-dashboard-cloud.shouryacode2021.workers.dev
+Cookie: __Host-jbd_sid=Qm9i…                   ← headers
+Accept: application/json
+
+HTTP/1.1 200 OK                                ← status
+Content-Type: application/json; charset=utf-8
+Cache-Control: no-store
+X-Content-Type-Options: nosniff
+
+{"me":{"name":"Shourya"},"bugs":[…]}            ← body</code></pre>
+<table>
+  <tr><th>Methods</th><th>Meaning</th></tr>
+  <tr><td><code>GET</code></td><td>read something; must not change anything</td></tr>
+  <tr><td><code>POST</code></td><td>do something / send data</td></tr>
+  <tr><td><code>DELETE</code></td><td>remove something</td></tr>
+</table>
+<table>
+  <tr><th>Status codes</th><th>Meaning</th></tr>
+  <tr><td>200, 202, 204</td><td>OK / accepted / OK with no body</td></tr>
+  <tr><td>302, 307</td><td>go somewhere else (redirect)</td></tr>
+  <tr><td>400, 401, 403, 404, 409, 413, 429</td><td>your fault: bad input, not signed in, forbidden, not found, conflict, too large, too many</td></tr>
+  <tr><td>500, 502, 503</td><td>server's fault: error, upstream error, unavailable</td></tr>
+</table>
+<p><strong>HTTPS</strong> is the same conversation inside TLS encryption, so nobody on the network can read or change it.</p>
+
+<h2>Origins</h2>
+<p>An <strong>origin</strong> is scheme + host + port. These are three different origins:</p>
+<pre><code>https://jira-bug-dashboard-cloud.shouryacode2021.workers.dev
+https://axismaxlife.atlassian.net
+http://localhost:4545</code></pre>
+<p>The browser treats each origin as a separate world.</p>
+
+<h2>Same-origin policy and CORS</h2>
+<div class="callout eli5"><span class="callout-title">Explained simply</span>Each website is a house. A script in one house can <em>send</em> letters to other houses, but it is not allowed to <em>open the replies</em> addressed back from another house, unless that house wrote "you may read this" on the envelope. That note is CORS.</div>
+<p>When a page on origin A calls <code>fetch()</code> to origin B, the browser sends it (sometimes after asking permission first with an <code>OPTIONS</code> "preflight"), and only lets the page read the response if B answers with headers like <code>Access-Control-Allow-Origin: A</code>.</p>
+<p><strong>Jira Cloud does not allow this</strong> for API requests carrying credentials. So a page on <code>workers.dev</code> or <code>github.io</code> can never read Jira directly. That is the root reason every edition with real data has a server, which, being a server and not a browser, is not subject to CORS.</p>
+<p>The app's own API never sends CORS headers either. That is deliberate: no other website can read its responses with your cookies.</p>
+
+<h2>Cookies</h2>
+<p>A server sets a cookie with a response header; the browser stores it and sends it back on every request to that site:</p>
+<pre><code>Set-Cookie: __Host-jbd_sid=Qm9i…; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax</code></pre>
+<table>
+  <tr><th>Attribute</th><th>Effect</th><th>Why the app uses it</th></tr>
+  <tr><td><code>__Host-</code> prefix</td><td>browser only accepts it with Secure, Path=/ and no Domain</td><td>sub-domains cannot plant or overwrite it</td></tr>
+  <tr><td><code>HttpOnly</code></td><td>JavaScript cannot read it</td><td>an injected script cannot steal the session</td></tr>
+  <tr><td><code>Secure</code></td><td>only sent over HTTPS (and localhost)</td><td>never travels unencrypted</td></tr>
+  <tr><td><code>SameSite=Lax</code></td><td>not sent on cross-site sub-requests (images, fetch, forms posted from other sites); sent on top-level links</td><td>blocks most CSRF; still works when Atlassian redirects you back</td></tr>
+  <tr><td><code>Max-Age</code></td><td>lifetime in seconds</td><td>30 days for the session, 10 minutes for the OAuth state</td></tr>
+</table>
+
+<h2>CSRF in one picture</h2>
+<p>Cross-site request forgery: a malicious page makes <em>your</em> browser send a request to a site where you are signed in, and the browser helpfully attaches your cookie. Defences used here:</p>
+<ol>
+  <li><strong>SameSite=Lax</strong> cookies are not sent on cross-site POSTs.</li>
+  <li>Every state-changing request must carry <code>X-JBD: 1</code>. A cross-site page cannot add custom headers without a CORS preflight, which the API never approves.</li>
+  <li>The <code>Origin</code> header must equal the app's origin; <code>Sec-Fetch-Site</code> must not be <code>cross-site</code>.</li>
+</ol>
+
+<h2>Other headers the app sends</h2>
+<table>
+  <tr><th>Header</th><th>Purpose</th></tr>
+  <tr><td><code>Content-Security-Policy</code></td><td>only run scripts from our own origin; no inline scripts; no framing; connect only to ourselves</td></tr>
+  <tr><td><code>Strict-Transport-Security</code></td><td>browser must always use HTTPS for this site</td></tr>
+  <tr><td><code>X-Frame-Options: DENY</code></td><td>cannot be embedded in someone else's page (clickjacking)</td></tr>
+  <tr><td><code>X-Content-Type-Options: nosniff</code></td><td>browser must trust the declared content type</td></tr>
+  <tr><td><code>Referrer-Policy: no-referrer</code></td><td>do not leak our URLs to other sites</td></tr>
+  <tr><td><code>Cache-Control: no-store</code></td><td>API data is never stored by caches</td></tr>
+</table>
+
+<h2>localStorage</h2>
+<p>A per-origin key-value store in the browser that survives restarts. Any script on the page can read it, so it is only for non-secret things: preferences, filters, caches, your Learn progress. Tokens are never stored there.</p>

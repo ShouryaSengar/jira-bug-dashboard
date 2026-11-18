@@ -10,15 +10,69 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="worker">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>Cloud Worker internals</h1>
-<p class="lede">Every file of the Cloudflare Worker, what it does, and how a request or a cron tick travels through it.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#lld">Low-level design (LLD)</a> › Code</div><h1>Cloud Worker internals</h1>
+<p class="lede">Every file of the Cloudflare Worker, what it does, and how a request or a cron tick travels through it.</p><div class="meta-line"><span>⏱ 16 min read</span><span>Guide 14 of 47</span></div>
 
-<h2>The two doors into the Worker</h2>
+<h2 id="the-two-doors-into-the-worker">The two doors into the Worker</h2>
 <p>A Worker is a JavaScript module that exports handlers. Cloudflare calls them:</p>
 <pre><code>// cloud/src/index.ts
 export default {
@@ -36,9 +90,8 @@ export default {
 };</code></pre>
 <div class="callout info"><span class="callout-title">Static files usually skip the Worker</span>With <code>run_worker_first: ["/api/*", "/auth/*"]</code> in <code>wrangler.jsonc</code>, Cloudflare serves files such as <code>/index.html</code> or <code>/js/main.js</code> directly from its asset storage. Those requests are free and do not count against the 100,000 daily Worker requests. Only API and sign-in paths run our code.</div>
 
-<h2>A request's path through the files</h2>
-<script type="application/json" class="diagram" data-kind="flow" data-caption="Request pipeline inside the Worker for GET /api/mine.">
-{"w": 820, "h": 300,
+<h2 id="a-request-s-path-through-the-files">A request's path through the files</h2>
+<figure class="diagram" data-kind="flow"><svg class="dg" viewBox="0 0 820 300" width="820" role="img" aria-label="Request pipeline inside the Worker for GET /api/mine."></svg><script type="application/json" class="diagram-spec">{"w": 820, "h": 300,
  "nodes": [
   {"id": "idx", "x": 20, "y": 30, "w": 160, "title": "index.ts", "kind": "cf", "sub": "route + config check"},
   {"id": "csrf", "x": 220, "y": 30, "w": 170, "title": "http.ts", "kind": "cf", "sub": "assertSameOrigin()"},
@@ -62,14 +115,13 @@ export default {
   {"from": "sess", "to": "d1", "dashed": true, "via": [[410, 110], [410, 268]]},
   {"from": "tok", "to": "d1", "dashed": true},
   {"from": "core", "to": "jira", "accent": true}
- ]}
-</script>
+ ]}</script><figcaption>Request pipeline inside the Worker for GET /api/mine.</figcaption></figure>
 
-<h2>File by file</h2>
-<h3><code>env.ts</code>: configuration</h3>
+<h2 id="file-by-file">File by file</h2>
+<h3 id="env-ts-configuration"><code>env.ts</code>: configuration</h3>
 <p>Declares every binding (<code>DB</code>, <code>ASSETS</code>), variable (<code>APP_ORIGIN</code>, <code>ATLASSIAN_CLIENT_ID</code>, <code>PUSH_ENDPOINT_HOSTS</code>, limits) and secret (<code>ATLASSIAN_CLIENT_SECRET</code>, <code>TOKEN_ENC_KEY</code>, <code>VAPID_PRIVATE_KEY</code>, <code>VAPID_SUBJECT</code>). <code>assertConfigured()</code> answers <em>503 "Cloud edition is not configured: missing …"</em> (names only, never values) until everything is set, so a half-configured deployment cannot accept sign-ins.</p>
 
-<h3><code>http.ts</code>: the web plumbing</h3>
+<h3 id="http-ts-the-web-plumbing"><code>http.ts</code>: the web plumbing</h3>
 <ul>
   <li><code>json()</code>, <code>redirect()</code> add security headers (<code>nosniff</code>, <code>DENY</code> framing, no referrer, <code>no-store</code>, HSTS).</li>
   <li><code>errorResponse()</code> turns known errors into clean JSON, and unknown ones into a generic 500 (the details go to the log, not to the user).</li>
@@ -79,10 +131,10 @@ export default {
   <li><code>rateLimit()</code>: a per-isolate token counter (a speed bump, not a global quota).</li>
 </ul>
 
-<h3><code>crypto.ts</code>: small, careful helpers</h3>
+<h3 id="crypto-ts-small-careful-helpers"><code>crypto.ts</code>: small, careful helpers</h3>
 <p>base64url encoding, random tokens (<code>crypto.getRandomValues</code>), SHA-256, constant-time comparison, and <code>encryptJson</code>/<code>decryptJson</code> with AES-256-GCM, a random 12-byte IV per encryption and additional authenticated data <code>grant:&lt;userId&gt;</code>. See <a href="security-crypto.html">The cryptography, simply</a>.</p>
 
-<h3><code>auth.ts</code>: identity and tokens</h3>
+<h3 id="auth-ts-identity-and-tokens"><code>auth.ts</code>: identity and tokens</h3>
 <ul>
   <li><code>startLogin()</code>: per-IP sign-in limit (D1), random <code>state</code> in an HttpOnly cookie, redirect to <code>auth.atlassian.com/authorize</code> with four scopes.</li>
   <li><code>finishLogin()</code>: checks state (constant time), exchanges the code, checks the granted scopes, reads <code>/me</code> and <code>accessible-resources</code>, then in <em>one batch</em> upserts the user, stores the encrypted grant, replaces the sites, creates settings and a session.</li>
@@ -91,13 +143,13 @@ export default {
   <li><code>cloudApi()</code>: the cloud implementation of the core's <code>JiraApi</code>, retrying once after forcing a refresh on 401.</li>
 </ul>
 
-<h3><code>api.ts</code>: the endpoints</h3>
+<h3 id="api-ts-the-endpoints"><code>api.ts</code>: the endpoints</h3>
 <p>One router (<code>handleApi</code>) with a <code>switch</code> on <code>"METHOD /path"</code>. Sign-in routes come first (they are top-level navigations), then the CSRF check, then <code>/api/config</code> (works signed-out), then <code>requireSession()</code> and a per-user rate limit for everything else. All endpoints are listed in the <a href="api-reference.html">API reference</a>.</p>
 
-<h3><code>monitor.ts</code>: the cron engine</h3>
+<h3 id="monitor-ts-the-cron-engine"><code>monitor.ts</code>: the cron engine</h3>
 <p><code>runTick()</code> loads due users in one query, checks each (<code>checkUser</code>), defers whoever does not fit, retries pending pushes, runs the privacy report at minute :37 and housekeeping at minute :13. Each user check is incremental and writes nothing when idle. Complete walkthrough: <a href="flow-cron.html">The background check</a> and <a href="jarvis-engine.html">JARVIS engine</a>.</p>
 
-<h3><code>budget.ts</code>: staying under 50 subrequests</h3>
+<h3 id="budget-ts-staying-under-50-subrequests"><code>budget.ts</code>: staying under 50 subrequests</h3>
 <pre><code>export class Budget {
   used = 0;
   constructor(public readonly size: number) {}
@@ -107,16 +159,16 @@ export default {
 }</code></pre>
 <p>Every fetch to Atlassian or a push service and every D1 call calls <code>budget.take()</code> first. If a user's work does not fit, <code>BudgetExhausted</code> is caught, the user is marked deferred, and nothing half-done is committed.</p>
 
-<h3><code>push.ts</code>: Web Push</h3>
+<h3 id="push-ts-web-push"><code>push.ts</code>: Web Push</h3>
 <p><code>endpointAllowed()</code> (HTTPS + allow-listed push hosts), <code>vapidJwt()</code> (ES256-signed, cached 12 hours per push origin), <code>encryptPayload()</code> (RFC 8291) and <code>sendPush()</code> (maps 404/410 to "gone" so dead subscriptions are deleted). See <a href="web-push.html">Service workers and Web Push</a>.</p>
 
-<h3><code>privacy.ts</code>: Personal Data Reporting</h3>
+<h3 id="privacy-ts-personal-data-reporting"><code>privacy.ts</code>: Personal Data Reporting</h3>
 <p>Lists every stored account id, reports up to 90 per request to Atlassian, erases on <em>closed</em>, clears on <em>updated</em>. See <a href="privacy-lifecycle.html">Privacy and the data life cycle</a>.</p>
 
-<h3><code>cloud/public/sw.js</code>: the service worker</h3>
+<h3 id="cloud-public-sw-js-the-service-worker"><code>cloud/public/sw.js</code>: the service worker</h3>
 <p>Not part of the Worker (it runs in the browser), but deployed with it. Handles <code>push</code> (show notifications, forward events to open tabs), <code>notificationclick</code> (focus or open the dashboard at the bug), and <code>pushsubscriptionchange</code> (re-register).</p>
 
-<h2>Configuration file: <code>wrangler.jsonc</code></h2>
+<h2 id="configuration-file-wrangler-jsonc">Configuration file: <code>wrangler.jsonc</code></h2>
 <pre><code>{
   "name": "jira-bug-dashboard-cloud",
   "main": "src/index.ts",
@@ -131,15 +183,18 @@ export default {
 }</code></pre>
 <p>Each environment has its own bindings, variables and triggers (they are not inherited). Secrets are not in this file at all. More in <a href="cf-storage.html">D1, assets, cron, secrets and environments</a>.</p>
 
-<h2>What the Worker never does</h2>
+<h2 id="what-the-worker-never-does">What the Worker never does</h2>
 <ul>
   <li>Return or log tokens (the logs show request URLs with the OAuth code and state redacted by Cloudflare).</li>
   <li>Trust a user id or site id from the client: the site must belong to the session's user.</li>
   <li>Store Jira issue contents beyond what monitoring and history need.</li>
   <li>Keep state between runs in memory (except harmless caches such as the VAPID JWT).</li>
-</ul>
+</ul><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="local-server.html"><small>← Previous</small>Local server internals</a><a class="next" href="database.html"><small>Next →</small>Database design (D1)</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#the-two-doors-into-the-worker">The two doors into the Worker</a><a href="#a-request-s-path-through-the-files">A request&#39;s path through the files</a><a href="#file-by-file">File by file</a><a href="#env-ts-configuration" class="h3">env.ts: configuration</a><a href="#http-ts-the-web-plumbing" class="h3">http.ts: the web plumbing</a><a href="#crypto-ts-small-careful-helpers" class="h3">crypto.ts: small, careful helpers</a><a href="#auth-ts-identity-and-tokens" class="h3">auth.ts: identity and tokens</a><a href="#api-ts-the-endpoints" class="h3">api.ts: the endpoints</a><a href="#monitor-ts-the-cron-engine" class="h3">monitor.ts: the cron engine</a><a href="#budget-ts-staying-under-50-subrequests" class="h3">budget.ts: staying under 50 subrequests</a><a href="#push-ts-web-push" class="h3">push.ts: Web Push</a><a href="#privacy-ts-personal-data-reporting" class="h3">privacy.ts: Personal Data Reporting</a><a href="#cloud-public-sw-js-the-service-worker" class="h3">cloud/public/sw.js: the service worker</a><a href="#configuration-file-wrangler-jsonc">Configuration file: wrangler.jsonc</a><a href="#what-the-worker-never-does">What the Worker never does</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

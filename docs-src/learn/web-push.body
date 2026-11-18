@@ -1,0 +1,70 @@
+<h1>Service workers and Web Push</h1>
+<p class="lede">How a website can show you a notification when its tab is closed: the service worker that lives in your browser, the push service that delivers messages, and the encryption that keeps them private.</p>
+
+<h2>Service workers</h2>
+<p>A service worker is a JavaScript file a website registers with your browser:</p>
+<pre><code>navigator.serviceWorker.register('sw.js');</code></pre>
+<p>Unlike a page, it has no window. The browser starts it when there is something for it to do (a push message, a notification click) and stops it shortly after. It can show notifications, talk to open tabs (<code>postMessage</code>), and fetch from its own origin.</p>
+<p>Rules: only on HTTPS (or localhost), scoped to its path (<code>/sw.js</code> covers the whole site), updated when the file changes (<code>Cache-Control: no-cache</code> is set for it).</p>
+
+<h2>The parties in Web Push</h2>
+<script type="application/json" class="diagram" data-kind="flow" data-caption="Web Push: the app never talks to your browser directly; the browser maker's push service relays encrypted messages.">
+{"w": 880, "h": 290,
+ "nodes": [
+  {"id": "app", "x": 20, "y": 110, "w": 200, "title": "App server (Worker)", "icon": "⚙️", "kind": "cf", "lines": ["VAPID private key", "subscriptions in D1"]},
+  {"id": "ps", "x": 380, "y": 110, "w": 200, "title": "Push service", "icon": "📮", "kind": "ext", "lines": ["FCM (Chrome, Edge)", "Mozilla (Firefox)", "Apple (Safari)"]},
+  {"id": "br", "x": 680, "y": 40, "w": 180, "title": "Browser", "icon": "🖥", "kind": "browser", "lines": ["subscription keys", "(p256dh, auth)"]},
+  {"id": "sw", "x": 680, "y": 180, "w": 180, "title": "sw.js", "icon": "🧩", "kind": "browser", "lines": ["push → notification", "→ open tabs"]}
+ ],
+ "edges": [
+  {"from": "br", "to": "app", "label": "1. subscription (endpoint + keys)", "dashed": true, "dy1": -10, "dy2": -20},
+  {"from": "app", "to": "ps", "label": "2. encrypted POST + VAPID", "accent": true},
+  {"from": "ps", "to": "br", "label": "3. deliver"},
+  {"from": "br", "to": "sw", "label": "4. wake + decrypt"}
+ ]}
+</script>
+<ol class="steps-list">
+  <li><strong>Subscribe.</strong> <code>pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })</code>. The browser asks its push service for an <em>endpoint</em> (a unique URL for this browser and this app) and creates a key pair whose public part (<code>p256dh</code>) and a 16-byte secret (<code>auth</code>) it gives to the page. The page sends all three to the app server.</li>
+  <li><strong>Send.</strong> The app server encrypts a message for those keys and POSTs it to the endpoint, proving its identity with VAPID.</li>
+  <li><strong>Deliver.</strong> The push service keeps the message (up to the <code>TTL</code>) and delivers it when the browser is reachable.</li>
+  <li><strong>Handle.</strong> The browser decrypts it and fires a <code>push</code> event in the service worker, which must show a notification.</li>
+</ol>
+
+<h2>VAPID: proving who is sending</h2>
+<p>Without proof, anyone who learned your endpoint could spam you. VAPID (RFC 8292) fixes this:</p>
+<ul>
+  <li>The app has a key pair (P-256). The public key is given to the browser at subscribe time (<code>applicationServerKey</code>), so the subscription is tied to it.</li>
+  <li>Each send includes <code>Authorization: vapid t=&lt;JWT&gt;, k=&lt;public key&gt;</code>. The JWT says <code>{"aud": "https://fcm.googleapis.com", "exp": …, "sub": "mailto:…"}</code> and is signed with ES256 (ECDSA P-256 SHA-256).</li>
+  <li>The push service verifies the signature with the public key. Only the holder of the private key (a Worker secret) can send to these subscriptions.</li>
+</ul>
+
+<h2>Payload encryption (RFC 8291) in plain words</h2>
+<div class="callout eli5"><span class="callout-title">Explained simply</span>The browser hands out an open padlock (its public key) and keeps the key. The server makes a fresh one-time padlock of its own, combines the two in a clever way (ECDH) to get a secret only the browser can also work out, uses that secret to lock the message, and sends the locked box plus its own one-time padlock. The post office (push service) carries a box it cannot open.</div>
+<ol>
+  <li>The server creates a fresh ECDH key pair for this message.</li>
+  <li>It combines its private key with the browser's <code>p256dh</code> → a shared secret (the browser can compute the same from its side).</li>
+  <li>HKDF mixes in the <code>auth</code> secret and a random salt to derive a 16-byte content key and a 12-byte nonce.</li>
+  <li>AES-128-GCM encrypts the JSON (plus a padding delimiter byte).</li>
+  <li>The body is: salt (16 bytes) + record size (4) + key length (1) + server public key (65) + ciphertext. Header <code>Content-Encoding: aes128gcm</code>.</li>
+</ol>
+<p>This app implements it in about 60 lines (<code>cloud/src/push.ts</code>). The test suite decrypts the output with Node's independent crypto implementation to prove it is correct.</p>
+
+<h2>Rules browsers enforce</h2>
+<ul>
+  <li><strong>Permission first</strong>, requested from a user click.</li>
+  <li><strong><code>userVisibleOnly: true</code></strong>: every push must show a notification. Sites that push silently get their permission revoked (Safari especially), which is why <code>sw.js</code> always shows one.</li>
+  <li><strong>iPhone/iPad</strong>: Web Push only for sites added to the Home Screen (iOS 16.4+).</li>
+  <li><strong>Subscriptions can expire</strong>: push services return 404/410; the app deletes them. <code>pushsubscriptionchange</code> lets the service worker re-subscribe.</li>
+</ul>
+
+<h2>Headers used when sending</h2>
+<table>
+  <tr><th>Header</th><th>Value here</th></tr>
+  <tr><td><code>Authorization</code></td><td><code>vapid t=…, k=…</code></td></tr>
+  <tr><td><code>Content-Encoding</code></td><td><code>aes128gcm</code></td></tr>
+  <tr><td><code>TTL</code></td><td><code>86400</code> (hold for a day if the device is offline)</td></tr>
+  <tr><td><code>Urgency</code></td><td><code>high</code> for important events, else <code>normal</code></td></tr>
+</table>
+
+<h2>Safety: the endpoint is user-supplied</h2>
+<p>A malicious client could submit an "endpoint" pointing at an internal address, hoping the server would send requests there (SSRF). The Worker only accepts HTTPS endpoints whose host is, or ends with, an allow-listed push service: <code>fcm.googleapis.com</code>, <code>updates.push.services.mozilla.com</code>, <code>push.services.mozilla.com</code>, <code>web.push.apple.com</code>, <code>notify.windows.com</code>.</p>

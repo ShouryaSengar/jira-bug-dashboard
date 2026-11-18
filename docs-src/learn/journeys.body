@@ -1,0 +1,90 @@
+<h1>User journeys and use cases</h1>
+<p class="lede">Who uses the app, what they want to achieve, and the path they take. Engineers call this "use cases"; it is the bridge between the product and the design.</p>
+
+<h2>The people (actors)</h2>
+<table>
+  <tr><th>Actor</th><th>Wants to…</th></tr>
+  <tr><td><strong>Developer</strong></td><td>see every bug assigned to them, notice changes immediately, avoid missing a reopened bug</td></tr>
+  <tr><td><strong>Tech lead / QA lead</strong></td><td>see all bugs of an epic, their age and status, who holds them, and how the backlog trends</td></tr>
+  <tr><td><strong>Visitor</strong></td><td>try the app with sample data before connecting anything</td></tr>
+  <tr><td><strong>Operator</strong> (you, hosting the Cloud edition)</td><td>deploy, monitor, keep costs at zero, respond to privacy duties</td></tr>
+  <tr><td><strong>Atlassian</strong> (a system, not a person)</td><td>authenticate users, serve Jira data, ask for personal-data reports</td></tr>
+  <tr><td><strong>Cloudflare</strong> (a system)</td><td>run the code, store data, wake the monitor every minute</td></tr>
+</table>
+
+<h2>Use case diagram</h2>
+<script type="application/json" class="diagram" data-kind="flow" data-caption="Use cases: each actor (left and right) connects to the things it does (centre).">
+{"w": 840, "h": 500,
+ "zones": [
+  {"x": 270, "y": 10, "w": 300, "h": 476, "label": "Jira Bug Dashboard", "kind": "browser"}
+ ],
+ "nodes": [
+  {"id": "dev", "x": 20, "y": 92, "w": 160, "title": "Developer", "icon": "👩‍💻", "kind": "user"},
+  {"id": "lead", "x": 20, "y": 250, "w": 160, "title": "Tech / QA lead", "icon": "🧑‍💼", "kind": "user"},
+  {"id": "vis", "x": 20, "y": 410, "w": 160, "title": "Visitor", "icon": "👀", "kind": "user"},
+  {"id": "u1", "x": 300, "y": 40, "w": 240, "h": 34, "title": "Sign in with Atlassian", "kind": "plain"},
+  {"id": "u2", "x": 300, "y": 82, "w": 240, "h": 34, "title": "See my bugs (For You)", "kind": "plain"},
+  {"id": "u3", "x": 300, "y": 166, "w": 240, "h": 34, "title": "Get notified + voice", "kind": "plain"},
+  {"id": "u4", "x": 300, "y": 124, "w": 240, "h": 34, "title": "Open bug details", "kind": "plain"},
+  {"id": "u5", "x": 300, "y": 216, "w": 240, "h": 34, "title": "Track an epic", "kind": "plain"},
+  {"id": "u6", "x": 300, "y": 258, "w": 240, "h": 34, "title": "Filter, sort, export", "kind": "plain"},
+  {"id": "u7", "x": 300, "y": 300, "w": 240, "h": 34, "title": "Configure JARVIS", "kind": "plain"},
+  {"id": "u8", "x": 300, "y": 342, "w": 240, "h": 34, "title": "Disconnect / delete", "kind": "plain"},
+  {"id": "u9", "x": 300, "y": 392, "w": 240, "h": 34, "title": "Try sample data", "kind": "plain"},
+  {"id": "u10", "x": 300, "y": 434, "w": 240, "h": 34, "title": "Read these guides", "kind": "plain"},
+  {"id": "atl", "x": 660, "y": 82, "w": 160, "title": "Atlassian", "icon": "🔑", "kind": "ext"},
+  {"id": "cf", "x": 660, "y": 166, "w": 160, "title": "Cloudflare", "icon": "☁️", "kind": "cf"},
+  {"id": "op", "x": 660, "y": 330, "w": 160, "title": "Operator", "icon": "🛠", "kind": "user"}
+ ],
+ "edges": [
+  {"from": "dev", "to": "u1", "via": [[285, 57.0]]},
+  {"from": "dev", "to": "u2", "via": [[285, 99.0]]},
+  {"from": "dev", "to": "u4", "via": [[285, 141.0]]},
+  {"from": "dev", "to": "u3", "via": [[285, 183.0]]},
+  {"from": "lead", "to": "u5", "via": [[285, 233.0]]},
+  {"from": "lead", "to": "u6", "via": [[285, 275.0]]},
+  {"from": "lead", "to": "u7", "via": [[285, 317.0]]},
+  {"from": "vis", "to": "u9", "via": [[285, 409.0]]},
+  {"from": "vis", "to": "u10", "via": [[285, 451.0]]},
+  {"from": "atl", "to": "u1", "dashed": true, "via": [[555, 57.0]]},
+  {"from": "atl", "to": "u2", "dashed": true, "via": [[555, 99.0]]},
+  {"from": "atl", "to": "u4", "dashed": true, "via": [[555, 141.0]]},
+  {"from": "cf", "to": "u3", "dashed": true, "via": [[555, 183.0]]},
+  {"from": "op", "to": "u8", "dashed": true, "via": [[555, 359.0]]}
+ ]}
+</script>
+
+<h2>Journey 1: a developer's first day with the Cloud edition</h2>
+<ol class="steps-list">
+  <li><strong>Opens the link</strong> a colleague shared. Sees the landing page with "Sign in with Atlassian" and "Try with sample data".</li>
+  <li><strong>Signs in</strong>. Atlassian asks which Jira site to share and shows the read-only permissions. They click Accept. (<a href="flow-signin.html">What happens underneath</a>.)</li>
+  <li><strong>Lands on For You</strong>, greeted by name, seeing every bug assigned to them.</li>
+  <li><strong>Opens JARVIS</strong>, clicks <em>Enable</em> for background notifications, allows the browser prompt, presses <em>Test announcement</em> and hears the voice.</li>
+  <li><strong>Closes the laptop.</strong> Within minutes of a colleague reopening one of their bugs, their phone or desktop shows "ABC-123 was reopened". (<a href="flow-push.html">The notification's journey</a>.)</li>
+  <li><strong>Next morning</strong> they open the dashboard; JARVIS says "Good morning. While you were away, 3 things happened across 2 of your bugs."</li>
+</ol>
+
+<h2>Journey 2: a lead reviewing an epic</h2>
+<ol class="steps-list">
+  <li>Switches to <strong>Epics</strong>, pastes the epic's Jira URL into the Track box.</li>
+  <li>Reads the progress bar and KPIs: 34 open, 9 older than 7 days, 4 unassigned.</li>
+  <li>Clicks the <em>Unassigned</em> tile: the table filters. Clicks <em>2 - Major</em> in the severity chart: filters further.</li>
+  <li>Exports the result as CSV for the stand-up.</li>
+  <li>Presses <em>Mark all as seen</em>. Tomorrow, NEW and UPDATED markers show exactly what changed overnight.</li>
+</ol>
+
+<h2>Journey 3: a visitor trying the demo</h2>
+<p>Opens the GitHub Pages site. With no server available, the page detects <em>demo mode</em> and generates sample data in the browser. Every feature works, including simulated JARVIS events, so the visitor can hear a briefing without connecting anything.</p>
+
+<h2>Journey 4: the operator</h2>
+<p>Deploys with Wrangler, sets secrets, registers the Atlassian app, watches logs with <code>wrangler tail</code>, checks CPU metrics, and lets the weekly personal-data report run. All of it is described in <a href="deploy-cloud.html">Deploy the Cloud edition</a> and <a href="operate.html">Operating in production</a>.</p>
+
+<h2>What this tells the design</h2>
+<table>
+  <tr><th>Need from the journeys</th><th>Design consequence</th></tr>
+  <tr><td>Notifications when the laptop is closed</td><td>Monitoring must run on a server on a schedule (cron), not in the page; delivery needs Web Push and a service worker</td></tr>
+  <tr><td>Anyone can sign in, nothing to install</td><td>A hosted backend with OAuth, multi-user isolation, encrypted tokens</td></tr>
+  <tr><td>Try before connecting</td><td>A demo mode that needs no server at all</td></tr>
+  <tr><td>Never miss a reopen, never repeat</td><td>Change detection from the changelog with stable ids, not from timestamps</td></tr>
+  <tr><td>Free to host</td><td>Fit inside Cloudflare's free limits: small, incremental work per minute</td></tr>
+</table>

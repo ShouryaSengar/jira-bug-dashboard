@@ -1,0 +1,59 @@
+<h1>Workers: how your code runs</h1>
+<p class="lede">What a Cloudflare Worker is, how it starts, what it may and may not do, and the handful of rules that shaped every design choice in the Cloud edition.</p>
+
+<h2>A Worker is a function, not a server</h2>
+<p>A traditional server is a program that starts, then waits for requests forever. A Worker is different: Cloudflare keeps your code ready in every data centre, and <em>calls your function</em> when a request (or a cron tick) arrives. Your function returns a response and that is it.</p>
+<pre><code>export default {
+  async fetch(request, env, ctx) {
+    return new Response('Hello from ' + request.cf?.colo);   // the data centre's code, e.g. "BOM"
+  },
+};</code></pre>
+<ul>
+  <li><code>request</code>: a standard web <code>Request</code> (URL, method, headers, body).</li>
+  <li><code>env</code>: your <em>bindings</em>: variables, secrets, the database (<code>env.DB</code>), assets (<code>env.ASSETS</code>).</li>
+  <li><code>ctx</code>: extras such as <code>ctx.waitUntil(promise)</code> to finish background work after responding.</li>
+</ul>
+
+<h2>Isolates: why it starts in milliseconds</h2>
+<div class="callout eli5"><span class="callout-title">Explained simply</span>A normal server is like renting a whole flat for each guest. Workers are like a hotel with many small rooms in one building: each guest (Worker) gets a sealed room (an <em>isolate</em>) inside the same JavaScript engine (V8, the one in Chrome). Opening a room takes milliseconds; building a flat takes seconds.</div>
+<ul>
+  <li>No cold-start problem worth mentioning; startup must stay under 1 second (this app: 2 ms).</li>
+  <li>An isolate may be reused for several requests, so global variables <em>may</em> survive a while, but you must never rely on that. Anything important goes in D1. (This app only caches harmless things in memory, such as the signed VAPID token.)</li>
+  <li>The runtime is called <strong>workerd</strong>; <code>wrangler dev</code> runs the same runtime on your computer.</li>
+</ul>
+
+<h2>The handlers this app uses</h2>
+<table>
+  <tr><th>Handler</th><th>Called when</th><th>Here</th></tr>
+  <tr><td><code>fetch(request, env, ctx)</code></td><td>an HTTP request reaches the Worker</td><td>API and sign-in</td></tr>
+  <tr><td><code>scheduled(controller, env, ctx)</code></td><td>a cron trigger fires</td><td>JARVIS monitor every minute</td></tr>
+</table>
+<p>Others exist (<code>queue</code>, <code>email</code>, <code>tail</code>…) but are not needed.</p>
+
+<h2>The web platform, not Node.js</h2>
+<p>Workers implement web standards: <code>fetch</code>, <code>Request</code>/<code>Response</code>, <code>URL</code>, <code>crypto.subtle</code> (Web Crypto), <code>TextEncoder</code>, <code>atob</code>/<code>btoa</code>, streams. Many Node APIs exist behind a compatibility flag, but this project avoids them: the shared core uses only web standards, so the exact same code runs in Node and in workerd.</p>
+<div class="callout warn"><span class="callout-title">A real gotcha</span>Cloudflare's TypeScript types name the ECDH parameter <code>$public</code> instead of the standard <code>public</code> (because <code>public</code> is a reserved word in their generator). The runtime expects <code>public</code>. The code uses <code>public</code> with a type cast, and a test proves it works by decrypting the result with Node.</div>
+
+<h2>The limits that matter (Workers Free)</h2>
+<table>
+  <tr><th>Limit</th><th>Value</th><th>What it means in practice</th></tr>
+  <tr><td>Requests</td><td>100,000 per day (resets 00:00 UTC)</td><td>static asset requests do not count</td></tr>
+  <tr><td>CPU time</td><td>10 ms per invocation (HTTP or cron)</td><td>waiting for network or the database does <em>not</em> count; only computing does</td></tr>
+  <tr><td>Subrequests</td><td>50 per invocation, D1 queries included</td><td>each <code>fetch()</code> and each D1 call uses one; a <code>db.batch()</code> counts once</td></tr>
+  <tr><td>Simultaneous connections</td><td>6 waiting for response headers</td><td>a 7th parallel fetch queues</td></tr>
+  <tr><td>Memory</td><td>128 MB</td><td>do not hold huge payloads</td></tr>
+  <tr><td>Cron triggers</td><td>5 per account</td><td>one is enough for any number of users</td></tr>
+  <tr><td>Worker size</td><td>64 MiB uncompressed</td><td>this one is 90 KiB</td></tr>
+</table>
+<p>The free plan never bills you. Over a limit, requests fail (error 1027 for the daily limit, 1102 for CPU) until it resets. Numbers and capacity: <a href="cf-limits.html">The free tier and capacity maths</a>.</p>
+
+<h2>Why the Cloud edition looks the way it does</h2>
+<ul>
+  <li><strong>50 subrequests</strong> → a <code>Budget</code> object counts every call; D1 writes are batched; the due-users query returns everything in one row per user.</li>
+  <li><strong>10 ms CPU</strong> → at most 12 users per cron run; avoid parsing large responses (field search instead of the full field list; statuses looked up one by one when unknown).</li>
+  <li><strong>No memory between runs</strong> → all state in D1.</li>
+  <li><strong>Runs can stop</strong> (limits, deploys, crashes) → every step is resumable and idempotent.</li>
+</ul>
+
+<h2>Versions and deployments</h2>
+<p>Every <code>wrangler deploy</code> creates a new <em>version</em> with an id (for example <code>bab7e433-…</code>) and makes it live within seconds worldwide. Old versions are kept, so you can roll back (<code>wrangler rollback</code>). During a deploy, running requests finish on the old version. See <a href="operate.html">Operating in production</a>.</p>

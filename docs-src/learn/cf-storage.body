@@ -1,0 +1,92 @@
+<h1>D1, assets, cron, secrets and environments</h1>
+<p class="lede">Every Cloudflare feature the Cloud edition uses, with the exact configuration and commands, and how they fit together in <code>wrangler.jsonc</code>.</p>
+
+<h2>Bindings: how code reaches resources</h2>
+<p>A Worker cannot "connect" to a database with a password. Instead you declare a <strong>binding</strong> in the configuration, and Cloudflare injects an object into <code>env</code>:</p>
+<pre><code>"d1_databases": [{ "binding": "DB", "database_name": "jbd-cloud", "database_id": "9e6d337d-…" }]
+// in code:
+const row = await env.DB.prepare('SELECT name FROM users WHERE id = ?').bind(id).first();</code></pre>
+<p>No credentials in code, and the Worker can only reach what is bound to it.</p>
+
+<h2>D1: the database</h2>
+<ul>
+  <li><strong>SQLite inside</strong>: standard SQL, tables, indexes, foreign keys, transactions.</li>
+  <li><strong>One primary location</strong> (this one: APAC), chosen near the first request. Reads and writes go there.</li>
+  <li><strong>API</strong>: <code>prepare(sql).bind(...).first() / .all() / .run()</code>, and <code>env.DB.batch([...])</code> for several statements as one transaction and one subrequest.</li>
+  <li><strong>Always bind parameters</strong> (<code>?</code>) instead of building SQL strings from input: that prevents SQL injection.</li>
+  <li><strong>Local copy</strong>: <code>--local</code> uses a SQLite file under <code>.wrangler/state</code>; <code>--remote</code> is the real one.</li>
+  <li><strong>Time travel</strong>: D1 can restore a database to a point in the past (7 days on Free).</li>
+</ul>
+<pre><code>npx wrangler d1 create jbd-cloud                                    # create (prints the id)
+npx wrangler d1 migrations apply DB --remote --env production       # apply schema files
+npx wrangler d1 execute DB --remote --env production --command "SELECT COUNT(*) FROM users"
+npx wrangler d1 export jbd-cloud --remote --output backup.sql       # backup</code></pre>
+
+<h2>Workers Static Assets</h2>
+<pre><code>"assets": {
+  "directory": "./dist-assets",            // what to upload
+  "binding": "ASSETS",                     // env.ASSETS.fetch(request) serves a file
+  "run_worker_first": ["/api/*", "/auth/*"] // only these paths run your code
+}</code></pre>
+<ul>
+  <li>Requests that match a file are served directly, free and unlimited.</li>
+  <li>HTML handling: <code>/privacy.html</code> redirects to the cleaner <code>/privacy</code>; <code>/learn/</code> serves <code>/learn/index.html</code>.</li>
+  <li>A <code>_headers</code> file in the directory adds response headers per path (this app's CSP, HSTS, no framing).</li>
+  <li>Assets are uploaded with each deploy; unchanged files are skipped.</li>
+</ul>
+
+<h2>Cron Triggers</h2>
+<pre><code>"triggers": { "crons": ["* * * * *"] }    // minute hour day-of-month month day-of-week</code></pre>
+<table>
+  <tr><th>Expression</th><th>Meaning</th></tr>
+  <tr><td><code>* * * * *</code></td><td>every minute</td></tr>
+  <tr><td><code>*/5 * * * *</code></td><td>every 5 minutes</td></tr>
+  <tr><td><code>0 9 * * 1-5</code></td><td>09:00 UTC on weekdays</td></tr>
+  <tr><td><code>37 * * * *</code></td><td>minute 37 of every hour</td></tr>
+</table>
+<ul>
+  <li>Times are UTC. The Worker's <code>scheduled()</code> receives <code>event.scheduledTime</code>.</li>
+  <li>One trigger can serve all users: this app uses one every-minute trigger and decides inside which users are due (their slot), plus hourly jobs at minutes 13 and 37.</li>
+  <li>Local testing: <code>wrangler dev --test-scheduled</code>, then <code>curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"</code>.</li>
+</ul>
+
+<h2>Variables vs secrets</h2>
+<table>
+  <tr><th></th><th>Variables (<code>vars</code>)</th><th>Secrets</th></tr>
+  <tr><td>Where defined</td><td>in <code>wrangler.jsonc</code>, committed to Git</td><td><code>wrangler secret put NAME</code>, or the dashboard</td></tr>
+  <tr><td>Visible</td><td>to anyone who reads the repo</td><td>never shown again after setting</td></tr>
+  <tr><td>Use for</td><td>public settings: origin, client id, limits, public key</td><td>keys, client secret, contact email</td></tr>
+  <tr><td>This app</td><td><code>APP_ORIGIN</code>, <code>ATLASSIAN_CLIENT_ID</code>, <code>ATLASSIAN_AUTH_BASE</code>, <code>ATLASSIAN_API_BASE</code>, <code>VAPID_PUBLIC_KEY</code>, <code>PUSH_ENDPOINT_HOSTS</code>, <code>MONITOR_*</code>, <code>MIN_INTERVAL_MIN</code></td><td><code>ATLASSIAN_CLIENT_SECRET</code>, <code>TOKEN_ENC_KEY</code>, <code>VAPID_PRIVATE_KEY</code>, <code>VAPID_SUBJECT</code></td></tr>
+</table>
+<p>Both appear in code as <code>env.NAME</code>. A name cannot be both a variable and a secret. Locally, secrets come from <code>cloud/.dev.vars</code> (git-ignored).</p>
+<div class="callout tip"><span class="callout-title">Setting secrets without leaking them</span><code>wrangler secret put NAME</code> prompts and hides your input. For generated values, pipe them in: the app's <code>set-prod-secrets.mjs</code> generates keys in memory and writes them to Wrangler's standard input, so they never appear on screen, in a file, or in shell history.</div>
+
+<h2>Environments</h2>
+<p>One configuration file, several copies of the app:</p>
+<pre><code>"env": {
+  "dev":        { "name": "jira-bug-dashboard-cloud-dev", "vars": { … mocks … }, "d1_databases": [ … ], "triggers": { … } },
+  "production": { "name": "jira-bug-dashboard-cloud",     "vars": { … real … },  "d1_databases": [ … ], "triggers": { … } }
+}</code></pre>
+<ul>
+  <li>Pick one with <code>--env dev</code> or <code>--env production</code> on every command.</li>
+  <li>Bindings, vars and triggers are <strong>not inherited</strong> from the top level: repeat them in each environment.</li>
+  <li>Secrets are per environment too.</li>
+</ul>
+
+<h2>How it all fits</h2>
+<script type="application/json" class="diagram" data-kind="flow" data-caption="What wrangler deploy --env production assembles.">
+{"w": 820, "h": 300,
+ "nodes": [
+  {"id": "cfg", "x": 20, "y": 30, "w": 220, "title": "wrangler.jsonc", "kind": "note", "lines": ["main: src/index.ts", "assets: ./dist-assets", "env.production: vars, D1, cron"]},
+  {"id": "code", "x": 20, "y": 160, "w": 220, "title": "Code", "kind": "plain", "lines": ["cloud/src/*.ts", "../src/core/*.ts", "→ bundled by esbuild"]},
+  {"id": "worker", "x": 320, "y": 90, "w": 200, "title": "Worker version", "icon": "⚙️", "kind": "cf", "lines": ["script (90 KiB)", "+ 16 asset files"]},
+  {"id": "sec", "x": 600, "y": 20, "w": 200, "h": 40, "title": "Secrets (4)", "icon": "🔐", "kind": "note"},
+  {"id": "d1", "x": 600, "y": 90, "w": 200, "h": 40, "title": "D1: jbd-cloud", "icon": "🗄", "kind": "db"},
+  {"id": "cron", "x": 600, "y": 160, "w": 200, "h": 40, "title": "Cron: * * * * *", "icon": "⏰", "kind": "cf"},
+  {"id": "url", "x": 600, "y": 230, "w": 200, "h": 40, "title": "…workers.dev", "icon": "🌐", "kind": "browser"}
+ ],
+ "edges": [
+  {"from": "cfg", "to": "worker"}, {"from": "code", "to": "worker"},
+  {"from": "sec", "to": "worker", "dashed": true}, {"from": "worker", "to": "d1", "both": true}, {"from": "cron", "to": "worker", "dashed": true}, {"from": "worker", "to": "url"}
+ ]}
+</script>

@@ -10,15 +10,69 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="security-threats">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>Threat model and defences</h1>
-<p class="lede">Who might attack the app, what they would want, how they might try, and the specific defence for each. Every defence listed is implemented and most are covered by automated tests.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#security">Security and privacy</a></div><h1>Threat model and defences</h1>
+<p class="lede">Who might attack the app, what they would want, how they might try, and the specific defence for each. Every defence listed is implemented and most are covered by automated tests.</p><div class="meta-line"><span>⏱ 13 min read</span><span>Guide 36 of 47</span></div>
 
-<h2>What is worth protecting</h2>
+<h2 id="what-is-worth-protecting">What is worth protecting</h2>
 <ol>
   <li><strong>Jira access</strong> (OAuth tokens, API tokens): the crown jewels; they unlock company data.</li>
   <li><strong>Sessions</strong>: a stolen session acts as the user in the app.</li>
@@ -26,7 +80,7 @@
   <li><strong>Availability</strong>: staying inside the free tier for everyone.</li>
 </ol>
 
-<h2>Attackers</h2>
+<h2 id="attackers">Attackers</h2>
 <table>
   <tr><th>Who</th><th>Can do</th></tr>
   <tr><td>A random website you visit</td><td>run JavaScript in your browser, send requests to other sites with your cookies</td></tr>
@@ -36,60 +90,63 @@
   <tr><td>A malicious Jira text</td><td>a bug summary or comment containing HTML/script</td></tr>
 </table>
 
-<h2>Threats and defences</h2>
-<h3>Token theft</h3>
+<h2 id="threats-and-defences">Threats and defences</h2>
+<h3 id="token-theft">Token theft</h3>
 <ul>
   <li>Tokens never reach the browser (the server calls Jira).</li>
   <li>Encrypted at rest (AES-256-GCM), key held separately as a Worker secret; bound to the user id.</li>
   <li>Never logged; responses never include them.</li>
   <li>Read-only scopes; resource-level grants.</li>
 </ul>
-<h3>Session hijacking</h3>
+<h3 id="session-hijacking">Session hijacking</h3>
 <ul>
   <li>32 random bytes per session (unguessable); only its SHA-256 hash stored.</li>
   <li>Cookie <code>__Host-</code>, HttpOnly, Secure, SameSite=Lax; HSTS forces HTTPS.</li>
   <li>30-day absolute and 7-day idle expiry; disconnect signs out everywhere.</li>
 </ul>
-<h3>CSRF (cross-site request forgery)</h3>
+<h3 id="csrf-cross-site-request-forgery">CSRF (cross-site request forgery)</h3>
 <p>Custom <code>X-JBD</code> header + Origin check + <code>Sec-Fetch-Site</code> check + SameSite cookies on every state change. Tests send requests without the header, with a foreign Origin and with <code>Sec-Fetch-Site: cross-site</code>: all refused.</p>
-<h3>Login CSRF and OAuth code theft</h3>
+<h3 id="login-csrf-and-oauth-code-theft">Login CSRF and OAuth code theft</h3>
 <p>Random <code>state</code> bound to an HttpOnly cookie, compared in constant time; codes are single-use and need the client secret; Atlassian only redirects to the registered callback. Tests: forged state, missing cookie, code replay.</p>
-<h3>IDOR (seeing someone else's data)</h3>
+<h3 id="idor-seeing-someone-else-s-data">IDOR (seeing someone else's data)</h3>
 <p>No endpoint accepts a user id. Every query includes <code>user_id = &lt;session user&gt;</code>. Client-supplied ids (event ids, device ids, site ids) are combined with that filter. Tests: a second user tries to read, mark read, clear, unsubscribe and switch to another user's data: no effect.</p>
-<h3>XSS (cross-site scripting)</h3>
+<h3 id="xss-cross-site-scripting">XSS (cross-site scripting)</h3>
 <ul>
   <li>Every dynamic value is HTML-escaped (<code>esc()</code>); links pass through <code>safeUrl()</code> (http/https only).</li>
   <li>Strict CSP: <code>script-src 'self'</code>, no inline scripts, <code>frame-ancestors 'none'</code>.</li>
   <li>Text from Jira is rendered as text, never as HTML.</li>
 </ul>
-<h3>SSRF (making the server call internal addresses)</h3>
+<h3 id="ssrf-making-the-server-call-internal-addresses">SSRF (making the server call internal addresses)</h3>
 <p>The only user-supplied URLs the server calls are push endpoints: HTTPS only, no credentials in the URL, host must be an allow-listed push service. Tests try <code>169.254.169.254</code>, look-alike hosts and HTTP.</p>
-<h3>Injection (SQL, JQL, shell)</h3>
+<h3 id="injection-sql-jql-shell">Injection (SQL, JQL, shell)</h3>
 <ul>
   <li>SQL: always bound parameters (<code>?</code>), never string-built from input.</li>
   <li>JQL: issue keys validated by regex; issue types quoted and stripped of quotes/backslashes.</li>
   <li>Shell (Local edition notifications): <code>execFile</code> with an argument array, never a shell string.</li>
 </ul>
-<h3>Abuse and denial of service</h3>
+<h3 id="abuse-and-denial-of-service">Abuse and denial of service</h3>
 <ul>
   <li>Sign-in limited per IP (D1, 30 per 10 minutes); per-user limits on API, "check now" and test pushes; request bodies capped at 16 KB.</li>
   <li>Monitor work bounded per run; back-off on errors.</li>
   <li>Cloudflare's network absorbs volumetric attacks in front of the Worker.</li>
 </ul>
-<h3>Secrets in the repository</h3>
+<h3 id="secrets-in-the-repository">Secrets in the repository</h3>
 <p><code>.dev.vars</code> and build output are git-ignored; production secrets are set with <code>wrangler secret put</code> or piped in by script; the contact email is a secret so it is not published; staged changes are scanned for key-like strings before commits.</p>
-<h3>Local edition specifics</h3>
+<h3 id="local-edition-specifics">Local edition specifics</h3>
 <p>Binds to 127.0.0.1; Host header allow-list (DNS rebinding); credentials file mode 0600 outside the project.</p>
 
-<h2>Residual risks (honest list)</h2>
+<h2 id="residual-risks-honest-list">Residual risks (honest list)</h2>
 <ul>
   <li>The operator of a Cloud instance controls the Worker secrets and could, in principle, decrypt users' tokens. Users must trust the operator; teams that do not can self-host.</li>
   <li>The in-memory rate limiter is per isolate; a determined attacker spreading requests can exceed it (Cloudflare WAF rules on a custom domain help).</li>
   <li>Browser extensions with full page access can read anything the page shows (not tokens).</li>
   <li>Dependencies: deliberately few (TypeScript and Wrangler at build time only), but not zero.</li>
-</ul>
+</ul><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="web-speech.html"><small>← Previous</small>Speech, notifications and browser rules</a><a class="next" href="security-crypto.html"><small>Next →</small>The cryptography, simply</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#what-is-worth-protecting">What is worth protecting</a><a href="#attackers">Attackers</a><a href="#threats-and-defences">Threats and defences</a><a href="#token-theft" class="h3">Token theft</a><a href="#session-hijacking" class="h3">Session hijacking</a><a href="#csrf-cross-site-request-forgery" class="h3">CSRF (cross-site request forgery)</a><a href="#login-csrf-and-oauth-code-theft" class="h3">Login CSRF and OAuth code theft</a><a href="#idor-seeing-someone-else-s-data" class="h3">IDOR (seeing someone else&#39;s data)</a><a href="#xss-cross-site-scripting" class="h3">XSS (cross-site scripting)</a><a href="#ssrf-making-the-server-call-internal-addresses" class="h3">SSRF (making the server call internal addresses)</a><a href="#injection-sql-jql-shell" class="h3">Injection (SQL, JQL, shell)</a><a href="#abuse-and-denial-of-service" class="h3">Abuse and denial of service</a><a href="#secrets-in-the-repository" class="h3">Secrets in the repository</a><a href="#local-edition-specifics" class="h3">Local edition specifics</a><a href="#residual-risks-honest-list">Residual risks (honest list)</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>

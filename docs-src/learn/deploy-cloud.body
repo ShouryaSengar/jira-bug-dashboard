@@ -1,0 +1,88 @@
+<h1>Deploy the Cloud edition, step by step</h1>
+<p class="lede">The exact path used to put this app on Cloudflare for free, in order, including every surprise along the way. Follow it top to bottom and you will have your own instance.</p>
+
+<div class="callout info"><span class="callout-title">Time and cost</span>About 45 minutes the first time. Cost: zero (Cloudflare Workers Free, D1 Free, Atlassian developer console). You need a Cloudflare account and an Atlassian account.</div>
+
+<h2>The plan</h2>
+<script type="application/json" class="diagram" data-kind="flow" data-caption="Order matters: the Worker URL is needed for the Atlassian callback, and the client id/secret are needed for sign-in.">
+{"w": 840, "h": 260,
+ "nodes": [
+  {"id": "a", "x": 10, "y": 30, "w": 150, "h": 60, "title": "1. Prepare", "kind": "plain", "sub": "install, test locally"},
+  {"id": "b", "x": 180, "y": 30, "w": 150, "h": 60, "title": "2. Login", "kind": "cf", "sub": "wrangler login"},
+  {"id": "c", "x": 350, "y": 30, "w": 150, "h": 60, "title": "3. Database", "kind": "db", "sub": "d1 create + migrate"},
+  {"id": "d", "x": 520, "y": 30, "w": 150, "h": 60, "title": "4. First deploy", "kind": "cf", "sub": "get the URL"},
+  {"id": "e", "x": 690, "y": 30, "w": 140, "h": 60, "title": "5. Keys", "kind": "note", "sub": "VAPID + token key"},
+  {"id": "f", "x": 690, "y": 160, "w": 140, "h": 60, "title": "6. Atlassian app", "kind": "ext", "sub": "callback, scopes"},
+  {"id": "g", "x": 520, "y": 160, "w": 150, "h": 60, "title": "7. Client id/secret", "kind": "note", "sub": "config + secret"},
+  {"id": "h", "x": 350, "y": 160, "w": 150, "h": 60, "title": "8. Deploy + sign in", "kind": "cf", "sub": "verify live"},
+  {"id": "i", "x": 180, "y": 160, "w": 150, "h": 60, "title": "9. Share", "kind": "user", "sub": "distribution"}
+ ],
+ "edges": [{"from": "a", "to": "b"}, {"from": "b", "to": "c"}, {"from": "c", "to": "d"}, {"from": "d", "to": "e"}, {"from": "e", "to": "f"}, {"from": "f", "to": "g"}, {"from": "g", "to": "h"}, {"from": "h", "to": "i"}]}
+</script>
+
+<h2>1. Prepare</h2>
+<pre><code>git clone https://github.com/ShouryaSengar/jira-bug-dashboard.git
+cd jira-bug-dashboard
+npm install                       # root: TypeScript for the shared frontend
+cd cloud && npm install           # Cloud: wrangler + workers types (kept separate from the Local edition)</code></pre>
+<p>Optional but recommended: run it locally against the mock first (no accounts needed): see <a href="testing.html">How this app is tested</a>.</p>
+
+<h2>2. Log Wrangler in to Cloudflare</h2>
+<pre><code>npx wrangler login                 # or: npx wrangler login --browser=false
+npx wrangler whoami                # shows your account name and id</code></pre>
+<div class="callout warn"><span class="callout-title">What went wrong for us</span>The first link opened in the default browser (Edge) while we approved in another (Brave): Cloudflare answered "No CSRF value available in the session cookie". A stale tab then sent an old <code>state</code> ("query string parameter doesn't match"). Fix: <code>--browser=false</code>, open the printed link in the browser you are signed in with, approve once, close old tabs.</div>
+
+<h2>3. Create the database</h2>
+<pre><code>npx wrangler d1 create jbd-cloud</code></pre>
+<p>Copy the printed <code>database_id</code> into <code>cloud/wrangler.jsonc</code> under <code>env.production.d1_databases</code>, keeping <code>"binding": "DB"</code>. (Wrangler offers to add it itself with a different binding name; decline.) Then create the tables:</p>
+<pre><code>npm run build                                                   # shared frontend + dist-assets
+npx wrangler d1 migrations apply DB --remote --env production   # 0001, 0002…</code></pre>
+
+<h2>4. First deploy, to get your URL</h2>
+<pre><code>npx wrangler deploy --env production</code></pre>
+<div class="callout warn"><span class="callout-title">workers.dev subdomain</span>A new account must have a <code>workers.dev</code> subdomain. Wrangler asks interactively; in a non-interactive shell it fails and prints a dashboard link (which for us was a 404, the dashboard had moved). Check whether you already have one: <code>curl -H "Authorization: Bearer $TOKEN" https://api.cloudflare.com/client/v4/accounts/&lt;account-id&gt;/workers/subdomain</code>, or in the dashboard under Workers &amp; Pages. Ours already existed (<code>shouryacode2021</code>).</div>
+<p>Your URL is <code>https://jira-bug-dashboard-cloud.&lt;subdomain&gt;.workers.dev</code>. Put it in <code>env.production.vars.APP_ORIGIN</code>. Until configuration is complete, <code>/api/config</code> answers <em>503 "not configured: missing …"</em> and the page falls back to demo mode. That is intended.</p>
+
+<h2>5. Keys and secrets</h2>
+<pre><code>node scripts/set-prod-secrets.mjs mailto:you@example.com</code></pre>
+<p>This one script generates a VAPID key pair and a 32-byte token-encryption key in memory, pipes <code>TOKEN_ENC_KEY</code>, <code>VAPID_PRIVATE_KEY</code> and <code>VAPID_SUBJECT</code> straight into <code>wrangler secret put</code>, and writes only the public key into <code>wrangler.jsonc</code>. Check with <code>npx wrangler secret list --env production</code> (names only). Redeploy afterwards.</p>
+<div class="callout warn"><span class="callout-title">Run it once</span>Running it again replaces the keys: existing push subscriptions stop working and every user must sign in again.</div>
+
+<h2>6. Register the Atlassian app</h2>
+<p>At <a href="https://developer.atlassian.com/console/myapps/">developer.atlassian.com/console/myapps</a>: <em>Create → OAuth 2.0 integration</em>; Permissions: Jira API classic scopes <code>read:jira-work</code>, <code>read:jira-user</code>, and User identity API; Authorization: callback <code>https://&lt;your-url&gt;/auth/callback</code>, resource-level. Full details: <a href="atlassian-console.html">The developer console</a>.</p>
+
+<h2>7. Client id and secret</h2>
+<ul>
+  <li><strong>Client ID</strong> (public): into <code>env.production.vars.ATLASSIAN_CLIENT_ID</code>.</li>
+  <li><strong>Secret</strong>: type it yourself, it never goes into a file:
+<pre><code>npx wrangler secret put ATLASSIAN_CLIENT_SECRET --env production</code></pre></li>
+</ul>
+
+<h2>8. Deploy and sign in</h2>
+<pre><code>npx wrangler deploy --env production
+curl https://&lt;your-url&gt;/api/config          # {"edition":"cloud","configured":false,"signedIn":false,…}
+npx wrangler tail --env production --format pretty   # watch while you sign in</code></pre>
+<p>Open the URL, <em>Sign in with Atlassian</em>, choose your site, Accept. You should land on For You. In the tail you will see <code>/auth/login → /auth/callback → /api/mine</code>, and within five minutes a cron line with <code>"checked": 1</code> (your baseline). Verify at rest (read-only):</p>
+<pre><code>npx wrangler d1 execute DB --remote --env production --command \
+  "SELECT (SELECT COUNT(*) FROM users) users, (SELECT status FROM oauth_grants) grant_status"</code></pre>
+
+<h2>9. Share with others</h2>
+<p>Set the app's <strong>Distribution</strong> to <em>Sharing within organization</em> or <em>Sharing with anyone</em>, add your privacy policy (<code>https://&lt;your-url&gt;/privacy</code>), declare that personal data is stored (the Personal Data Reporting API is implemented), and send colleagues the URL. Company admins may need to approve third-party apps.</p>
+
+<h2>Later deploys</h2>
+<pre><code>cd cloud
+npm run deploy        # = build + remote migrations + wrangler deploy</code></pre>
+<p>Adding a new migration file? It runs automatically on the next <code>npm run deploy</code>. Want to check first? <code>npm run deploy:dry</code>.</p>
+
+<h2>Checklist</h2>
+<ul>
+  <li>☐ <code>wrangler whoami</code> shows the right account</li>
+  <li>☐ <code>database_id</code> set, migrations applied</li>
+  <li>☐ <code>APP_ORIGIN</code>, <code>ATLASSIAN_CLIENT_ID</code>, <code>VAPID_PUBLIC_KEY</code> set (no <code>REPLACE_</code> left)</li>
+  <li>☐ 4 secrets listed: <code>ATLASSIAN_CLIENT_SECRET</code>, <code>TOKEN_ENC_KEY</code>, <code>VAPID_PRIVATE_KEY</code>, <code>VAPID_SUBJECT</code></li>
+  <li>☐ Callback URL in Atlassian matches exactly</li>
+  <li>☐ <code>/api/config</code> returns 200 with <code>"edition":"cloud"</code></li>
+  <li>☐ Sign-in works; baseline appears in the tail</li>
+  <li>☐ JARVIS → Enable notifications → Send a test push arrives</li>
+  <li>☐ Privacy policy reachable; distribution set if sharing</li>
+</ul>

@@ -1,0 +1,29 @@
+<h1>Roadmap and ideas</h1>
+<p class="lede">What could come next, why, and what each would involve. Nothing here is promised; it is a list to discuss.</p>
+
+<h2>Planned phases</h2>
+<table>
+  <tr><th>Phase</th><th>What</th><th>Status</th></tr>
+  <tr><td>1</td><td>Local edition: TypeScript/HTML/CSS dashboard, For You, JARVIS</td><td>done</td></tr>
+  <tr><td>3</td><td>Cloud edition: Cloudflare Worker, D1, cron, OAuth, Web Push, privacy reporting</td><td>done on the feature branch, deployed</td></tr>
+  <tr><td>2</td><td>Move the frontend to React + TypeScript and make it an installable PWA (offline shell, home-screen icon, push on iPhone)</td><td>next</td></tr>
+</table>
+
+<h2>Ideas</h2>
+<ul>
+  <li><strong>Web app manifest + icons</strong> (small step toward the PWA): installable from the browser, required for push on iOS.</li>
+  <li><strong>Team view</strong>: a lead sees the whole team's assigned bugs (needs a design for permissions: each member's own token only sees what they can see).</li>
+  <li><strong>More event types</strong>: due dates, sprint changes, labels, attachments (see <a href="extending.html">How to add a feature</a>).</li>
+  <li><strong>Digest e-mail or chat message</strong> once a day (Cloudflare Email Workers or a webhook to Slack/Teams).</li>
+  <li><strong>Several active sites per user</strong> in the monitor (currently one at a time to save budget).</li>
+  <li><strong>Custom domain</strong> with WAF rate-limiting rules.</li>
+  <li><strong>Saved views</strong> (named filter sets) synced to the server.</li>
+  <li><strong>Localisation</strong>: templates and UI in other languages; voices exist for many.</li>
+  <li><strong>Jira webhooks</strong> for near-instant updates, if the OAuth app limits allow it for the use case.</li>
+</ul>
+
+<h2>Scaling beyond the free tier</h2>
+<p>On Workers Paid, raise <code>MONITOR_MAX_USERS_PER_RUN</code>; for thousands of users, fan out each minute's work to a Queue (one message per user) so many Worker invocations run in parallel, each with its own limits.</p>
+
+<h2>Contributing</h2>
+<p>The project is MIT-licensed. Open an issue on GitHub to discuss an idea, then a pull request from a branch. Run the test suites first and update these guides if behaviour changes.</p>

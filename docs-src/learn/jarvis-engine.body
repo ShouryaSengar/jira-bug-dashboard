@@ -1,0 +1,102 @@
+<h1>JARVIS: how changes are detected</h1>
+<p class="lede">The algorithm that turns "something happened in Jira" into exactly one well-labelled event, never zero, never two. Shared by both editions.</p>
+
+<h2>The hard part</h2>
+<p>Jira does not tell a private app "Bob just commented on ABC-1". The app has to look and work it out. Naive approaches fail:</p>
+<ul>
+  <li><strong>Compare <code>updated</code> times only</strong>: you know <em>that</em> something changed, not <em>what</em>. A label edit and a reopen look the same.</li>
+  <li><strong>Announce the whole history</strong> on first run: users get flooded with years of old changes.</li>
+  <li><strong>Remember "last check time" only</strong>: overlapping windows, clock differences and retries produce duplicates.</li>
+</ul>
+<p>JARVIS combines four ideas: a <strong>baseline</strong>, a <strong>snapshot</strong>, the <strong>changelog</strong>, and a <strong>seen set</strong>.</p>
+
+<h2>The four ideas</h2>
+<table>
+  <tr><th>Idea</th><th>What it is</th><th>What it prevents</th></tr>
+  <tr><td>Baseline</td><td>The first check only records what exists</td><td>announcing old history</td></tr>
+  <tr><td>Snapshot</td><td>For each bug I hold: its <code>updated</code> time, summary, project</td><td>re-reading bugs that did not change</td></tr>
+  <tr><td>Changelog + comments</td><td>Jira's own record of every field change and comment, with author and time</td><td>guessing what changed</td></tr>
+  <tr><td>Seen set</td><td>Stable ids of every changelog item and comment already processed (<code>ABC-1:h10234:status</code>, <code>ABC-1:c55012</code>)</td><td>duplicates, across restarts and overlaps</td></tr>
+</table>
+
+<h2>One check, step by step (Cloud edition)</h2>
+<script type="application/json" class="diagram" data-kind="flow" data-caption="Decision flow for one user's check.">
+{"w": 840, "h": 560,
+ "nodes": [
+  {"id": "start", "x": 320, "y": 10, "w": 200, "h": 34, "title": "Check user", "kind": "cf"},
+  {"id": "full", "x": 320, "y": 70, "w": 200, "h": 50, "title": "Baseline or 6 h passed?", "kind": "note"},
+  {"id": "fullq", "x": 20, "y": 70, "w": 260, "title": "Full list", "kind": "server", "lines": ["assignee = currentUser()", "record snapshot", "(first time: announce nothing)"]},
+  {"id": "inc", "x": 560, "y": 70, "w": 260, "title": "Incremental search", "kind": "server", "lines": ["(assignee = me AND updated >= -Nm)", "OR assignee CHANGED FROM me", "   AFTER -Nm"]},
+  {"id": "each", "x": 560, "y": 180, "w": 260, "h": 34, "title": "For each result", "kind": "plain"},
+  {"id": "same", "x": 300, "y": 250, "w": 240, "h": 34, "title": "mine + same updated → skip", "kind": "note"},
+  {"id": "away", "x": 20, "y": 330, "w": 240, "title": "Not mine any more", "kind": "ext", "lines": ["classifyAway()", "→ reassigned_away / unassigned", "remove from snapshot"]},
+  {"id": "new", "x": 300, "y": 330, "w": 240, "title": "Mine, not in snapshot", "kind": "browser", "lines": ["read changelog", "classifyNew()", "→ assigned (by whom)"]},
+  {"id": "chg", "x": 580, "y": 330, "w": 240, "title": "Mine, updated changed", "kind": "browser", "lines": ["read changelog + comments", "classifyChanges()", "→ status, comment, …"]},
+  {"id": "commit", "x": 300, "y": 470, "w": 240, "title": "Commit (one batch)", "kind": "db", "lines": ["insert events", "save snapshot + seen ids", "save checkpoint"]},
+  {"id": "pushn", "x": 580, "y": 470, "w": 240, "h": 50, "title": "Push to devices", "icon": "📮", "kind": "cf"}
+ ],
+ "edges": [
+  {"from": "start", "to": "full"},
+  {"from": "full", "to": "fullq", "label": "yes"},
+  {"from": "full", "to": "inc", "label": "no"},
+  {"from": "inc", "to": "each"},
+  {"from": "each", "to": "same"},
+  {"from": "same", "to": "away", "label": "not mine"},
+  {"from": "same", "to": "new", "label": "new"},
+  {"from": "same", "to": "chg", "label": "changed"},
+  {"from": "away", "to": "commit"},
+  {"from": "new", "to": "commit"},
+  {"from": "chg", "to": "commit"},
+  {"from": "commit", "to": "pushn"}
+ ]}
+</script>
+
+<ol class="steps-list">
+  <li><strong>Get a token</strong> (refresh it if it expires within 2 minutes).</li>
+  <li><strong>Choose the kind of check.</strong> First time, or 6 hours since the last full comparison, or checkpoint older than 7 days → a full list. Otherwise → incremental.</li>
+  <li><strong>Incremental search.</strong> The window <em>N</em> = minutes since the last fully processed check + 3, at least 10, at most 7 days. Results are ordered oldest first, so if the run is cut short the oldest are handled first.</li>
+  <li><strong>For each result</strong>:
+    <ul>
+      <li>still mine and <code>updated</code> equals the snapshot → already handled in an earlier, overlapping window → skip;</li>
+      <li>not mine any more → <code>classifyAway</code> using the assignee in the result itself (no extra call), drop from snapshot;</li>
+      <li>mine but not in the snapshot → read the changelog → <code>classifyNew</code> finds the newest "assignee → me" entry, so the event can say who assigned it;</li>
+      <li>mine and changed → read changelog + 15 newest comments → <code>classifyChanges</code> for entries newer than the snapshot's <code>updated</code> (minus 1.5 s of slack).</li>
+    </ul></li>
+  <li><strong>Learn statuses</strong> lazily: unknown status ids in the changelog are looked up once (<code>/rest/api/3/status/{id}</code>) and their category cached.</li>
+  <li><strong>Commit</strong> events and the checkpoint in one batch; advance <code>checked_at</code> only if every result was processed.</li>
+  <li><strong>Push</strong> the events that pass the user's rules (not their own, type enabled, not quiet hours).</li>
+</ol>
+
+<h2>How each event type is recognised</h2>
+<table>
+  <tr><th>Event</th><th>Rule</th><th>Importance</th></tr>
+  <tr><td><code>assigned</code></td><td>bug appears in my list; or a changelog item sets assignee to my account id while already in my list (it left and came back between checks)</td><td>high</td></tr>
+  <tr><td><code>reopened</code></td><td>status changes from a <em>done</em>-category status to a not-done one, or to a status named like "Reopen"</td><td>high</td></tr>
+  <tr><td><code>resolved</code> / <code>closed</code></td><td>status changes into the done category; "closed" if the new name contains "clos"</td><td>normal</td></tr>
+  <tr><td><code>status</code></td><td>any other status change</td><td>normal</td></tr>
+  <tr><td><code>priority</code></td><td>priority field changed; <em>escalated</em> if the new one is more urgent by <code>makePriorityRank</code> (then importance high)</td><td>normal / high</td></tr>
+  <tr><td><code>severity</code></td><td>the configured severity field changed (matched by field id or name); escalated by <code>severityRank</code></td><td>normal / high</td></tr>
+  <tr><td><code>comment</code></td><td>a comment newer than the snapshot; excerpt of 160 characters; at most 5 per bug per check</td><td>normal</td></tr>
+  <tr><td><code>reassigned_away</code> / <code>unassigned</code></td><td>bug left my list and now has another assignee / none</td><td>normal</td></tr>
+  <tr><td><code>updated</code></td><td>other field edits, except noise (rank, last viewed, work log…)</td><td>low (never spoken)</td></tr>
+</table>
+<p><strong>Own actions</strong>: if the changelog author or comment author is me, the event is stored with <code>own = true</code> (and as read). It shows in history but is never pushed or spoken.</p>
+
+<h2>Why the Blocker bug existed (a real lesson)</h2>
+<p>The first version ranked priorities by Jira's list order. One real Jira site returned <code>Highest &gt; High &gt; Medium &gt; Low &gt; Lowest &gt; Blocker</code>, so raising a bug to <em>Blocker</em> would have been announced as a <em>downgrade</em>. Now, if every priority name is a familiar word, they are ranked by meaning; only custom names (P1, P2…) use Jira's order. A test covers it.</p>
+
+<h2>Guarantees and how they are achieved</h2>
+<table>
+  <tr><th>Guarantee</th><th>Mechanism</th></tr>
+  <tr><td>Never announce old history</td><td>baseline on first check; on a new assignment, its whole earlier history is marked seen</td></tr>
+  <tr><td>Never announce the same change twice</td><td>stable ids in <code>seen</code> (last 3000 kept), checked before creating an event</td></tr>
+  <tr><td>Never lose a change</td><td>window based on the last <em>fully processed</em> check; partial runs keep the old checkpoint and are deferred; a 6-hour full comparison repairs anything missed</td></tr>
+  <tr><td>Correct after restarts</td><td>all state in D1 (cloud) or <code>jarvis.json</code> (local)</td></tr>
+  <tr><td>Cheap when nothing happens</td><td>one search returning nothing, no database write</td></tr>
+</table>
+
+<h2>The Local edition's variant</h2>
+<p>Locally there is one user and no 50-subrequest limit, so each check lists <em>all</em> assigned bugs and diffs against the snapshot (new, changed, missing). Missing bugs are looked up individually to tell "reassigned" from "aged out". The classification functions are the same ones.</p>
+
+<h2>Testing the engine</h2>
+<p>Both mocks (<code>mock-jira.mjs</code>, <code>mock-atlassian.mjs</code>) can create bugs, assign, change status and priority, comment, and edit, through control endpoints. The test suites then assert the exact event list after each step, for example <code>status:ABC-2, comment:ABC-2</code> for two changes in one check, and <code>(none)</code> for a repeated check. See <a href="testing.html">How this app is tested</a>.</p>

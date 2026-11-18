@@ -1,0 +1,73 @@
+<h1>Threat model and defences</h1>
+<p class="lede">Who might attack the app, what they would want, how they might try, and the specific defence for each. Every defence listed is implemented and most are covered by automated tests.</p>
+
+<h2>What is worth protecting</h2>
+<ol>
+  <li><strong>Jira access</strong> (OAuth tokens, API tokens): the crown jewels; they unlock company data.</li>
+  <li><strong>Sessions</strong>: a stolen session acts as the user in the app.</li>
+  <li><strong>Personal data</strong>: names, emails, bug summaries in history.</li>
+  <li><strong>Availability</strong>: staying inside the free tier for everyone.</li>
+</ol>
+
+<h2>Attackers</h2>
+<table>
+  <tr><th>Who</th><th>Can do</th></tr>
+  <tr><td>A random website you visit</td><td>run JavaScript in your browser, send requests to other sites with your cookies</td></tr>
+  <tr><td>Another user of the app</td><td>sign in legitimately and send crafted requests</td></tr>
+  <tr><td>Someone on the network</td><td>watch traffic (on café Wi-Fi)</td></tr>
+  <tr><td>Someone with a database copy</td><td>read every row (leak, misconfiguration)</td></tr>
+  <tr><td>A malicious Jira text</td><td>a bug summary or comment containing HTML/script</td></tr>
+</table>
+
+<h2>Threats and defences</h2>
+<h3>Token theft</h3>
+<ul>
+  <li>Tokens never reach the browser (the server calls Jira).</li>
+  <li>Encrypted at rest (AES-256-GCM), key held separately as a Worker secret; bound to the user id.</li>
+  <li>Never logged; responses never include them.</li>
+  <li>Read-only scopes; resource-level grants.</li>
+</ul>
+<h3>Session hijacking</h3>
+<ul>
+  <li>32 random bytes per session (unguessable); only its SHA-256 hash stored.</li>
+  <li>Cookie <code>__Host-</code>, HttpOnly, Secure, SameSite=Lax; HSTS forces HTTPS.</li>
+  <li>30-day absolute and 7-day idle expiry; disconnect signs out everywhere.</li>
+</ul>
+<h3>CSRF (cross-site request forgery)</h3>
+<p>Custom <code>X-JBD</code> header + Origin check + <code>Sec-Fetch-Site</code> check + SameSite cookies on every state change. Tests send requests without the header, with a foreign Origin and with <code>Sec-Fetch-Site: cross-site</code>: all refused.</p>
+<h3>Login CSRF and OAuth code theft</h3>
+<p>Random <code>state</code> bound to an HttpOnly cookie, compared in constant time; codes are single-use and need the client secret; Atlassian only redirects to the registered callback. Tests: forged state, missing cookie, code replay.</p>
+<h3>IDOR (seeing someone else's data)</h3>
+<p>No endpoint accepts a user id. Every query includes <code>user_id = &lt;session user&gt;</code>. Client-supplied ids (event ids, device ids, site ids) are combined with that filter. Tests: a second user tries to read, mark read, clear, unsubscribe and switch to another user's data: no effect.</p>
+<h3>XSS (cross-site scripting)</h3>
+<ul>
+  <li>Every dynamic value is HTML-escaped (<code>esc()</code>); links pass through <code>safeUrl()</code> (http/https only).</li>
+  <li>Strict CSP: <code>script-src 'self'</code>, no inline scripts, <code>frame-ancestors 'none'</code>.</li>
+  <li>Text from Jira is rendered as text, never as HTML.</li>
+</ul>
+<h3>SSRF (making the server call internal addresses)</h3>
+<p>The only user-supplied URLs the server calls are push endpoints: HTTPS only, no credentials in the URL, host must be an allow-listed push service. Tests try <code>169.254.169.254</code>, look-alike hosts and HTTP.</p>
+<h3>Injection (SQL, JQL, shell)</h3>
+<ul>
+  <li>SQL: always bound parameters (<code>?</code>), never string-built from input.</li>
+  <li>JQL: issue keys validated by regex; issue types quoted and stripped of quotes/backslashes.</li>
+  <li>Shell (Local edition notifications): <code>execFile</code> with an argument array, never a shell string.</li>
+</ul>
+<h3>Abuse and denial of service</h3>
+<ul>
+  <li>Sign-in limited per IP (D1, 30 per 10 minutes); per-user limits on API, "check now" and test pushes; request bodies capped at 16 KB.</li>
+  <li>Monitor work bounded per run; back-off on errors.</li>
+  <li>Cloudflare's network absorbs volumetric attacks in front of the Worker.</li>
+</ul>
+<h3>Secrets in the repository</h3>
+<p><code>.dev.vars</code> and build output are git-ignored; production secrets are set with <code>wrangler secret put</code> or piped in by script; the contact email is a secret so it is not published; staged changes are scanned for key-like strings before commits.</p>
+<h3>Local edition specifics</h3>
+<p>Binds to 127.0.0.1; Host header allow-list (DNS rebinding); credentials file mode 0600 outside the project.</p>
+
+<h2>Residual risks (honest list)</h2>
+<ul>
+  <li>The operator of a Cloud instance controls the Worker secrets and could, in principle, decrypt users' tokens. Users must trust the operator; teams that do not can self-host.</li>
+  <li>The in-memory rate limiter is per isolate; a determined attacker spreading requests can exceed it (Cloudflare WAF rules on a custom domain help).</li>
+  <li>Browser extensions with full page access can read anything the page shows (not tokens).</li>
+  <li>Dependencies: deliberately few (TypeScript and Wrangler at build time only), but not zero.</li>
+</ul>

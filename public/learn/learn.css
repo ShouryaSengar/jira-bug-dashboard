@@ -112,3 +112,19 @@ figure.diagram figcaption { font-size: 13px; color: var(--muted); text-align: ce
   .doc { font-size: 15.5px; }
 }
 @media print { .learn-side, .learn-toc, .top, .pager, .done-toggle { display: none !important; } .learn { display: block; } }
+
+/* ---- smooth page changes ---------------------------------------------------------------------------------- */
+/* The scrollbar space is always reserved, so a short page never makes the layout wider or narrower. */
+html { scrollbar-gutter: stable; }
+
+/* Browsers that support it (Chrome, Edge, Brave, Safari 18+) keep showing the old page until the new one is ready,
+   and the header and sidebar stay put instead of cross-fading. Others simply ignore these rules. */
+@view-transition { navigation: auto; }
+.learn-top { view-transition-name: learn-top; }
+.learn-side { view-transition-name: learn-side; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .14s; }
+
+/* Loader: a thin bar at the top, and the article dims a little. Both wait 150 ms, so quick page changes show nothing. */
+html.navigating::before { content: ""; position: fixed; z-index: 100; top: 0; left: 0; height: 3px; width: 0; background: var(--accent); animation: learn-load 10s cubic-bezier(.1, .8, .2, 1) .15s forwards; }
+html.navigating .doc { opacity: .55; transition: opacity .2s ease .15s; pointer-events: none; }
+@keyframes learn-load { to { width: 92%; } }

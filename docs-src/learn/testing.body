@@ -1,0 +1,68 @@
+<h1>How this app is tested</h1>
+<p class="lede">The test strategy: fake versions of every outside service, end-to-end tests against the real runtime, browser tests, unit tests, regression checks against a real Jira, and CPU measurements. About 200 automated checks in total.</p>
+
+<h2>The idea: replace the outside world with mocks</h2>
+<p>Real Atlassian, real Jira and real push services cannot be scripted ("now reopen ABC-1"), cost real accounts, and are slow. So each is replaced by a small fake server that behaves like the documented API and can be controlled by the tests.</p>
+<script type="application/json" class="diagram" data-kind="flow" data-caption="Cloud test setup: the real Worker runtime, a local D1 file, and one mock standing in for Atlassian, Jira and push services.">
+{"w": 900, "h": 300,
+ "nodes": [
+  {"id": "t", "x": 20, "y": 50, "w": 210, "title": "Test scripts", "icon": "🧪", "kind": "user", "lines": ["test-e2e.mjs (82)", "test-ui.mjs (34, Playwright)", "test-unit.mjs (16)"]},
+  {"id": "w", "x": 310, "y": 50, "w": 220, "title": "wrangler dev --env dev", "icon": "⚙️", "kind": "cf", "lines": ["the real Worker code", "workerd runtime", "http://localhost:8787"]},
+  {"id": "d1", "x": 310, "y": 225, "w": 220, "h": 50, "title": "local D1 (SQLite)", "icon": "🗄", "kind": "db"},
+  {"id": "m", "x": 630, "y": 50, "w": 250, "title": "mock-atlassian.mjs", "icon": "🎭", "kind": "ext", "lines": ["/authorize, /oauth/token", "/me, accessible-resources", "/ex/jira/... (JQL, changelog)", "/push/{id}, /app/report-accounts", "/__mock/* controls"]}
+ ],
+ "edges": [
+  {"from": "t", "to": "w", "label": "HTTP like a browser", "accent": true, "lpos": [270, 38]},
+  {"from": "w", "to": "m", "label": "ATLASSIAN_*_BASE = mock", "lpos": [580, 38]},
+  {"from": "w", "to": "d1", "both": true},
+  {"from": "t", "to": "m", "dashed": true, "label": "control + inspect", "via": [[125, 192], [755, 192]]},
+  {"from": "t", "to": "d1", "dashed": true, "label": "wrangler d1 execute"}
+ ]}
+</script>
+
+<h2>The suites</h2>
+<table>
+  <tr><th>Suite</th><th>Checks</th><th>What it covers</th></tr>
+  <tr><td><code>scripts/test-core.mjs</code></td><td>33</td><td>announcement rules: templates, greetings, quiet hours across midnight, grouping, digests, own actions, variation never repeating</td></tr>
+  <tr><td><code>scripts/test-jarvis.mjs</code></td><td>29</td><td>local monitor against <code>mock-jira.mjs</code>: baseline, every event type, Blocker escalation, bounced assignment, duplicates, restarts</td></tr>
+  <tr><td><code>cloud/scripts/test-e2e.mjs</code></td><td>82</td><td>Cloud API: OAuth flow and attacks, CSRF, sessions, encryption at rest, isolation between users, monitoring, push encryption and VAPID, quiet hours, token rotation under concurrency, revocation, disconnect, deletion, personal data reporting</td></tr>
+  <tr><td><code>cloud/scripts/test-ui.mjs</code></td><td>34</td><td>real Chromium: landing, sign-in through redirects, For You, detail, settings, push subscribe, cron → push → service worker notification → voice, mobile layout, sign out</td></tr>
+  <tr><td><code>cloud/scripts/test-unit.mjs</code></td><td>16</td><td>crypto round trips and tamper detection, push payload decrypted by Node, SSRF allow-list, time-zone quiet hours, push grouping, CPU measurements</td></tr>
+  <tr><td>browser regression scripts</td><td>~40</td><td>Local and Demo UI unchanged after refactors</td></tr>
+</table>
+
+<h2>Running them</h2>
+<pre><code># Local edition
+node scripts/mock-jira.mjs &amp;
+JBD_CONFIG_DIR=$(mktemp -d) PORT=4800 JIRA_URL=http://127.0.0.1:4700 JIRA_USERNAME=me@x.com JIRA_API_TOKEN=x node dist/server/index.js &amp;
+node scripts/test-jarvis.mjs
+node scripts/test-core.mjs
+
+# Cloud edition (in cloud/)
+node scripts/gen-vapid.mjs --dev
+npm run build &amp;&amp; npm run db:migrate:local
+node scripts/mock-atlassian.mjs &amp;
+sh scripts/dev-server.sh &amp;
+node scripts/test-unit.mjs
+node scripts/test-e2e.mjs
+PLAYWRIGHT=/path/to/playwright/index.mjs node scripts/test-ui.mjs</code></pre>
+<div class="callout warn"><span class="callout-title">Start from a clean state</span>The suites assume fresh mocks and an empty local database (the e2e suite empties it itself). A second run against a mock that already has changes will report failures that are not real. We hit this twice; the fix is to restart the mock.</div>
+
+<h2>Techniques worth borrowing</h2>
+<ul>
+  <li><strong>A cookie jar in 20 lines</strong>: the e2e "Browser" class stores <code>Set-Cookie</code> values and sends them back, follows redirects manually, and adds CSRF headers, so tests behave exactly like a browser.</li>
+  <li><strong>Independent verification</strong>: push payloads are decrypted and VAPID signatures verified with Node's own crypto, not the app's code.</li>
+  <li><strong>Reading the database directly</strong>: <code>wrangler d1 execute --json</code> proves tokens are encrypted and deletions are complete.</li>
+  <li><strong>Driving the service worker</strong>: Chrome DevTools Protocol <code>ServiceWorker.deliverPushMessage</code> delivers a push to the real <code>sw.js</code>.</li>
+  <li><strong>Recording speech</strong>: <code>speechSynthesis</code> is replaced with a recorder, so tests assert the exact sentence spoken.</li>
+  <li><strong>Mocks that fail loudly</strong>: an early bug in the mock's control routes (a regex that did not match hyphens) silently ignored commands and produced 12 false failures; the test helper now throws if a mock command fails.</li>
+  <li><strong>Read-only checks against a real Jira</strong>: old and new code compared side by side to prove a refactor changed nothing.</li>
+  <li><strong>Measuring CPU</strong>: <code>process.cpuUsage()</code> around the hot paths, because local dev does not enforce Cloudflare's 10 ms limit.</li>
+</ul>
+
+<h2>What the tests cannot prove</h2>
+<ul>
+  <li>Real push services delivering to real devices (verified manually with "Send a test push").</li>
+  <li>Exact CPU on Cloudflare's machines (check Metrics after deploying).</li>
+  <li>Every Jira configuration in the world (custom statuses, fields, permissions).</li>
+</ul>

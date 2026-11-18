@@ -1,0 +1,108 @@
+<h1>Frontend internals</h1>
+<p class="lede">How the page works: start-up, the three modes, state, rendering, storage, charts and events. No framework is used, so everything is visible in a few files.</p>
+
+<h2>Start-up sequence</h2>
+<script type="application/json" class="diagram" data-kind="seq" data-caption="What happens from the moment index.html arrives.">
+{"actors": [
+  {"id": "html", "label": "index.html", "kind": "browser"},
+  {"id": "boot", "label": "boot.js", "kind": "browser"},
+  {"id": "main", "label": "main.js", "kind": "browser"},
+  {"id": "api", "label": "api.ts", "kind": "browser"},
+  {"id": "srv", "label": "Server", "kind": "cf"}
+ ],
+ "steps": [
+  {"from": "html", "to": "boot", "text": "run before paint"},
+  {"from": "boot", "to": "boot", "text": "apply saved theme"},
+  {"from": "html", "to": "main", "text": "load module"},
+  {"from": "main", "to": "main", "text": "wire() all events"},
+  {"from": "main", "to": "api", "text": "detectMode()"},
+  {"from": "api", "to": "srv", "text": "GET api/config"},
+  {"from": "srv", "to": "api", "text": "JSON (or 404 = demo)", "ret": true},
+  {"from": "api", "to": "main", "text": "mode + config", "ret": true},
+  {"from": "main", "to": "main", "text": "initForYou(), initJarvis()"},
+  {"from": "main", "to": "main", "text": "setView(epics | foryou)"},
+  {"note": "the chosen view fetches its data and renders", "over": ["main", "srv"]}
+ ]}
+</script>
+
+<h2>The three modes</h2>
+<p><code>mode</code> is one of <code>'local' | 'cloud' | 'demo'</code> (see <a href="editions.html">Editions</a>). It decides:</p>
+<table>
+  <tr><th>Behaviour</th><th>local</th><th>cloud</th><th>demo</th></tr>
+  <tr><td>Data source</td><td colspan="2"><code>fetch('api/…')</code></td><td><code>demo.ts</code> generators</td></tr>
+  <tr><td>Settings connection form</td><td>URL + email + token</td><td>Sign in with Atlassian, site, disconnect, delete</td><td>explanatory note</td></tr>
+  <tr><td>JARVIS live events</td><td>EventSource <code>api/jarvis/stream</code></td><td>service worker messages from Web Push</td><td>simulated</td></tr>
+  <tr><td>Cached results</td><td colspan="2">saved in localStorage</td><td>never (always fresh sample data)</td></tr>
+  <tr><td>Storage namespace</td><td colspan="2"><code>jbd.v1.*</code></td><td><code>jbd.v1.demo.*</code></td></tr>
+</table>
+
+<h2>State: where things live</h2>
+<p>There is no global store library. Each module keeps its own variables, and anything worth remembering is saved through <code>store.ts</code>:</p>
+<table>
+  <tr><th>Key (localStorage)</th><th>Content</th></tr>
+  <tr><td><code>jbd.v1.prefs</code></td><td>theme, accent, thresholds, auto-refresh, hidden columns</td></tr>
+  <tr><td><code>jbd.v1.tracked</code>, <code>.active</code></td><td>tracked issues (tabs) and the selected one</td></tr>
+  <tr><td><code>jbd.v1.filters.&lt;KEY&gt;</code>, <code>.stars.&lt;KEY&gt;</code>, <code>.baseline.&lt;KEY&gt;</code>, <code>.cache.&lt;KEY&gt;</code></td><td>per tracked issue: filters, stars, the "seen" baseline for NEW/UPDATED, the last result</td></tr>
+  <tr><td><code>jbd.v1.fy.filters</code>, <code>.fy.cache</code></td><td>For You filters and last result</td></tr>
+  <tr><td><code>jbd.v1.jarvis</code></td><td>JARVIS preferences: voice, desktop, address, rate, volume, event types, frequency, quiet hours</td></tr>
+  <tr><td><code>jbd.v1.jarvis.announced</code></td><td>highest event id already announced (for "while you were away")</td></tr>
+  <tr><td><code>jbd.v1.view</code></td><td>last view (Epics / For You)</td></tr>
+  <tr><td><code>jbd.v1.learn.done</code></td><td>which Learn guides you marked as done</td></tr>
+</table>
+<div class="callout warn"><span class="callout-title">Never tokens</span>Nothing secret is ever written to localStorage. Any script on the page could read it, so only harmless preferences and caches go there. Signing out, disconnecting or deleting your account clears it.</div>
+
+<h2>Rendering: strings, escaped</h2>
+<p>Views are rendered by building HTML strings and assigning <code>innerHTML</code>. Every value that comes from Jira or the user goes through <code>esc()</code>, which replaces <code>&amp; &lt; &gt; " '</code> with entities, and every link through <code>safeUrl()</code>, which only allows <code>http(s)</code>. Combined with the strict CSP (no inline scripts allowed), a malicious issue summary like <code>&lt;img onerror=…&gt;</code> is shown as text, never executed.</p>
+<pre><code>// util.ts
+export const esc = (s: unknown): string =&gt; String(s ?? '').replace(/[&amp;&lt;&gt;"']/g, (c) =&gt; ESC[c] ?? c);
+export const safeUrl = (u: string): string =&gt; (/^https?:\/\//i.test(u) ? u : '#');</code></pre>
+<p>Rendering is split into small functions (<code>renderHeader</code>, <code>renderCharts</code>, <code>renderTable</code>…). A filter change calls only <code>renderResults()</code>, which redraws charts, chips and the table but not the header.</p>
+
+<h2>Events: delegation</h2>
+<p>Instead of attaching a listener to every row and chip, each container has one listener that looks at <code>data-*</code> attributes of the clicked element (<code>data-sort</code>, <code>data-quick</code>, <code>data-group</code>, <code>data-fy-open</code>…). This keeps working after re-rendering, because the container itself is never replaced.</p>
+<pre><code>$('thead').addEventListener('click', (e) =&gt; {
+  const col = e.target.closest('[data-sort]')?.dataset.sort;
+  if (col) setFilters(filters.sort === col ? { dir: -filters.dir } : { sort: col, dir: … });
+});</code></pre>
+
+<h2>Analysis: the numbers on screen</h2>
+<ul>
+  <li><strong>Age</strong> (<code>ageMs</code>): open bugs = now − created; closed bugs = resolved − created ("time to close").</li>
+  <li><strong>Level</strong> (<code>ageLevel</code>): ok / warn / crit by your thresholds (default 3 and 7 days); done bugs are grey.</li>
+  <li><strong>Stale</strong>: open and not updated for N days (default 5).</li>
+  <li><strong>Changed</strong> (<code>changeOf</code>): compares each bug's <code>updated</code> to the baseline saved when you pressed "Mark all as seen".</li>
+  <li><strong>Trend</strong>: per week (Monday-based), bugs created, resolved, and open at the end of the week, for up to 26 weeks.</li>
+  <li><strong>Sorting</strong>: severity sorts by the number in "2 - Major"; age sorts closed bugs after open ones.</li>
+</ul>
+
+<h2>Charts without a library</h2>
+<p><code>charts.ts</code> builds SVG and HTML strings:</p>
+<ul>
+  <li><strong>Donut</strong>: one SVG <code>&lt;circle&gt;</code> per slice using <code>stroke-dasharray</code> (a circle of radius 15.9155 has a circumference of 100, so a slice of 23% is <code>"23 77"</code>).</li>
+  <li><strong>Bars</strong>: HTML buttons with a width percentage, so they are clickable and accessible.</li>
+  <li><strong>Trend</strong>: an SVG with grid lines, paired bars and a path for the backlog line.</li>
+</ul>
+<p>Colours come from CSS variables (<code>var(--red)</code> etc.), so charts follow the theme automatically.</p>
+
+<h2>Themes</h2>
+<p><code>&lt;html data-theme="dark" data-accent="teal"&gt;</code> switches a block of CSS variables. <code>boot.js</code> sets these attributes before the page paints. The "system" theme follows the operating system with a <code>prefers-color-scheme</code> media query.</p>
+
+<h2>The For You view (<code>foryou.ts</code>)</h2>
+<ol>
+  <li><code>showForYou()</code> shows a cached result immediately (if any), then <code>refreshForYou()</code> fetches <code>api/mine</code>.</li>
+  <li>Filters (<code>FyFilters</code>) are saved; KPI tiles set a preset of filters; charts toggle values.</li>
+  <li>Clicking a row opens the detail drawer: <code>openIssueDetail(key)</code> fetches <code>api/issue?key=…</code> and marks that bug's JARVIS events as read. The URL gets <code>?issue=KEY</code> so notification clicks can deep-link.</li>
+  <li>When JARVIS reports activity, <code>onActivity()</code> (debounced 2.5 s) refreshes the list quietly.</li>
+</ol>
+
+<h2>JARVIS in the browser (<code>jarvis.ts</code>)</h2>
+<ul>
+  <li><strong>Ingest</strong>: every event (from the stream, push, "check now", or a simulation) goes through <code>ingest()</code>, which de-duplicates by id, appends to history, and batches live events for 1.2 s (12 s in digest mode).</li>
+  <li><strong>Flush</strong>: <code>plan()</code> from <code>jarvis-core.ts</code> decides notifications and speech; <code>Speaker</code> queues voice lines.</li>
+  <li><strong>Several tabs</strong>: tabs write a heartbeat to localStorage; only one tab that is allowed to speak announces (Web Locks make the claim atomic).</li>
+  <li><strong>Cloud</strong>: registers <code>sw.js</code>, listens to its messages, subscribes to Web Push on request, and syncs notification rules to the server.</li>
+</ul>
+<p>Rules and templates: <a href="jarvis-voice.html">JARVIS: speech and notifications</a>.</p>
+
+<h2>Responsive layout</h2>
+<p>Below 760 px wide: the header wraps; KPI grids go to three columns; the bug table becomes a list of cards (each <code>&lt;td&gt;</code> shows its <code>data-label</code> as a caption); the filter drawer becomes a bottom sheet; dialogs dock to the bottom. No JavaScript is involved: it is all CSS media queries.</p>

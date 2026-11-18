@@ -10,22 +10,76 @@
 <link rel="icon" href="../icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../css/app.css" />
 <link rel="stylesheet" href="learn.css" />
+<link rel="expect" href="#learnSideReady" blocking="render" />
 <script src="../js/boot.js"></script>
 </head>
 <body data-slug="cf-storage">
+<header class="top learn-top">
+<div class="top-row">
+  <button class="btn icon side-toggle" type="button" aria-label="Open the topic list">☰</button>
+  <a class="brand" href="../index.html" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="var(--accent)"/><path d="M7 15l3-3 2 2 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Bug Dashboard</span></a>
+  <nav class="views" aria-label="Sections"><a class="vbtn" href="../index.html">App</a><a class="vbtn on" href="index.html" aria-current="page">Learn</a></nav>
+  <div class="top-actions"><button class="btn icon" id="learnTheme" type="button" title="Switch theme" aria-label="Switch theme">◐</button></div>
+</div>
+</header>
 <main>
+<div class="learn">
+<nav class="learn-side" id="learnSide" aria-label="All guides">
+<div class="learn-search"><input id="learnSearch" type="search" placeholder="Search the guides…  ( / )" aria-label="Search the guides" autocomplete="off"/><div id="learnResults" class="learn-results" hidden></div></div>
+<div class="learn-progress"><span id="learnProgressText">0 of 47 guides done</span><div class="bar"><span id="learnProgressBar" style="width:0%"></span></div></div>
+<p style="margin:12px 0 0"><a href="index.html">← All topics</a></p>
+<h4>Start here</h4>
+<ul><li><a href="welcome.html" data-slug="welcome"><span class="done-dot" aria-hidden="true"></span><span>Welcome: how to use these guides</span></a></li><li><a href="big-picture.html" data-slug="big-picture"><span class="done-dot" aria-hidden="true"></span><span>The big picture, explained simply</span></a></li><li><a href="glossary.html" data-slug="glossary"><span class="done-dot" aria-hidden="true"></span><span>Glossary: every term in plain words</span></a></li></ul>
+<h4>The product</h4>
+<h5>Using the app</h5>
+<ul><li><a href="features.html" data-slug="features"><span class="done-dot" aria-hidden="true"></span><span>Feature tour</span></a></li><li><a href="journeys.html" data-slug="journeys"><span class="done-dot" aria-hidden="true"></span><span>User journeys and use cases</span></a></li></ul>
+<h5>Editions</h5>
+<ul><li><a href="editions.html" data-slug="editions"><span class="done-dot" aria-hidden="true"></span><span>Local, Cloud and Demo editions</span></a></li></ul>
+<h4>Architecture (HLD)</h4>
+<h5>System design</h5>
+<ul><li><a href="hld-overview.html" data-slug="hld-overview"><span class="done-dot" aria-hidden="true"></span><span>High-level design</span></a></li><li><a href="decisions.html" data-slug="decisions"><span class="done-dot" aria-hidden="true"></span><span>Design decisions and trade-offs</span></a></li><li><a href="nfr.html" data-slug="nfr"><span class="done-dot" aria-hidden="true"></span><span>Quality goals: security, speed, cost, reliability</span></a></li></ul>
+<h4>Low-level design (LLD)</h4>
+<h5>Code</h5>
+<ul><li><a href="code-map.html" data-slug="code-map"><span class="done-dot" aria-hidden="true"></span><span>Code map: every folder and module</span></a></li><li><a href="frontend.html" data-slug="frontend"><span class="done-dot" aria-hidden="true"></span><span>Frontend internals</span></a></li><li><a href="core.html" data-slug="core"><span class="done-dot" aria-hidden="true"></span><span>The shared Jira core</span></a></li><li><a href="local-server.html" data-slug="local-server"><span class="done-dot" aria-hidden="true"></span><span>Local server internals</span></a></li><li><a href="worker.html" data-slug="worker"><span class="done-dot" aria-hidden="true"></span><span>Cloud Worker internals</span></a></li></ul>
+<h5>Data and APIs</h5>
+<ul><li><a href="database.html" data-slug="database"><span class="done-dot" aria-hidden="true"></span><span>Database design (D1)</span></a></li><li><a href="api-reference.html" data-slug="api-reference"><span class="done-dot" aria-hidden="true"></span><span>API reference</span></a></li></ul>
+<h5>JARVIS</h5>
+<ul><li><a href="jarvis-engine.html" data-slug="jarvis-engine"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: how changes are detected</span></a></li><li><a href="jarvis-voice.html" data-slug="jarvis-voice"><span class="done-dot" aria-hidden="true"></span><span>JARVIS: speech and notifications</span></a></li></ul>
+<h4>End-to-end flows</h4>
+<ul><li><a href="flow-page-load.html" data-slug="flow-page-load"><span class="done-dot" aria-hidden="true"></span><span>Opening the app</span></a></li><li><a href="flow-signin.html" data-slug="flow-signin"><span class="done-dot" aria-hidden="true"></span><span>Signing in with Atlassian</span></a></li><li><a href="flow-foryou.html" data-slug="flow-foryou"><span class="done-dot" aria-hidden="true"></span><span>Loading &quot;For You&quot;</span></a></li><li><a href="flow-cron.html" data-slug="flow-cron"><span class="done-dot" aria-hidden="true"></span><span>The background check (cron)</span></a></li><li><a href="flow-push.html" data-slug="flow-push"><span class="done-dot" aria-hidden="true"></span><span>A notification&#39;s journey</span></a></li><li><a href="flow-token-refresh.html" data-slug="flow-token-refresh"><span class="done-dot" aria-hidden="true"></span><span>Refreshing and rotating tokens</span></a></li></ul>
+<h4>Jira and Atlassian</h4>
+<ul><li><a href="jira-api.html" data-slug="jira-api"><span class="done-dot" aria-hidden="true"></span><span>How Jira&#39;s REST API works</span></a></li><li><a href="atlassian-auth.html" data-slug="atlassian-auth"><span class="done-dot" aria-hidden="true"></span><span>API tokens vs OAuth 2.0 (3LO)</span></a></li><li><a href="atlassian-console.html" data-slug="atlassian-console"><span class="done-dot" aria-hidden="true"></span><span>The developer console, sharing and privacy duties</span></a></li></ul>
+<h4>Cloudflare</h4>
+<ul><li><a href="cf-basics.html" data-slug="cf-basics"><span class="done-dot" aria-hidden="true"></span><span>What Cloudflare is and how the edge works</span></a></li><li><a href="cf-workers.html" data-slug="cf-workers"><span class="done-dot" aria-hidden="true"></span><span>Workers: how your code runs</span></a></li><li><a href="cf-storage.html" data-slug="cf-storage" class="on" aria-current="page"><span class="done-dot" aria-hidden="true"></span><span>D1, assets, cron, secrets and environments</span></a></li><li><a href="cf-limits.html" data-slug="cf-limits"><span class="done-dot" aria-hidden="true"></span><span>The free tier and capacity maths</span></a></li><li><a href="cf-wrangler.html" data-slug="cf-wrangler"><span class="done-dot" aria-hidden="true"></span><span>Wrangler cheat sheet</span></a></li></ul>
+<h4>Web fundamentals</h4>
+<ul><li><a href="web-http.html" data-slug="web-http"><span class="done-dot" aria-hidden="true"></span><span>HTTP, cookies, CORS and same-origin</span></a></li><li><a href="web-push.html" data-slug="web-push"><span class="done-dot" aria-hidden="true"></span><span>Service workers and Web Push</span></a></li><li><a href="web-speech.html" data-slug="web-speech"><span class="done-dot" aria-hidden="true"></span><span>Speech, notifications and browser rules</span></a></li></ul>
+<h4>Security and privacy</h4>
+<ul><li><a href="security-threats.html" data-slug="security-threats"><span class="done-dot" aria-hidden="true"></span><span>Threat model and defences</span></a></li><li><a href="security-crypto.html" data-slug="security-crypto"><span class="done-dot" aria-hidden="true"></span><span>The cryptography, simply</span></a></li><li><a href="privacy-lifecycle.html" data-slug="privacy-lifecycle"><span class="done-dot" aria-hidden="true"></span><span>Privacy and the data life cycle</span></a></li></ul>
+<h4>Deploy and operate</h4>
+<h5>This app</h5>
+<ul><li><a href="run-local.html" data-slug="run-local"><span class="done-dot" aria-hidden="true"></span><span>Run the Local edition</span></a></li><li><a href="deploy-cloud.html" data-slug="deploy-cloud"><span class="done-dot" aria-hidden="true"></span><span>Deploy the Cloud edition, step by step</span></a></li><li><a href="github.html" data-slug="github"><span class="done-dot" aria-hidden="true"></span><span>Git, GitHub and GitHub Pages</span></a></li></ul>
+<h5>Any app</h5>
+<ul><li><a href="cf-playbook.html" data-slug="cf-playbook"><span class="done-dot" aria-hidden="true"></span><span>Playbook: deploy any new app on Cloudflare</span></a></li></ul>
+<h5>Production</h5>
+<ul><li><a href="operate.html" data-slug="operate"><span class="done-dot" aria-hidden="true"></span><span>Operating in production</span></a></li><li><a href="troubleshooting.html" data-slug="troubleshooting"><span class="done-dot" aria-hidden="true"></span><span>Troubleshooting</span></a></li></ul>
+<h4>Quality and growth</h4>
+<ul><li><a href="testing.html" data-slug="testing"><span class="done-dot" aria-hidden="true"></span><span>How this app is tested</span></a></li><li><a href="extending.html" data-slug="extending"><span class="done-dot" aria-hidden="true"></span><span>How to add a feature</span></a></li><li><a href="roadmap.html" data-slug="roadmap"><span class="done-dot" aria-hidden="true"></span><span>Roadmap and ideas</span></a></li></ul>
+<script src="side.js"></script><span id="learnSideReady" hidden></span>
+</nav>
 <article class="doc">
-<h1>D1, assets, cron, secrets and environments</h1>
-<p class="lede">Every Cloudflare feature the Cloud edition uses, with the exact configuration and commands, and how they fit together in <code>wrangler.jsonc</code>.</p>
+<div class="crumbs"><a href="index.html">Learn</a> › <a href="index.html#cloudflare">Cloudflare</a></div><h1>D1, assets, cron, secrets and environments</h1>
+<p class="lede">Every Cloudflare feature the Cloud edition uses, with the exact configuration and commands, and how they fit together in <code>wrangler.jsonc</code>.</p><div class="meta-line"><span>⏱ 12 min read</span><span>Guide 30 of 47</span></div>
 
-<h2>Bindings: how code reaches resources</h2>
+<h2 id="bindings-how-code-reaches-resources">Bindings: how code reaches resources</h2>
 <p>A Worker cannot "connect" to a database with a password. Instead you declare a <strong>binding</strong> in the configuration, and Cloudflare injects an object into <code>env</code>:</p>
 <pre><code>"d1_databases": [{ "binding": "DB", "database_name": "jbd-cloud", "database_id": "9e6d337d-…" }]
 // in code:
 const row = await env.DB.prepare('SELECT name FROM users WHERE id = ?').bind(id).first();</code></pre>
 <p>No credentials in code, and the Worker can only reach what is bound to it.</p>
 
-<h2>D1: the database</h2>
+<h2 id="d1-the-database">D1: the database</h2>
 <ul>
   <li><strong>SQLite inside</strong>: standard SQL, tables, indexes, foreign keys, transactions.</li>
   <li><strong>One primary location</strong> (this one: APAC), chosen near the first request. Reads and writes go there.</li>
@@ -39,7 +93,7 @@ npx wrangler d1 migrations apply DB --remote --env production       # apply sche
 npx wrangler d1 execute DB --remote --env production --command "SELECT COUNT(*) FROM users"
 npx wrangler d1 export jbd-cloud --remote --output backup.sql       # backup</code></pre>
 
-<h2>Workers Static Assets</h2>
+<h2 id="workers-static-assets">Workers Static Assets</h2>
 <pre><code>"assets": {
   "directory": "./dist-assets",            // what to upload
   "binding": "ASSETS",                     // env.ASSETS.fetch(request) serves a file
@@ -52,7 +106,7 @@ npx wrangler d1 export jbd-cloud --remote --output backup.sql       # backup</co
   <li>Assets are uploaded with each deploy; unchanged files are skipped.</li>
 </ul>
 
-<h2>Cron Triggers</h2>
+<h2 id="cron-triggers">Cron Triggers</h2>
 <pre><code>"triggers": { "crons": ["* * * * *"] }    // minute hour day-of-month month day-of-week</code></pre>
 <table>
   <tr><th>Expression</th><th>Meaning</th></tr>
@@ -67,7 +121,7 @@ npx wrangler d1 export jbd-cloud --remote --output backup.sql       # backup</co
   <li>Local testing: <code>wrangler dev --test-scheduled</code>, then <code>curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"</code>.</li>
 </ul>
 
-<h2>Variables vs secrets</h2>
+<h2 id="variables-vs-secrets">Variables vs secrets</h2>
 <table>
   <tr><th></th><th>Variables (<code>vars</code>)</th><th>Secrets</th></tr>
   <tr><td>Where defined</td><td>in <code>wrangler.jsonc</code>, committed to Git</td><td><code>wrangler secret put NAME</code>, or the dashboard</td></tr>
@@ -78,7 +132,7 @@ npx wrangler d1 export jbd-cloud --remote --output backup.sql       # backup</co
 <p>Both appear in code as <code>env.NAME</code>. A name cannot be both a variable and a secret. Locally, secrets come from <code>cloud/.dev.vars</code> (git-ignored).</p>
 <div class="callout tip"><span class="callout-title">Setting secrets without leaking them</span><code>wrangler secret put NAME</code> prompts and hides your input. For generated values, pipe them in: the app's <code>set-prod-secrets.mjs</code> generates keys in memory and writes them to Wrangler's standard input, so they never appear on screen, in a file, or in shell history.</div>
 
-<h2>Environments</h2>
+<h2 id="environments">Environments</h2>
 <p>One configuration file, several copies of the app:</p>
 <pre><code>"env": {
   "dev":        { "name": "jira-bug-dashboard-cloud-dev", "vars": { … mocks … }, "d1_databases": [ … ], "triggers": { … } },
@@ -90,9 +144,8 @@ npx wrangler d1 export jbd-cloud --remote --output backup.sql       # backup</co
   <li>Secrets are per environment too.</li>
 </ul>
 
-<h2>How it all fits</h2>
-<script type="application/json" class="diagram" data-kind="flow" data-caption="What wrangler deploy --env production assembles.">
-{"w": 820, "h": 300,
+<h2 id="how-it-all-fits">How it all fits</h2>
+<figure class="diagram" data-kind="flow"><svg class="dg" viewBox="0 0 820 300" width="820" role="img" aria-label="What wrangler deploy --env production assembles."></svg><script type="application/json" class="diagram-spec">{"w": 820, "h": 300,
  "nodes": [
   {"id": "cfg", "x": 20, "y": 30, "w": 220, "title": "wrangler.jsonc", "kind": "note", "lines": ["main: src/index.ts", "assets: ./dist-assets", "env.production: vars, D1, cron"]},
   {"id": "code", "x": 20, "y": 160, "w": 220, "title": "Code", "kind": "plain", "lines": ["cloud/src/*.ts", "../src/core/*.ts", "→ bundled by esbuild"]},
@@ -105,10 +158,12 @@ npx wrangler d1 export jbd-cloud --remote --output backup.sql       # backup</co
  "edges": [
   {"from": "cfg", "to": "worker"}, {"from": "code", "to": "worker"},
   {"from": "sec", "to": "worker", "dashed": true}, {"from": "worker", "to": "d1", "both": true}, {"from": "cron", "to": "worker", "dashed": true}, {"from": "worker", "to": "url"}
- ]}
-</script>
+ ]}</script><figcaption>What wrangler deploy --env production assembles.</figcaption></figure><div class="done-toggle"><button class="btn primary" type="button" id="doneBtn">Mark this guide as done</button></div><nav class="pager" aria-label="Previous and next guide"><a class="prev" href="cf-workers.html"><small>← Previous</small>Workers: how your code runs</a><a class="next" href="cf-limits.html"><small>Next →</small>The free tier and capacity maths</a></nav>
 </article>
+<nav class="learn-toc" aria-label="On this page"><h4>On this page</h4><a href="#bindings-how-code-reaches-resources">Bindings: how code reaches resources</a><a href="#d1-the-database">D1: the database</a><a href="#workers-static-assets">Workers Static Assets</a><a href="#cron-triggers">Cron Triggers</a><a href="#variables-vs-secrets">Variables vs secrets</a><a href="#environments">Environments</a><a href="#how-it-all-fits">How it all fits</a></nav>
+</div>
 </main>
+<script src="catalogue.js"></script>
 <script src="learn.js"></script>
 </body>
 </html>
