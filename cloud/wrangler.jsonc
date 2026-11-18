@@ -52,7 +52,7 @@
         "MIN_INTERVAL_MIN": "5"
       },
       "d1_databases": [
-        { "binding": "DB", "database_name": "jbd-cloud", "database_id": "REPLACE_WITH_D1_DATABASE_ID", "migrations_dir": "migrations" }
+        { "binding": "DB", "database_name": "jbd-cloud", "database_id": "9e6d337d-c45c-40b2-acb5-84256537f58b", "migrations_dir": "migrations" }
       ],
       "triggers": { "crons": ["* * * * *"] }
     }
