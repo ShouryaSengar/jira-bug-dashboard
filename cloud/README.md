@@ -152,8 +152,9 @@ Steps marked 👤 need your own account and cannot be done by the code.
 
 1. 👤 **Cloudflare account** (free). `cd cloud && npx wrangler login`.
 2. 👤 **Database**: `npx wrangler d1 create jbd-cloud` → copy the `database_id` into `env.production.d1_databases` in `wrangler.jsonc`.
-3. **Keys**: `npm run vapid` prints a VAPID key pair and a token-encryption key. Put `VAPID_PUBLIC_KEY` and
-   `VAPID_SUBJECT` (e.g. `mailto:you@example.com`) into `env.production.vars`.
+3. **Keys**: `npm run vapid` prints a VAPID key pair and a token-encryption key. Put `VAPID_PUBLIC_KEY` into
+   `env.production.vars`. `VAPID_SUBJECT` (e.g. `mailto:you@example.com`) is set as a secret in step 6 so your
+   address is not published in the repository.
 4. 👤 **First deploy** to learn your URL: `npm run deploy`. Wrangler prints
    `https://jira-bug-dashboard-cloud.<your-subdomain>.workers.dev`. Set it as `APP_ORIGIN`. (The API answers
    "not configured" until the remaining steps are done; that is expected.)
@@ -169,6 +170,7 @@ Steps marked 👤 need your own account and cannot be done by the code.
    npx wrangler secret put ATLASSIAN_CLIENT_SECRET --env production
    npx wrangler secret put TOKEN_ENC_KEY --env production       # from npm run vapid
    npx wrangler secret put VAPID_PRIVATE_KEY --env production   # from npm run vapid
+   npx wrangler secret put VAPID_SUBJECT --env production       # mailto:you@example.com
    ```
 7. **Deploy**: `npm run deploy` (applies D1 migrations remotely, then deploys; the cron trigger comes from `wrangler.jsonc`).
 8. 👤 **Optional hardening**: a custom domain, plus a WAF rate-limiting rule on `/auth/*` and `/api/*` if your plan allows it.

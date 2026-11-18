@@ -1,3 +1,4 @@
+import { ApiError } from './http.js';
 // Bindings, variables and secrets. Secrets are set with `wrangler secret put` (production) or `.dev.vars`
 // (local development, git-ignored) and never appear in source code or wrangler.jsonc.
 
@@ -14,7 +15,7 @@ export interface Env {
   /** https://api.atlassian.com in production; a local mock in tests. */
   ATLASSIAN_API_BASE: string;
   VAPID_PUBLIC_KEY: string;
-  /** mailto: or https: contact for push services. */
+  /** mailto: or https: contact for push services. A secret in production (keeps the address out of the repo). */
   VAPID_SUBJECT: string;
   /** Comma-separated host suffixes push subscriptions may point at (SSRF protection). */
   PUSH_ENDPOINT_HOSTS: string;
@@ -53,6 +54,8 @@ export const budgetSize = (env: Env): number => Math.min(48, Math.max(10, Number
 
 /** Fails fast with a clear message when a deployment is missing configuration. */
 export function assertConfigured(env: Env): void {
-  const missing = (['APP_ORIGIN', 'ATLASSIAN_CLIENT_ID', 'ATLASSIAN_CLIENT_SECRET', 'TOKEN_ENC_KEY'] as const).filter((k) => !env[k] || /REPLACE/.test(String(env[k])));
-  if (missing.length) throw new Error(`Cloud edition is not configured: missing ${missing.join(', ')}. See cloud/README.md.`);
+  const missing = (['APP_ORIGIN', 'ATLASSIAN_CLIENT_ID', 'ATLASSIAN_CLIENT_SECRET', 'TOKEN_ENC_KEY', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT'] as const)
+    .filter((k) => !env[k] || /REPLACE/.test(String(env[k])));
+  // Only setting names are reported, never values.
+  if (missing.length) throw new ApiError(503, `Cloud edition is not configured: missing ${missing.join(', ')}. See cloud/README.md.`, 'not_configured');
 }

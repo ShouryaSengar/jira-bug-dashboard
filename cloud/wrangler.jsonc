@@ -37,15 +37,15 @@
     },
 
     // Production. Replace the REPLACE_ values (see cloud/README.md, "Deployment checklist").
+    // VAPID_SUBJECT (your contact e-mail) is a secret, so it is not published in this public file.
     "production": {
       "name": "jira-bug-dashboard-cloud",
       "vars": {
-        "APP_ORIGIN": "REPLACE_WITH_https://jira-bug-dashboard-cloud.<your-subdomain>.workers.dev",
+        "APP_ORIGIN": "https://jira-bug-dashboard-cloud.shouryacode2021.workers.dev",
         "ATLASSIAN_CLIENT_ID": "REPLACE_WITH_ATLASSIAN_CLIENT_ID",
         "ATLASSIAN_AUTH_BASE": "https://auth.atlassian.com",
         "ATLASSIAN_API_BASE": "https://api.atlassian.com",
-        "VAPID_SUBJECT": "REPLACE_WITH_mailto:you@example.com",
-        "VAPID_PUBLIC_KEY": "REPLACE_WITH_OUTPUT_OF_npm_run_vapid",
+        "VAPID_PUBLIC_KEY": "BPF7ZVknIcFt37fPzlVyvhltQQ-fzy76OwYiacC4qhDNftqGdVUGRbzWe8cuEPsGubCZKpIA77iALaph7Kv38LI",
         "PUSH_ENDPOINT_HOSTS": "fcm.googleapis.com,updates.push.services.mozilla.com,push.services.mozilla.com,web.push.apple.com,notify.windows.com",
         "MONITOR_SUBREQUEST_BUDGET": "45",
         "MONITOR_MAX_USERS_PER_RUN": "12",
