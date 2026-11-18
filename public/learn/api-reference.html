@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>API reference · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Every HTTP endpoint with requests and responses." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="api-reference">
+<main>
+<article class="doc">
+<h1>API reference</h1>
+<p class="lede">Every HTTP endpoint of the backend, what it expects and what it returns. Both servers implement the shared ones with the same shapes; cloud-only endpoints are marked ☁️.</p>
+
+<h2>Conventions</h2>
+<ul>
+  <li>All responses are JSON with security headers and <code>Cache-Control: no-store</code>.</li>
+  <li>Errors: <code>{"error": "human readable message", "code": "machine_code"}</code>. Codes: <code>signin</code> (401, not signed in), <code>reauth</code> (401, Jira access revoked or expired), <code>rate_limited</code> (429), <code>not_configured</code> (503), <code>nosite</code> (409).</li>
+  <li>Every <code>POST</code>/<code>DELETE</code> must send <code>X-JBD: 1</code> and come from the app's own origin (CSRF protection). The frontend helper <code>post()</code> does this.</li>
+  <li>☁️ Every endpoint except <code>/api/config</code> and <code>/auth/*</code> requires the session cookie. User ids are never accepted from the client.</li>
+</ul>
+
+<h2>Connection and configuration</h2>
+<table>
+  <tr><th>Method and path</th><th>Purpose</th><th>Response</th></tr>
+  <tr><td><code>GET /api/config</code></td><td>What the page needs to start</td><td>Local: <code>{configured, source, jiraUrl, email, displayName, severityFields, issueTypes, configFile}</code>. Cloud: also <code>edition: "cloud"</code>, <code>signedIn</code>, <code>needsReauth</code>, <code>user</code>, <code>site</code>, <code>sites[]</code>, <code>vapidPublicKey</code>, <code>minIntervalMin</code></td></tr>
+  <tr><td><code>POST /api/config</code></td><td>Local: save <code>{jiraUrl, email, apiToken, severityFields, issueTypes}</code> (verified first). Cloud: update <code>{activeCloudId, severityFields, issueTypes}</code></td><td>updated config</td></tr>
+  <tr><td><code>DELETE /api/config</code></td><td>Local: delete credentials. Cloud: disconnect (delete tokens, sites, monitor state, devices, all sessions)</td><td>config</td></tr>
+  <tr><td>☁️ <code>GET /auth/login</code></td><td>Start sign-in (302 to Atlassian, sets state cookie)</td><td>redirect</td></tr>
+  <tr><td>☁️ <code>GET /auth/callback?code&amp;state</code></td><td>Finish sign-in (302 to <code>/?view=foryou&amp;connected=1</code> or <code>/?auth=&lt;reason&gt;</code>)</td><td>redirect</td></tr>
+  <tr><td>☁️ <code>POST /auth/logout</code></td><td>End this session</td><td><code>{ok: true}</code></td></tr>
+  <tr><td>☁️ <code>POST /api/account/delete</code></td><td>Body <code>{"confirm": "DELETE"}</code>; erases every row for the user</td><td><code>{deleted: true}</code></td></tr>
+</table>
+<p>Sign-in failure reasons in <code>?auth=</code>: <code>state</code>, <code>denied</code>, <code>code</code>, <code>exchange</code>, <code>offline</code>, <code>scopes</code>, <code>profile</code>, <code>nosite</code>.</p>
+
+<h2>Jira data</h2>
+<table>
+  <tr><th>Method and path</th><th>Purpose</th><th>Response</th></tr>
+  <tr><td><code>GET /api/bugs?key=ABC-123</code></td><td>Epics view: bugs linked to or under an issue</td><td><code>{parent, bugs: Bug[], severityFieldsUsed, jql, fetchedAt}</code></td></tr>
+  <tr><td><code>GET /api/mine</code></td><td>For You: bugs assigned to me (cloud: max 300)</td><td><code>{me, bugs: MyBug[], jql, truncated, recentlyAssignedSource, fetchedAt}</code></td></tr>
+  <tr><td><code>GET /api/issue?key=ABC-123</code></td><td>Detail drawer</td><td><code>IssueDetail</code>: summary, status, priority, severity, project, people, dates, parent, labels, description, comments[], history[], links[]</td></tr>
+</table>
+<p>Keys must match <code>^[A-Z][A-Z0-9_]+-\d+$</code>, otherwise 400.</p>
+
+<h2>JARVIS</h2>
+<table>
+  <tr><th>Method and path</th><th>Purpose</th><th>Response</th></tr>
+  <tr><td><code>GET /api/jarvis/status</code></td><td>Indicator and panel</td><td><code>{state, prefs, lastSyncAt, nextSyncAt, lastError, monitored, unread, lastEventId, clients, osNotifySupported}</code></td></tr>
+  <tr><td><code>GET /api/jarvis/events?after=N</code></td><td>History (up to 200, oldest first)</td><td><code>{events: JarvisEvent[]}</code></td></tr>
+  <tr><td><code>GET /api/jarvis/stream</code></td><td>Local only: Server-Sent Events (<code>jarvis</code> and <code>status</code> events)</td><td>event stream</td></tr>
+  <tr><td><code>POST /api/jarvis/prefs</code></td><td><code>{enabled?, paused?, intervalSec?, closedWindowDays?, osNotify?}</code> (cloud interval 5–60 min)</td><td><code>{prefs, status}</code></td></tr>
+  <tr><td><code>POST /api/jarvis/read</code></td><td><code>{ids: number[]}</code> or <code>{all: true}</code></td><td>status</td></tr>
+  <tr><td><code>POST /api/jarvis/clear</code></td><td>Delete my history</td><td>status</td></tr>
+  <tr><td><code>POST /api/jarvis/sync</code></td><td>Check now. Local: returns status, events arrive on the stream. Cloud: runs the check in the request (max 4 per minute) and returns new events</td><td>cloud: <code>{result, events, status}</code></td></tr>
+  <tr><td>☁️ <code>POST /api/jarvis/notify</code></td><td>Server-side notification rules: <code>{push?, types?, frequency?, quiet?: {on, from, to}, tz?}</code> (validated)</td><td><code>{notify}</code></td></tr>
+</table>
+<p>A <code>JarvisEvent</code>:</p>
+<pre><code>{ "id": 42, "type": "reopened", "at": "2026-11-18T19:02:00.000Z", "occurredAt": "2026-11-18T19:01:12.000Z",
+  "key": "ABC-1", "summary": "Login fails on Safari", "project": "ABC", "url": "https://acme.atlassian.net/browse/ABC-1",
+  "actor": "Bob Builder", "actorId": "acc-bob", "from": "Done", "to": "Reopened", "detail": null,
+  "escalated": false, "importance": "high", "own": false, "read": false }</code></pre>
+
+<h2>☁️ Web Push</h2>
+<table>
+  <tr><th>Method and path</th><th>Purpose</th></tr>
+  <tr><td><code>POST /api/push/subscribe</code></td><td>Body = <code>PushSubscription.toJSON()</code> + <code>label</code>; endpoint must be an allowed push service; max 5 devices</td></tr>
+  <tr><td><code>POST /api/push/unsubscribe</code></td><td><code>{endpoint}</code> or <code>{id}</code>, only your own</td></tr>
+  <tr><td><code>GET /api/push/devices</code></td><td><code>{devices: [{id, label, created_at, last_ok_at}]}</code></td></tr>
+  <tr><td><code>POST /api/push/test</code></td><td>Send a test push to your devices (max 3 per minute); dead subscriptions are removed</td></tr>
+</table>
+
+<h2>Development only</h2>
+<p><code>POST /api/__dev/tick</code> (run one cron tick and return its report) and <code>POST /api/__dev/pdr</code> (run the privacy report) exist only when <code>ALLOW_INSECURE_PUSH = "1"</code>, which is set in the <code>dev</code> environment and never in production. Locally you can also trigger the real scheduled handler with <code>curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"</code>.</p>
+
+<h2>Calling the API yourself</h2>
+<pre><code># signed-out config (works on the live site)
+curl https://jira-bug-dashboard-cloud.shouryacode2021.workers.dev/api/config
+
+# anything else needs your session cookie; easiest from the browser console on the site:
+await (await fetch('/api/jarvis/status')).json()
+await (await fetch('/api/jarvis/sync', { method: 'POST', headers: { 'X-JBD': '1' } })).json()</code></pre>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

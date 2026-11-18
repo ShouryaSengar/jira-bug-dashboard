@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>A notification&#x27;s journey · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="From a Jira comment to a voice in your ear." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="flow-push">
+<main>
+<article class="doc">
+<h1>A notification's journey</h1>
+<p class="lede">From "Bob commented on your bug" in Jira to a notification on your screen and JARVIS speaking, crossing five systems, with the message encrypted end to end.</p>
+
+<script type="application/json" class="diagram" data-kind="seq" data-caption="A comment becomes a notification and a voice. Steps 5-8 work even when no tab is open; 9-10 need an open tab.">
+{"gap": 140, "actors": [
+  {"id": "bob", "label": "Bob", "kind": "user", "sub": "in Jira"},
+  {"id": "j", "label": "Jira", "kind": "ext"},
+  {"id": "w", "label": "Worker", "kind": "cf", "sub": "cron"},
+  {"id": "ps", "label": "Push service", "kind": "ext", "sub": "FCM / Apple / …"},
+  {"id": "sw", "label": "Service worker", "kind": "browser"},
+  {"id": "tab", "label": "Dashboard tab", "kind": "browser"}
+ ],
+ "steps": [
+  {"from": "bob", "to": "j", "text": "adds a comment on ABC-1"},
+  {"note": "up to one interval later (default 5 min)", "over": ["j", "w"]},
+  {"from": "w", "to": "j", "text": "incremental search + comments"},
+  {"from": "j", "to": "w", "text": "new comment", "ret": true},
+  {"from": "w", "to": "w", "text": "event, rules, encrypt"},
+  {"from": "w", "to": "ps", "text": "POST endpoint (VAPID)", "accent": true},
+  {"from": "ps", "to": "sw", "text": "deliver (wakes it)"},
+  {"from": "sw", "to": "sw", "text": "decrypt (browser does it)"},
+  {"from": "sw", "to": "sw", "text": "showNotification()"},
+  {"from": "sw", "to": "tab", "text": "postMessage(events)"},
+  {"from": "tab", "to": "tab", "text": "JARVIS speaks"}
+ ]}
+</script>
+
+<h2>The pieces</h2>
+<h3>Subscribing (once per device)</h3>
+<ol>
+  <li>In JARVIS you click <em>Enable</em>. Inside that click the page asks for notification permission (browsers only allow it from a user action).</li>
+  <li>The page calls <code>registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })</code>. The key is the app's public VAPID key.</li>
+  <li>The browser contacts its push service and returns a <em>subscription</em>: an endpoint URL (unique to this browser) plus two keys (<code>p256dh</code>, <code>auth</code>) that only this browser can decrypt with.</li>
+  <li>The page sends it to <code>POST /api/push/subscribe</code>. The Worker checks the endpoint is a real push service and stores it.</li>
+</ol>
+
+<h3>Sending (each time there is news)</h3>
+<ol>
+  <li>The monitor creates events and applies your rules (not your own, type enabled, not quiet hours in your time zone).</li>
+  <li><code>pushPlan()</code> groups them into at most 3 notifications.</li>
+  <li>The payload (titles, bodies, and the events so open tabs can speak them) is encrypted with your browser's keys (RFC 8291, <code>aes128gcm</code>).</li>
+  <li>The Worker POSTs it to your endpoint with a VAPID header (a JWT signed with the app's private key proving which app is sending), <code>TTL: 86400</code> (keep for a day if your device is offline) and <code>Urgency</code>.</li>
+  <li>404/410 from the push service = subscription dead → deleted. Network failure = retry next minute (up to 6 hours).</li>
+</ol>
+
+<h3>Receiving</h3>
+<ol>
+  <li>The push service delivers to your browser; the browser wakes <code>sw.js</code> and gives it the decrypted payload.</li>
+  <li>The service worker always shows the notifications (browsers revoke push access from sites that receive pushes without showing anything).</li>
+  <li>It posts the events to every open dashboard tab. The tab adds them to history, refreshes For You, and JARVIS speaks (skipping its own desktop notification, since one was already shown).</li>
+  <li>Clicking a notification focuses an open tab on that bug, or opens <code>/?view=foryou&amp;issue=ABC-1</code>.</li>
+</ol>
+
+<h2>Who can read the message?</h2>
+<table>
+  <tr><th>Party</th><th>Sees</th></tr>
+  <tr><td>The push service (Google, Apple…)</td><td>an encrypted blob, its size and the sending app's public key; <strong>not</strong> the content</td></tr>
+  <tr><td>Your browser</td><td>the content (it holds the private key)</td></tr>
+  <tr><td>Other users of the app</td><td>nothing; subscriptions are per user and per device</td></tr>
+</table>
+
+<h2>What works where</h2>
+<table>
+  <tr><th>Situation</th><th>Notification</th><th>Voice</th></tr>
+  <tr><td>Dashboard tab open (even in background)</td><td>yes</td><td>yes</td></tr>
+  <tr><td>Browser open, no dashboard tab</td><td>yes</td><td>no</td></tr>
+  <tr><td>Browser fully quit (desktop)</td><td>the push service holds the message up to 24 hours (TTL) and delivers it when the browser next runs; Chrome and Edge can keep a background process that receives it straight away</td><td>no</td></tr>
+  <tr><td>Phone (Android Chrome)</td><td>yes</td><td>no</td></tr>
+  <tr><td>iPhone / iPad</td><td>only after <em>Share → Add to Home Screen</em> (iOS 16.4+)</td><td>no</td></tr>
+</table>
+<p>The cryptography is explained in <a href="web-push.html">Service workers and Web Push</a> and <a href="security-crypto.html">The cryptography, simply</a>.</p>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

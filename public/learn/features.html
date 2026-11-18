@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Feature tour · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Epics view, For You, JARVIS, filters, markers and themes." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="features">
+<main>
+<article class="doc">
+<h1>Feature tour</h1>
+<p class="lede">What the app does for the people who use it, screen by screen. Knowing the features first makes the code much easier to follow.</p>
+
+<h2>The header</h2>
+<p>Every screen shares one header: the brand (link home), the <strong>Epics / For You</strong> switch, an issue box (Epics only), the <strong>JARVIS</strong> indicator, refresh, theme switcher and settings. On phones the header wraps into two rows.</p>
+<table>
+  <tr><th>Control</th><th>What it does</th><th>Where in the code</th></tr>
+  <tr><td>Epics / For You</td><td>Switches the two main views; remembered between visits</td><td><code>setView()</code> in <code>src/client/main.ts</code></td></tr>
+  <tr><td>Track box</td><td>Accepts <code>ABC-123</code> or a pasted Jira URL; adds a tab</td><td><code>parseKey()</code> in <code>util.ts</code>, <code>track()</code> in <code>main.ts</code></td></tr>
+  <tr><td>JARVIS button</td><td>Green dot = online; badge = unread events; opens the control panel</td><td><code>renderIndicator()</code> in <code>jarvis.ts</code></td></tr>
+  <tr><td>↻</td><td>Reloads the current view (shortcut <kbd>r</kbd>)</td><td><code>refreshCurrent()</code></td></tr>
+  <tr><td>◐</td><td>Cycles themes: system, light, paper, dark, midnight</td><td><code>applyTheme()</code>, CSS variables in <code>app.css</code></td></tr>
+  <tr><td>⚙</td><td>Settings: connection, appearance, markers, data</td><td><code>openSettings()</code></td></tr>
+</table>
+
+<h2>The Epics view</h2>
+<p>Track any issue (usually an epic). The app collects every bug that is <em>linked to it</em> (any link type: blocks, relates to…) or is its <em>child</em>, using this JQL:</p>
+<pre><code>(issue in linkedIssues("ABC-123") OR parent = "ABC-123") AND issuetype in ("Bug") ORDER BY created DESC</code></pre>
+<ul>
+  <li><strong>Tabs</strong>: several tracked issues at once, each with its own filters and stars.</li>
+  <li><strong>Header card</strong>: the epic's key, status, title and a progress bar (closed / total).</li>
+  <li><strong>KPI tiles</strong>: total, open, closed, open more than N days, stale, unassigned, new/changed, average open age, oldest open. Clicking a tile filters the table.</li>
+  <li><strong>Charts</strong>: status donut, severity, priority, open-by-assignee bars, a weekly flow chart (created vs resolved, with open backlog line) and an age histogram. Clicking a chart item toggles a filter.</li>
+  <li><strong>Table</strong>: sortable columns, column picker, search (<kbd>/</kbd>), quick filters, "show more" paging, CSV export (with spreadsheet-formula protection).</li>
+  <li><strong>Markers</strong>: ★ stars; <span style="color:var(--accent)">NEW</span> / UPDATED since you pressed "Mark all as seen"; STALE when not updated for N days; age coloured green / amber / red by thresholds you choose.</li>
+</ul>
+
+<h2>For You</h2>
+<p>Every bug assigned to you across all projects (open ones, plus closed ones touched in the last 90 days), regardless of epic.</p>
+<ul>
+  <li><strong>Greeting</strong> and a one-line summary ("5 open bugs on your plate, 2 gone stale").</li>
+  <li><strong>Nine KPIs</strong>: total, open, in progress, blocked, resolved/closed, newly assigned (7 days), updated (24 hours), stale, oldest unresolved.</li>
+  <li><strong>Charts</strong>: status, open by project, priority, severity, age; lists of the oldest and the stalest bugs; the latest JARVIS events.</li>
+  <li><strong>Blocked detection</strong>: a status named like <em>Blocked / On hold</em>, a <code>blocked</code> label, or an open "is blocked by" link.</li>
+  <li><strong>Detail drawer</strong>: description, comments, change history, linked issues, and "Open in Jira". Rows show the latest activity JARVIS saw.</li>
+</ul>
+
+<h2>JARVIS</h2>
+<p>The assistant that watches your assigned bugs.</p>
+<ul>
+  <li><strong>Detects</strong> new assignments, status changes, reopenings, resolutions, closings, comments, priority and severity changes, reassignments and other edits.</li>
+  <li><strong>Announces</strong> them with a voice (browser speech) and desktop notifications, using witty templates: <em>"Good evening, sir. A new bug has landed on your desk…"</em>.</li>
+  <li><strong>Groups</strong> bursts: two events are spoken separately; three or more become one briefing. Repeats on one bug collapse ("3 new comments").</li>
+  <li><strong>Respects you</strong>: your own actions are never announced; low-importance edits are never spoken; quiet hours; "important only" or "digest" modes; per-event-type switches.</li>
+  <li><strong>Control panel</strong>: status, last and next check, pause, check now, test announcement, simulate events, history with read/unread, settings (voice, speed, volume, how to address you).</li>
+  <li><strong>Cloud extras</strong>: background notifications via Web Push even when the browser is closed; checks run every 5 minutes on Cloudflare.</li>
+</ul>
+<p>The engine is explained in <a href="jarvis-engine.html">JARVIS: how changes are detected</a> and <a href="jarvis-voice.html">JARVIS: speech and notifications</a>.</p>
+
+<h2>Settings and data</h2>
+<ul>
+  <li><strong>Connection</strong>: Local edition: Jira URL, email, API token (verified before saving). Cloud: signed-in account, Jira site picker, advanced fields, sign out, disconnect, delete account. Demo: a note explaining sample data.</li>
+  <li><strong>Appearance</strong>: theme and five accent colours.</li>
+  <li><strong>Markers and refresh</strong>: warn / critical / stale thresholds in days, auto-refresh interval.</li>
+  <li><strong>Data on this device</strong>: clear everything stored in this browser.</li>
+</ul>
+
+<h2>Small things that matter</h2>
+<ul>
+  <li>Mobile layout: tables turn into cards, filters into a bottom sheet.</li>
+  <li>Keyboard: <kbd>/</kbd> search, <kbd>r</kbd> refresh, <kbd>Esc</kbd> closes drawers.</li>
+  <li>Accessibility: real buttons, ARIA labels, visible focus, reduced-motion support.</li>
+  <li>Offline tolerance: the last result is cached and shown if Jira is unreachable.</li>
+  <li>The "Get the app" dialog with install steps and a ready-made prompt for AI assistants (hosted demo and Local).</li>
+</ul>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

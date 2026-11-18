@@ -5,6 +5,8 @@ Atlassian, and get the full app (Epics view, For You, JARVIS voice, background n
 
 The **Local edition** in the repository root is unchanged and does not depend on this folder.
 
+The full explanation (HLD, LLD, sequence diagrams, database, Cloudflare and Atlassian setup, deploy playbook) is in the app itself at `/learn/`; the source is `public/learn/`.
+
 | | Local edition | Cloud edition | Demo (GitHub Pages) |
 |---|---|---|---|
 | Install | Node.js + `npm start` | nothing | nothing |

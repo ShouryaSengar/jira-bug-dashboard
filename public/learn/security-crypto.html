@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>The cryptography, simply · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Hashes, AES-GCM, ECDSA, ECDH and HKDF without maths." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="security-crypto">
+<main>
+<article class="doc">
+<h1>The cryptography, simply</h1>
+<p class="lede">Every cryptographic building block in the app, what problem it solves, explained without maths, and exactly where it is used. All of it comes from the browser-standard Web Crypto API; nothing is home-made except the assembly.</p>
+
+<h2>The toolbox</h2>
+<table>
+  <tr><th>Tool</th><th>In one sentence</th><th>Used for</th></tr>
+  <tr><td>Random numbers</td><td>unpredictable bytes from the operating system</td><td>session ids, OAuth state, IVs, salts</td></tr>
+  <tr><td>SHA-256 (hash)</td><td>a fingerprint you cannot reverse</td><td>storing sessions, hashing IPs, key ids</td></tr>
+  <tr><td>AES-GCM (symmetric encryption)</td><td>one key locks and unlocks, and detects tampering</td><td>tokens at rest; push payloads (128-bit variant)</td></tr>
+  <tr><td>ECDSA P-256 (signatures)</td><td>sign with a private key, anyone verifies with the public key</td><td>VAPID JWT for push</td></tr>
+  <tr><td>ECDH P-256 (key agreement)</td><td>two parties derive the same secret without sending it</td><td>push payload encryption</td></tr>
+  <tr><td>HKDF (key derivation)</td><td>stretch one secret into several good keys</td><td>push payload encryption</td></tr>
+  <tr><td>Constant-time compare</td><td>compare secrets without leaking timing</td><td>OAuth state check</td></tr>
+</table>
+
+<h2>Hashing: storing sessions</h2>
+<div class="callout eli5"><span class="callout-title">Explained simply</span>A hash is like a fingerprint of a word. The same word always gives the same fingerprint, but from the fingerprint you cannot rebuild the word.</div>
+<p>Your session cookie is 32 random bytes. The database stores <code>SHA-256(cookie)</code>. When you make a request, the Worker hashes your cookie and looks up the hash. If someone copies the database, they have fingerprints, not cookies, so they cannot sign in as anyone.</p>
+
+<h2>AES-256-GCM: tokens at rest</h2>
+<pre><code>// cloud/src/crypto.ts (simplified)
+const iv = crypto.getRandomValues(new Uint8Array(12));                       // new every time
+const ct = await crypto.subtle.encrypt(
+  { name: 'AES-GCM', iv, additionalData: enc.encode(`grant:${userId}`) },   // "AAD"
+  key, enc.encode(JSON.stringify({ access, refresh })));
+store(`${b64url(iv)}.${b64url(ct)}`);</code></pre>
+<ul>
+  <li><strong>The key</strong> (<code>TOKEN_ENC_KEY</code>, 32 random bytes) is a Worker secret, not in the database. A database leak alone reveals nothing.</li>
+  <li><strong>A new IV per encryption</strong>: encrypting the same tokens twice gives different results, and GCM requires never reusing an IV with the same key.</li>
+  <li><strong>Authenticated</strong>: any change to the stored text makes decryption fail instead of producing garbage.</li>
+  <li><strong>Additional data</strong> <code>grant:&lt;userId&gt;</code>: not secret, but part of the check. Copying user A's ciphertext into user B's row fails to decrypt. Tested.</li>
+  <li><strong>Key id</strong>: the first 8 characters of a hash of the key are stored with the row, so a future rotation can tell which key was used.</li>
+</ul>
+
+<h2>Signatures: VAPID</h2>
+<div class="callout eli5"><span class="callout-title">Explained simply</span>A signature is like a wax seal only you can make (private key) but everyone can recognise (public key). The push service sees the seal and knows the message really comes from this app.</div>
+<p>The Worker builds a small JSON Web Token (<code>{"aud": push origin, "exp": in 12 h, "sub": "mailto:…"}</code>), signs <code>header.payload</code> with ECDSA P-256 SHA-256, and caches it for a while. Web Crypto produces the signature in exactly the raw <code>r||s</code> format JWTs need.</p>
+
+<h2>Key agreement + derivation: push encryption</h2>
+<p>ECDH lets the Worker and your browser end up with the same secret number, each using its own private key and the other's public key, without the secret ever crossing the network. HKDF then turns that secret (mixed with your browser's <code>auth</code> secret and a random salt) into an AES key and a nonce. The push service in the middle sees only ciphertext. Full walk-through in <a href="web-push.html">Service workers and Web Push</a>.</p>
+
+<h2>Constant-time comparison</h2>
+<pre><code>export function safeEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i &lt; a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}</code></pre>
+<p>A normal <code>===</code> stops at the first different character, so an attacker measuring response times could guess a secret one character at a time. This version always looks at every character.</p>
+
+<h2>What is deliberately not done</h2>
+<ul>
+  <li>No custom algorithms; only standard Web Crypto primitives.</li>
+  <li>No encryption keys in code, Git, logs or the database.</li>
+  <li>No "encryption" of things that should simply not be stored (full issue contents are not stored at all).</li>
+</ul>
+
+<h2>How correctness is checked</h2>
+<p>The unit tests round-trip AES-GCM, prove that the wrong user id, a tampered ciphertext or the wrong key all fail, and decrypt Web Push payloads with Node's own <code>crypto</code> module (a completely independent implementation). The end-to-end tests verify VAPID signatures with Node as well.</p>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

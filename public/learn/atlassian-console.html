@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>The developer console, sharing and privacy duties · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Registering an app and the Personal Data Reporting API." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="atlassian-console">
+<main>
+<article class="doc">
+<h1>The developer console, sharing and privacy duties</h1>
+<p class="lede">Registering an OAuth app with Atlassian, every setting that matters, how to let other people sign in, and the Personal Data Reporting obligation that comes with storing personal data.</p>
+
+<h2>Registering the app</h2>
+<ol class="steps-list">
+  <li>Open <a href="https://developer.atlassian.com/console/myapps/">developer.atlassian.com/console/myapps</a> and sign in.</li>
+  <li><strong>Create → OAuth 2.0 integration</strong>, give it a name, accept the terms.</li>
+  <li><strong>Permissions</strong>: add <em>Jira API</em> → Configure → classic scopes <code>read:jira-work</code>, <code>read:jira-user</code>. Add <em>User identity API</em> (<code>read:me</code>).</li>
+  <li><strong>Authorization → OAuth 2.0 (3LO)</strong>: enter the callback URL exactly, for example <code>https://jira-bug-dashboard-cloud.shouryacode2021.workers.dev/auth/callback</code>. Choose <em>Resource-level</em> access.</li>
+  <li><strong>Settings</strong>: copy the <strong>Client ID</strong> (public; goes in <code>wrangler.jsonc</code>) and the <strong>Secret</strong> (private; goes straight into <code>wrangler secret put ATLASSIAN_CLIENT_SECRET</code>, never into a file or chat).</li>
+</ol>
+<div class="callout warn"><span class="callout-title">The greyed-out Save button</span>The console only enables "Save changes" when the text differs from what is saved. If the URL is already saved, the button stays grey. That is not an error. The "Authorization URL generator" on the same page shows the saved value inside its links: check that <code>redirect_uri</code> ends with <code>%2Fauth%2Fcallback</code>.</div>
+<div class="callout info"><span class="callout-title">offline_access is not in the console</span>You will not find <code>offline_access</code> among the scopes to tick. The app adds it to the authorize URL itself; that is how Atlassian works.</div>
+
+<h2>Distribution: who may sign in</h2>
+<table>
+  <tr><th>Setting</th><th>Who can sign in</th><th>Use when</th></tr>
+  <tr><td>Not sharing (default)</td><td>only you and app contributors</td><td>development and your own testing</td></tr>
+  <tr><td>Sharing within organization</td><td>people in your Atlassian organisation</td><td>sharing with colleagues (app owned by your company account)</td></tr>
+  <tr><td>Sharing with anyone</td><td>any Atlassian user, any site</td><td>a public service</td></tr>
+</table>
+<p>Sharing needs a vendor name, a privacy policy URL (this app has <code>/privacy</code>), terms of service (the MIT license works as a start), a support contact, and a personal-data declaration.</p>
+
+<h2>The personal-data declaration</h2>
+<p>Atlassian asks: <em>does your app store personal data?</em> "Yes" if you copy and keep data linked to user references (such as account ids) or cache data for longer than 24 hours. This app does (names, emails, account ids in history for 30 days), so the answer is Yes, which brings an obligation:</p>
+
+<h2>The Personal Data Reporting API</h2>
+<p>Apps that store personal data must regularly tell Atlassian which accounts they hold data for. Atlassian then replies, per account, whether the person closed their account or changed their data.</p>
+<pre><code>POST https://api.atlassian.com/app/report-accounts/
+Authorization: Bearer &lt;an access token of this app&gt;
+{ "accounts": [
+    { "accountId": "5b10ac8d…", "updatedAt": "2026-11-18T19:37:44.066Z" },
+    …  up to 90 per request
+] }
+
+204 No Content            → nothing to do
+200 { "accounts": [ { "accountId": "…", "status": "closed" },
+                    { "accountId": "…", "status": "updated" } ] }
+429 + Retry-After         → slow down</code></pre>
+<ul>
+  <li><strong>Cycle</strong>: every 7 days by default (or what the <code>Cycle-Period</code> header says); not more often.</li>
+  <li><strong>updatedAt</strong>: when you fetched that person's data (the oldest, if several pieces).</li>
+  <li><strong>closed</strong>: erase everything about that person. <strong>updated</strong>: your copy is stale; refresh or erase it.</li>
+  <li>Never report the special id <code>unknown</code>. Do not schedule exactly on the hour (everyone does).</li>
+</ul>
+<p>How this app implements it (minute :37, resumable, erases and scrubs): <a href="privacy-lifecycle.html">Privacy and the data life cycle</a>. Its first real report was accepted by Atlassian on 18 November 2026.</p>
+
+<h2>Checklist for any Atlassian OAuth app</h2>
+<ul>
+  <li>☐ Scopes as narrow as possible (read-only if you can)</li>
+  <li>☐ Callback URL exact, HTTPS</li>
+  <li>☐ <code>state</code> parameter bound to the browser</li>
+  <li>☐ Client secret only in server secrets</li>
+  <li>☐ Rotating refresh tokens handled without races</li>
+  <li>☐ <code>invalid_grant</code> → ask the user to reconnect</li>
+  <li>☐ Privacy policy published</li>
+  <li>☐ Personal Data Reporting implemented if you store personal data</li>
+  <li>☐ Data erased when no longer needed (revocation, account closed)</li>
+</ul>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

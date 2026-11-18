@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Quality goals: security, speed, cost, reliability · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="The non-functional requirements and how they are met." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="nfr">
+<main>
+<article class="doc">
+<h1>Quality goals: security, speed, cost, reliability</h1>
+<p class="lede">Non-functional requirements (NFRs) are the "how well" of a system rather than the "what". Each goal below lists how it is met and how it was verified.</p>
+
+<h2>Security</h2>
+<table>
+  <tr><th>Goal</th><th>How it is met</th><th>Verified by</th></tr>
+  <tr><td>Tokens never reach the browser</td><td>All Jira calls go through the server; API responses never include tokens</td><td>e2e test scans config responses and localStorage</td></tr>
+  <tr><td>Stolen database ≠ stolen access</td><td>Tokens AES-256-GCM encrypted with an external key; sessions stored as SHA-256 hashes</td><td>e2e reads D1 and checks for plaintext</td></tr>
+  <tr><td>No cross-user access</td><td>Every query filtered by the session's user id; no endpoint accepts a user id</td><td>e2e second-user IDOR tests</td></tr>
+  <tr><td>No forged requests</td><td>Custom <code>X-JBD</code> header, <code>Origin</code> and <code>Sec-Fetch-Site</code> checks, SameSite cookies</td><td>e2e CSRF tests</td></tr>
+  <tr><td>Sign-in cannot be hijacked</td><td>OAuth <code>state</code> bound to an HttpOnly cookie; one-time codes; scope check</td><td>e2e forged state, missing cookie, code replay</td></tr>
+  <tr><td>Page cannot be weaponised</td><td>Strict CSP, all text HTML-escaped, <code>frame-ancestors 'none'</code></td><td>headers checked on the live site</td></tr>
+  <tr><td>Server cannot be aimed at internal hosts</td><td>Push endpoints restricted to known push services</td><td>unit + e2e SSRF tests</td></tr>
+</table>
+<p>Full detail: <a href="security-threats.html">Threat model and defences</a>.</p>
+
+<h2>Privacy</h2>
+<ul>
+  <li>Data minimisation: no full issue contents stored, comments trimmed to 160 characters in history.</li>
+  <li>Retention: history 30 days; sessions 30 days (7 idle); IP hashes ~10 minutes; accounts erased 30 days after access ended.</li>
+  <li>User control: disconnect, delete account, revoke at Atlassian.</li>
+  <li>Atlassian's Personal Data Reporting API implemented and verified live.</li>
+</ul>
+<p>See <a href="privacy-lifecycle.html">Privacy and the data life cycle</a>.</p>
+
+<h2>Performance</h2>
+<table>
+  <tr><th>Operation</th><th>Measured CPU (M1 Pro, V8)</th><th>Free-plan limit</th></tr>
+  <tr><td>For You page: parse and map 100 issues</td><td>~0.9 ms</td><td rowspan="5">10 ms per invocation</td></tr>
+  <tr><td>Idle monitor check (300 tracked, 3000 seen ids)</td><td>~0.4 ms</td></tr>
+  <tr><td>Monitor commit (serialise checkpoint)</td><td>~0.5 ms</td></tr>
+  <tr><td>Classify 100 changelog entries</td><td>~0.2 ms</td></tr>
+  <tr><td>Encrypt one Web Push message</td><td>~0.45 ms</td></tr>
+</table>
+<p>Network waiting does not count as CPU on Workers, so slow Jira responses do not break the limit. The frontend bundle is about 90 KiB uncompressed (26 KiB gzipped), with no framework.</p>
+
+<h2>Cost</h2>
+<ul>
+  <li>Target: zero. Workers Free, D1 Free, GitHub Pages; no paid APIs; no AI services.</li>
+  <li>The free plan cannot bill you. Exceeding a limit returns errors until the daily reset (00:00 UTC), which the monitor treats as temporary.</li>
+  <li>Capacity on free: about 60 monitored users at a 5-minute interval, about 120 at 10 minutes. See <a href="cf-limits.html">The free tier and capacity maths</a>.</li>
+</ul>
+
+<h2>Reliability</h2>
+<ul>
+  <li><strong>No lost events</strong>: the checkpoint advances only after a user's changes are fully processed; failed pushes stay pending and are retried for 6 hours.</li>
+  <li><strong>No duplicates</strong>: every changelog item and comment id is recorded in <code>seen</code>.</li>
+  <li><strong>Graceful overload</strong>: deferral instead of failure; exponential back-off with <code>Retry-After</code>.</li>
+  <li><strong>Restart-safe</strong>: Workers hold no state; the Local server persists its state to disk atomically (write temp file, then rename).</li>
+  <li><strong>Revocation-safe</strong>: an <code>invalid_grant</code> marks the grant revoked; the UI asks to reconnect; the monitor skips the user.</li>
+</ul>
+
+<h2>Maintainability</h2>
+<ul>
+  <li>Shared core for both servers; one API contract; TypeScript strict mode everywhere.</li>
+  <li>Tests: ~29 local detection, 33 announcement rules, 82 cloud end-to-end, 34 browser, 16 unit (see <a href="testing.html">How this app is tested</a>).</li>
+  <li>Decisions recorded (<a href="decisions.html">Design decisions</a>), schema in numbered migrations, these guides.</li>
+</ul>
+
+<h2>Usability and accessibility</h2>
+<ul>
+  <li>Responsive down to 360 px wide; tables become cards on phones.</li>
+  <li>Keyboard shortcuts, focus outlines, ARIA labels, real buttons, reduced-motion support.</li>
+  <li>Five themes, including two dark ones.</li>
+</ul>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

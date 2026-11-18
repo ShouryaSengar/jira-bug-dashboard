@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>The background check (cron) · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="What happens every minute while you sleep." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="flow-cron">
+<main>
+<article class="doc">
+<h1>The background check (cron)</h1>
+<p class="lede">Every minute Cloudflare wakes the Worker. Here is everything that happens in that one run, why it is safe to stop half way, and how it stays inside 10 ms of CPU and 50 subrequests.</p>
+
+<div class="callout eli5"><span class="callout-title">Explained simply</span>A night guard does a round every minute. There are many rooms (users), but the guard only has time for about a dozen per round, so each room has its own minute on a rota. In each room the guard asks one quick question ("anything new since my last visit?"). Only if the answer is yes does the guard look closer and write it in the logbook. If the round runs out of time, the guard notes the unfinished rooms and starts with them next round.</div>
+
+<h2>The run</h2>
+<script type="application/json" class="diagram" data-kind="seq" data-caption="One cron run (runTick) with one due user who has a new comment.">
+{"gap": 150, "actors": [
+  {"id": "cf", "label": "Cloudflare", "kind": "cf", "sub": "cron * * * * *"},
+  {"id": "w", "label": "Worker", "kind": "cf", "sub": "runTick()"},
+  {"id": "d1", "label": "D1", "kind": "db"},
+  {"id": "j", "label": "Jira (gateway)", "kind": "ext"},
+  {"id": "p", "label": "Push service", "kind": "ext"}
+ ],
+ "steps": [
+  {"from": "cf", "to": "w", "text": "scheduled(event)"},
+  {"from": "w", "to": "d1", "text": "due users (1 query, all data)"},
+  {"from": "d1", "to": "w", "text": "rows", "ret": true},
+  {"note": "for each due user, while budget lasts (max 12)", "over": ["w", "j"]},
+  {"from": "w", "to": "j", "text": "incremental JQL search"},
+  {"from": "j", "to": "w", "text": "1 changed bug", "ret": true},
+  {"from": "w", "to": "j", "text": "changelog + comments"},
+  {"from": "j", "to": "w", "text": "history", "ret": true},
+  {"from": "w", "to": "w", "text": "classify → 1 comment event"},
+  {"from": "w", "to": "d1", "text": "batch: event + checkpoint"},
+  {"from": "w", "to": "d1", "text": "user's devices"},
+  {"from": "w", "to": "p", "text": "encrypted push", "accent": true},
+  {"from": "w", "to": "d1", "text": "mark delivered"},
+  {"note": "then: defer leftovers, retry failed pushes, :37 privacy report, :13 housekeeping", "over": ["w", "p"]}
+ ]}
+</script>
+
+<h2>1. Who is due</h2>
+<p>Each user has a random <code>slot</code> (0–59) and an interval (default 5 minutes). A user is due when <code>(minute − slot) mod interval = 0</code>, or when they were deferred last minute. One SQL query returns, for every due user, everything the check needs: account id, site, settings, the encrypted grant, and the checkpoint (snapshot, seen ids, status categories). See the query in <a href="database.html">Database design</a>.</p>
+<p>Users in back-off (after errors) and users with a revoked grant are not selected.</p>
+
+<h2>2. Checking a user</h2>
+<p>Covered in detail in <a href="jarvis-engine.html">JARVIS: how changes are detected</a>. In short: refresh the token if needed, run one incremental search, read history only for bugs that changed, classify, commit in one batch.</p>
+
+<h2>3. Limits and how they are respected</h2>
+<table>
+  <tr><th>Limit (Workers Free)</th><th>Mechanism</th></tr>
+  <tr><td>50 subrequests per run (D1 included)</td><td><code>Budget(45)</code>; a user is started only if 6 are left; inside a user, a changed bug is processed only if 3–4 are left</td></tr>
+  <tr><td>10 ms CPU per run</td><td>at most 12 users per run (<code>MONITOR_MAX_USERS_PER_RUN</code>); idle checks cost ~0.4 ms</td></tr>
+  <tr><td>100,000 D1 writes per day</td><td>idle checks write nothing; a heartbeat every 20 minutes</td></tr>
+</table>
+<p>When the budget runs out, the remaining users get <code>deferred = 1</code> (one batched write) and go first next minute. A user cut short keeps their old <code>checked_at</code>, so the next incremental window still covers the unprocessed bugs: nothing is lost.</p>
+
+<h2>4. Errors</h2>
+<ul>
+  <li><strong>Jira rate limit (429)</strong>: back off at least the <code>Retry-After</code> seconds.</li>
+  <li><strong>Other failures</strong>: back off <code>interval × 2^failures</code>, at most 60 minutes; the error message is stored (no tokens, no Jira content) and shown in the JARVIS panel.</li>
+  <li><strong>Revoked access</strong>: the grant is marked revoked; the user is skipped until they reconnect.</li>
+</ul>
+
+<h2>5. After the users</h2>
+<ul>
+  <li><strong>Retry pushes</strong>: events still marked <code>pushed = 0</code> (the push service was down, or the budget ran out) are retried; after 6 hours they are marked "gave up". The events are still in the history.</li>
+  <li><strong>Minute :37 of each hour</strong>: <a href="privacy-lifecycle.html">personal-data report</a> for accounts that are due.</li>
+  <li><strong>Minute :13 of each hour</strong>: delete expired sessions and rate-limit rows, history older than 30 days, and accounts whose Jira access ended more than 30 days ago.</li>
+</ul>
+
+<h2>What it looks like in the logs</h2>
+<pre><code>$ npx wrangler tail --env production
+"* * * * *" @ 19/11/2026, 12:56:44 am - Ok
+  (log) {"tick":"2026-11-18T18:56:44.066Z","due":1,"checked":1,"events":0,"deferred":0,"subrequests":5}</code></pre>
+<p><code>due</code>: users selected; <code>checked</code>: processed; <code>events</code>: new events; <code>subrequests</code>: budget used. An idle minute with nobody due uses 2 (the due-users query and the pending-push sweep).</p>
+
+<h2>Capacity</h2>
+<p>12 users per minute × 5-minute interval ≈ 60 users with no delay. With more users, the effective interval stretches (deferred users first); nothing is dropped. The Local edition has no such limits because it runs on your computer for one user. Numbers and the paid-plan option: <a href="cf-limits.html">The free tier and capacity maths</a>.</p>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

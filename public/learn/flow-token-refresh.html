@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Refreshing and rotating tokens · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="How access stays alive without races." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="flow-token-refresh">
+<main>
+<article class="doc">
+<h1>Refreshing and rotating tokens</h1>
+<p class="lede">Access tokens expire after about an hour. This is how the Worker gets new ones without asking you to sign in again, and why two requests at the same moment cannot break your connection.</p>
+
+<h2>Two tokens, two jobs</h2>
+<table>
+  <tr><th></th><th>Access token</th><th>Refresh token</th></tr>
+  <tr><td>Used for</td><td>every Jira API call</td><td>only to get a new access token</td></tr>
+  <tr><td>Lifetime</td><td>~1 hour</td><td>rotating: replaced on every use; expires after 90 days of inactivity</td></tr>
+  <tr><td>Sent to</td><td><code>api.atlassian.com</code></td><td><code>auth.atlassian.com/oauth/token</code> (with the client secret)</td></tr>
+</table>
+
+<h2>Rotation, and why it is tricky</h2>
+<p>Atlassian uses <em>rotating</em> refresh tokens: each refresh returns a <strong>new</strong> refresh token and disables the old one. Re-using an old token outside a 10-minute grace period is treated as theft ("breach detection") and can revoke the whole grant.</p>
+<div class="callout eli5"><span class="callout-title">Explained simply</span>Imagine a voucher that can be exchanged once for a key card and a new voucher. If two people try to exchange the same voucher, one gets the goods and the other is holding an old voucher. If the old voucher is presented again much later, the shop assumes it was stolen and cancels everything.</div>
+<p>Now imagine the cron run and your page request both notice, in the same second, that the access token is about to expire. Without care, both refresh, one of them saves its new tokens last, and the newest refresh token might be overwritten by an older one. That is the race the design prevents.</p>
+
+<h2>The solution: a lease and a version number</h2>
+<script type="application/json" class="diagram" data-kind="seq" data-caption="Two requests need a fresh token at the same time. Only A refreshes; B waits and reuses A's result.">
+{"gap": 165, "actors": [
+  {"id": "a", "label": "Request A", "kind": "cf"},
+  {"id": "b", "label": "Request B", "kind": "cf"},
+  {"id": "d1", "label": "D1 grant row", "kind": "db", "sub": "version = 7"},
+  {"id": "auth", "label": "auth.atlassian.com", "kind": "ext"}
+ ],
+ "steps": [
+  {"from": "a", "to": "d1", "text": "take lease WHERE version=7"},
+  {"from": "d1", "to": "a", "text": "ok (lease 30 s)", "ret": true},
+  {"from": "b", "to": "d1", "text": "take lease WHERE version=7"},
+  {"from": "d1", "to": "b", "text": "no row (leased)", "ret": true},
+  {"from": "a", "to": "auth", "text": "refresh_token=R7", "accent": true},
+  {"from": "b", "to": "b", "text": "wait 0.7 s"},
+  {"from": "auth", "to": "a", "text": "access A8, refresh R8", "ret": true},
+  {"from": "a", "to": "d1", "text": "save WHERE version=7 → version 8"},
+  {"from": "b", "to": "d1", "text": "re-read"},
+  {"from": "d1", "to": "b", "text": "version 8, fresh token", "ret": true}
+ ]}
+</script>
+<ol class="steps-list">
+  <li><strong>Still fresh?</strong> If the stored access token is valid for more than 2 minutes, decrypt and use it. (This is the normal case: no network call.)</li>
+  <li><strong>Take a lease</strong>: <code>UPDATE … SET lease_until = now+30s WHERE user_id = ? AND version = ? AND lease_until &lt; now RETURNING version</code>. The database guarantees only one caller gets a row back.</li>
+  <li><strong>Lost the lease?</strong> Someone else is refreshing. Wait 0.7 s (then 1.2 s, 1.7 s…) and re-read the row; use the new token when it appears.</li>
+  <li><strong>Won the lease</strong>: decrypt the refresh token, call Atlassian, encrypt the new pair.</li>
+  <li><strong>Save only if nothing changed</strong>: <code>UPDATE … SET enc_tokens = ?, version = version + 1, lease_until = 0 WHERE version = &lt;old&gt;</code>. If zero rows changed (the lease expired and someone else won), re-read and use theirs.</li>
+</ol>
+<p>A test fires four requests at once with an expired token: exactly <strong>one</strong> refresh reaches Atlassian, all four succeed, and the mock's breach detector stays silent.</p>
+
+<h2>When refresh fails</h2>
+<table>
+  <tr><th>Atlassian answers</th><th>Meaning</th><th>What the Worker does</th></tr>
+  <tr><td>400 / 401 / 403 (<code>invalid_grant</code>)</td><td>you revoked the app, 90 days of inactivity, or reuse detected</td><td>marks the grant <code>revoked</code>; API answers 401 <code>reauth</code>; the UI says "Reconnect with Atlassian"; the monitor skips you</td></tr>
+  <tr><td>5xx or network error</td><td>Atlassian temporarily unavailable</td><td>releases the lease, returns 502; the monitor backs off and retries</td></tr>
+</table>
+
+<h2>Belt and braces: 401 during a call</h2>
+<p>If Jira rejects a token that the database thought was valid (clock skew, early revocation), <code>cloudApi()</code> marks it expired, refreshes once through the same lease logic, and retries the call. A second 401 means access really is gone → <code>reauth</code>.</p>
+
+<h2>Key rotation (the encryption key, not OAuth)</h2>
+<p>To change <code>TOKEN_ENC_KEY</code> without signing everyone out: set the current value as <code>TOKEN_ENC_KEY_OLD</code> and a new <code>TOKEN_ENC_KEY</code>. Decryption tries the new key, then the old one; every refresh re-encrypts with the new key. After a few hours of normal use, everything is on the new key and the old secret can be removed.</p>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

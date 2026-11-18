@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Playbook: deploy any new app on Cloudflare · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="A reusable recipe for your next project." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="cf-playbook">
+<main>
+<article class="doc">
+<h1>Playbook: deploy any new app on Cloudflare</h1>
+<p class="lede">A reusable recipe for your next project, distilled from building this one. It takes you from an empty folder to a live app with a database, a schedule, secrets, two environments, tests, and a rollback plan.</p>
+
+<h2>0. Decide the shape</h2>
+<table>
+  <tr><th>Your app is…</th><th>Use</th></tr>
+  <tr><td>static only (HTML/CSS/JS)</td><td>a Worker with only <code>assets</code> (or Cloudflare Pages); no code needed</td></tr>
+  <tr><td>static + an API</td><td>one Worker with <code>assets</code> + <code>run_worker_first: ["/api/*"]</code> (this app's shape)</td></tr>
+  <tr><td>needs to store data</td><td>D1 for relational data; KV for simple key-value caches; R2 for files</td></tr>
+  <tr><td>does work on a schedule</td><td>Cron Triggers (max 5 per account on Free; one trigger can serve many jobs)</td></tr>
+  <tr><td>needs long-lived connections or strong per-object coordination</td><td>Durable Objects</td></tr>
+  <tr><td>background jobs with retries</td><td>Queues</td></tr>
+</table>
+
+<h2>1. Create the project</h2>
+<pre><code>mkdir my-app &amp;&amp; cd my-app
+npm init -y
+npm install -D wrangler typescript @cloudflare/workers-types
+mkdir -p src public migrations</code></pre>
+<p><code>package.json</code>: add <code>"type": "module"</code>. <code>tsconfig.json</code>:</p>
+<pre><code>{ "compilerOptions": { "target": "ES2022", "module": "ES2022", "moduleResolution": "Bundler",
+    "lib": ["ES2023"], "types": ["@cloudflare/workers-types"], "strict": true, "noEmit": true },
+  "include": ["src"] }</code></pre>
+
+<h2>2. Write the Worker</h2>
+<pre><code>// src/index.ts
+export interface Env { DB: D1Database; ASSETS: Fetcher; APP_ORIGIN: string; API_SECRET: string }
+
+export default {
+  async fetch(req: Request, env: Env): Promise&lt;Response&gt; {
+    const url = new URL(req.url);
+    if (url.pathname === '/api/hello') {
+      const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM visits').first&lt;{ n: number }&gt;();
+      return Response.json({ hello: 'world', visits: row?.n ?? 0 });
+    }
+    return env.ASSETS.fetch(req);
+  },
+  async scheduled(_c: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(env.DB.prepare('INSERT INTO visits (at) VALUES (?)').bind(Date.now()).run());
+  },
+} satisfies ExportedHandler&lt;Env&gt;;</code></pre>
+<p><code>public/index.html</code>: any page. <code>migrations/0001_init.sql</code>:</p>
+<pre><code>CREATE TABLE visits (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL);</code></pre>
+
+<h2>3. Configure: <code>wrangler.jsonc</code></h2>
+<pre><code>{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "my-app",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "observability": { "enabled": true },
+  "env": {
+    "dev": {
+      "name": "my-app-dev",
+      "vars": { "APP_ORIGIN": "http://localhost:8787" },
+      "d1_databases": [{ "binding": "DB", "database_name": "my-app-dev", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }],
+      "triggers": { "crons": ["*/5 * * * *"] }
+    },
+    "production": {
+      "name": "my-app",
+      "vars": { "APP_ORIGIN": "https://my-app.&lt;subdomain&gt;.workers.dev" },
+      "d1_databases": [{ "binding": "DB", "database_name": "my-app", "database_id": "&lt;from d1 create&gt;", "migrations_dir": "migrations" }],
+      "triggers": { "crons": ["*/5 * * * *"] }
+    }
+  }
+}</code></pre>
+<div class="callout warn"><span class="callout-title">Not inherited</span>Bindings, vars and triggers must be repeated inside each environment. Secrets are per environment too.</div>
+
+<h2>4. Run locally</h2>
+<pre><code>echo "API_SECRET=dev-only-value" &gt; .dev.vars         # local secrets; add .dev.vars to .gitignore!
+npx wrangler d1 migrations apply DB --local --env dev
+npx wrangler dev --env dev --test-scheduled
+curl http://localhost:8787/api/hello
+curl "http://localhost:8787/__scheduled?cron=*/5+*+*+*+*"</code></pre>
+
+<h2>5. Go live</h2>
+<pre><code>npx wrangler login
+npx wrangler d1 create my-app                        # copy the id into wrangler.jsonc
+npx wrangler d1 migrations apply DB --remote --env production
+npx wrangler secret put API_SECRET --env production  # prompts, hidden
+npx wrangler deploy --env production
+npx wrangler tail --env production                   # watch it</code></pre>
+
+<h2>6. Make it production-grade</h2>
+<h3>Security</h3>
+<ul>
+  <li>Secrets only via <code>wrangler secret put</code>; never in <code>wrangler.jsonc</code> or Git.</li>
+  <li>Bound SQL parameters (<code>?</code>) always.</li>
+  <li>Security headers on HTML (<code>public/_headers</code>) and API responses (CSP, HSTS, nosniff, frame denial).</li>
+  <li>If you have sign-in: HttpOnly Secure SameSite cookies, CSRF checks on state changes, never trust ids from the client.</li>
+  <li>If you call user-supplied URLs: allow-list hosts (SSRF).</li>
+  <li>Fail closed when configuration is missing (this app answers 503 "not configured").</li>
+</ul>
+<h3>Limits (Free)</h3>
+<ul>
+  <li>Count subrequests (50 per run, D1 included); batch D1 statements with <code>env.DB.batch()</code>.</li>
+  <li>Keep CPU low (10 ms): small payloads, request only needed fields, cap work per cron run, defer the rest.</li>
+  <li>Write to D1 only when something changed (100,000 rows/day).</li>
+  <li>Make scheduled work idempotent and resumable: it can be cut off at any point.</li>
+</ul>
+<h3>Operations</h3>
+<ul>
+  <li>Migrations: numbered, additive, never edited after running in production.</li>
+  <li>Logs: <code>console.log</code> structured JSON summaries; never log secrets or personal data.</li>
+  <li>Backups: <code>wrangler d1 export … --remote</code> before risky changes; D1 time travel exists.</li>
+  <li>Rollback: <code>wrangler rollback</code> (code only: database changes are not rolled back, another reason to keep migrations additive).</li>
+</ul>
+<h3>Tests</h3>
+<ul>
+  <li>A mock for every external service (start it on a local port, point a <code>vars</code> URL at it in <code>dev</code>).</li>
+  <li>End-to-end tests against <code>wrangler dev</code> using plain <code>fetch</code> with a cookie jar.</li>
+  <li>Unit tests by bundling modules with esbuild (ships with Wrangler) and importing them in Node.</li>
+</ul>
+
+<h2>7. Custom domain (optional)</h2>
+<p>Add your domain to Cloudflare (it becomes a <em>zone</em>), then in the Worker's settings add a <em>Custom Domain</em> (or a <code>routes</code> entry in <code>wrangler.jsonc</code>). Update <code>APP_ORIGIN</code> and any OAuth callback URLs. With a zone you can also add WAF and rate-limiting rules in front of the Worker.</p>
+
+<h2>Template checklist</h2>
+<ul>
+  <li>☐ <code>wrangler.jsonc</code> with <code>dev</code> and <code>production</code></li>
+  <li>☐ <code>.gitignore</code>: <code>node_modules</code>, <code>.wrangler</code>, <code>.dev.vars</code>, build output</li>
+  <li>☐ migrations folder, first migration</li>
+  <li>☐ <code>_headers</code> with CSP</li>
+  <li>☐ secrets listed in a README (names, not values)</li>
+  <li>☐ <code>npm run dev</code>, <code>npm run deploy</code>, <code>npm test</code> scripts</li>
+  <li>☐ a mock + an end-to-end test</li>
+  <li>☐ <code>wrangler tail</code> checked after the first deploy</li>
+</ul>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

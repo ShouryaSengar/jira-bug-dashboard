@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>The shared Jira core · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="The JiraApi interface and logic shared by both servers." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="core">
+<main>
+<article class="doc">
+<h1>The shared Jira core</h1>
+<p class="lede"><code>src/core</code> is the part both servers share: how to ask Jira for bugs, how to shape the answers, and how to turn a changelog into JARVIS events. It uses only web-standard JavaScript, so it runs in Node.js and in a Cloudflare Worker unchanged.</p>
+
+<h2>The key idea: one interface, two implementations</h2>
+<p>The two editions talk to Jira differently:</p>
+<ul>
+  <li><strong>Local</strong>: <code>https://your-site.atlassian.net/rest/api/3/…</code> with <code>Authorization: Basic base64(email:apiToken)</code>.</li>
+  <li><strong>Cloud</strong>: <code>https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/…</code> with <code>Authorization: Bearer &lt;OAuth access token&gt;</code>.</li>
+</ul>
+<p>Everything else is the same. So the core defines a tiny interface, and each edition provides an object that fulfils it:</p>
+<pre><code>export interface JiraApi {
+  /** Base URL people open issues on, e.g. https://acme.atlassian.net */
+  siteUrl: string;
+  /** Stable key for per-site caches. */
+  cacheKey: string;
+  /** Calls a Jira REST path such as /rest/api/3/myself. Throws HttpError on failure. */
+  request(path: string, init?: { method?: 'GET' | 'POST'; body?: unknown }): Promise&lt;Json&gt;;
+}</code></pre>
+
+<script type="application/json" class="diagram" data-kind="flow" data-caption="Class diagram: the JiraApi interface (dependency inversion). The core depends on the interface, not on either implementation.">
+{"w": 820, "h": 380,
+ "nodes": [
+  {"id": "if", "x": 280, "y": 20, "w": 260, "title": "«interface» JiraApi", "kind": "db", "lines": ["siteUrl: string", "cacheKey: string", "request(path, init): Promise<Json>"]},
+  {"id": "loc", "x": 20, "y": 190, "w": 300, "title": "localApi(cfg)  [src/server/jira.ts]", "kind": "server", "lines": ["siteUrl = cfg.jiraUrl", "request → fetch(jiraUrl + path)", "Authorization: Basic email:token"]},
+  {"id": "cld", "x": 500, "y": 190, "w": 300, "title": "cloudApi(env, site, …)  [cloud/src/auth.ts]", "kind": "cf", "lines": ["siteUrl = site.url", "request → api.atlassian.com/ex/jira/…", "Bearer token, retries once on 401"]},
+  {"id": "core", "x": 230, "y": 300, "w": 360, "title": "core functions", "kind": "plain", "lines": ["getBugs · getMyBugs · getIssueDetail · searchAll"]}
+ ],
+ "edges": [
+  {"from": "loc", "to": "if", "dashed": true, "label": "implements"},
+  {"from": "cld", "to": "if", "dashed": true, "label": "implements"},
+  {"from": "core", "to": "if", "label": "uses", "accent": true}
+ ]}
+</script>
+<div class="callout eli5"><span class="callout-title">Explained simply</span>The core is a recipe that says "ask the kitchen for X". It does not care whether the waiter uses the front door with a key card (Local) or the delivery entrance with a pass (Cloud). Each edition provides its own waiter; the recipe stays the same.</div>
+
+<h2><code>core/jira.ts</code>, function by function</h2>
+<table>
+  <tr><th>Function</th><th>What it does</th></tr>
+  <tr><td><code>searchAll(api, jql, fields, max)</code></td><td>POSTs to <code>/rest/api/3/search/jql</code> page by page (100 per page, <code>nextPageToken</code>) until done or <code>max</code> reached; reports <code>truncated</code></td></tr>
+  <tr><td><code>getBugs(api, key, opts)</code></td><td>Epics view: reads the issue and its links, then searches <code>linkedIssues(key) OR parent = key</code> for the configured issue types; labels each bug's relation ("blocks", "child of"…)</td></tr>
+  <tr><td><code>getMyBugs(api, opts)</code></td><td>For You: searches <code>assignee = currentUser()</code> (open, or done within N days), adds project, parent, labels, blocked info, latest activity, and "recently assigned" (via <code>assignee CHANGED TO currentUser() AFTER -7d</code>, falling back to created date)</td></tr>
+  <tr><td><code>getIssueDetail(api, key, sev)</code></td><td>Issue + 30 newest comments + the newest 100 changelog entries in parallel; converts rich text (ADF) to plain text; lists links</td></tr>
+  <tr><td><code>recentChangelog(api, key, n)</code></td><td>Jira returns history oldest-first; for long histories this jumps to the last page</td></tr>
+  <tr><td><code>recentComments(api, key, n)</code></td><td>Newest comments first (<code>orderBy=-created</code>)</td></tr>
+  <tr><td><code>mapBug(api, issue, sevIds, relation)</code></td><td>Turns a raw Jira issue (big, nested) into the app's small <code>Bug</code> object</td></tr>
+  <tr><td><code>blockedInfo(fields)</code></td><td>Blocked if status sounds blocked, has a <code>blocked</code> label, or an unresolved "is blocked by" link</td></tr>
+  <tr><td><code>adfToText(node)</code></td><td>Walks the Atlassian Document Format tree: paragraphs, lists, mentions, code, tables, attachments</td></tr>
+  <tr><td><code>matchSeverityFields(csv, fields)</code></td><td>"Defect Severity, Severity" → field ids such as <code>customfield_12039</code></td></tr>
+  <tr><td><code>makePriorityRank(names)</code></td><td>Urgency ranking; if every priority name is familiar (Blocker, Highest, …) rank by meaning, otherwise by Jira's order. Exists because one real site lists "Blocker" last.</td></tr>
+  <tr><td><code>severityRank(name)</code></td><td>"1 - Critical" &lt; "2 - Major"; falls back to keywords</td></tr>
+  <tr><td><code>iso(s)</code></td><td>Jira sends <code>+0530</code>; Safari only parses <code>+05:30</code>. Normalised everywhere.</td></tr>
+  <tr><td><code>typesJql(csv)</code></td><td>Turns "Bug, Defect" into <code>"Bug","Defect"</code>, stripping quotes and backslashes so settings cannot inject JQL</td></tr>
+</table>
+
+<h2>The data shapes it produces</h2>
+<pre><code>interface Bug {
+  key: string; url: string; summary: string; type?: string;
+  status: string; statusCategory?: 'new' | 'indeterminate' | 'done';
+  priority: string | null; severity: string | null;
+  reporter: Person | null; assignee: Person | null;
+  created: string; updated: string; resolved: string | null;
+  relation: string;                       // "child of", "blocks", "assigned to me"
+}
+interface MyBug extends Bug {
+  project: { key: string; name: string };
+  parent: { key: string; summary: string; type?: string } | null;
+  labels: string[]; blocked: boolean; blockedReason: string | null;
+  recentlyAssigned: boolean;
+  lastActivity: { at: string; label: string } | null;
+}</code></pre>
+
+<h2><code>core/detect.ts</code>: turning history into events</h2>
+<p>These functions are <em>pure</em>: the caller fetches the changelog and comments (so it can manage its own request budget) and passes them in. They only decide what the data means.</p>
+<table>
+  <tr><th>Function</th><th>Input</th><th>Output</th></tr>
+  <tr><td><code>classifyNew(ctx, issue, history, lastSync)</code></td><td>a bug that just appeared in my list</td><td>one <code>assigned</code> event (with who did it), or nothing if it is a closed bug merely re-entering the window</td></tr>
+  <tr><td><code>classifyChanges(ctx, issue, history, comments, since)</code></td><td>a bug whose <code>updated</code> changed</td><td>status / reopened / resolved / closed / priority / severity / assigned / updated / comment events</td></tr>
+  <tr><td><code>classifyAway(ctx, issue, prevSummary)</code></td><td>a bug no longer assigned to me</td><td><code>reassigned_away</code> or <code>unassigned</code></td></tr>
+</table>
+<p>The context (<code>DetectCtx</code>) supplies: my account id, severity field ids/names, the <code>seen</code> set, a status-category lookup and a priority ranking. Every processed changelog item gets a stable id like <code>ABC-1:h10234:status</code>; comments <code>ABC-1:c55012</code>. Anything in <code>seen</code> is skipped, which makes detection idempotent. Full algorithm: <a href="jarvis-engine.html">JARVIS: how changes are detected</a>.</p>
+
+<h2>Why the core may not import Node or Cloudflare</h2>
+<p>If <code>core/jira.ts</code> used <code>Buffer</code> (Node) or <code>env.DB</code> (Cloudflare), it would break in the other runtime. Keeping it to standard <code>fetch</code>-free logic plus the injected <code>request()</code> is what lets both editions share it, and lets tests run it in plain Node.</p>
+<div class="callout tip"><span class="callout-title">Verified identical</span>When the Local server was refactored onto the core, the old and new versions were run side by side against a real Jira site (read-only): For You, issue detail, an Epics query returning 1009 bugs, and priority ranking produced byte-identical JSON.</div>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

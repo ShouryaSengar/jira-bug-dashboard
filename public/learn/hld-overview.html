@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>High-level design · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Components, responsibilities and data flow." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="hld-overview">
+<main>
+<article class="doc">
+<h1>High-level design</h1>
+<p class="lede">The big boxes of the system, what each is responsible for, and how data moves between them. This is the "HLD": the view an architect draws first.</p>
+
+<div class="callout eli5"><span class="callout-title">Explained simply</span>A high-level design is like a city map that shows districts and main roads, but not every house. Low-level design (the next category) is the street map.</div>
+
+<h2>Context: the system and its neighbours</h2>
+<p>Start from the outside. What is inside "our system", and what do we depend on?</p>
+<script type="application/json" class="diagram" data-kind="flow" data-caption="System context (Cloud edition). Solid lines are requests; dashed lines are asynchronous messages.">
+{"w": 840, "h": 415,
+ "zones": [
+  {"x": 250, "y": 14, "w": 320, "h": 370, "label": "Our system", "kind": "cf"}
+ ],
+ "nodes": [
+  {"id": "user", "x": 20, "y": 40, "w": 190, "title": "User", "icon": "🙂", "kind": "user", "sub": "developer, lead, visitor"},
+  {"id": "browser", "x": 20, "y": 170, "w": 190, "title": "Browser", "icon": "🖥", "kind": "browser", "lines": ["page (HTML/CSS/JS)", "service worker (sw.js)", "localStorage"]},
+  {"id": "worker", "x": 290, "y": 50, "w": 240, "title": "Cloudflare Worker", "icon": "⚙️", "kind": "cf", "lines": ["fetch(): /api/*, /auth/*", "scheduled(): cron monitor", "static assets (free)"]},
+  {"id": "d1", "x": 290, "y": 210, "w": 240, "title": "D1 database", "icon": "🗄", "kind": "db", "lines": ["users, sessions, grants", "settings, checkpoints", "events, devices"]},
+  {"id": "secrets", "x": 290, "y": 330, "w": 240, "h": 40, "title": "Worker secrets", "icon": "🔐", "kind": "note"},
+  {"id": "auth", "x": 620, "y": 30, "w": 200, "title": "auth.atlassian.com", "icon": "🔑", "kind": "ext", "sub": "OAuth: authorize, tokens"},
+  {"id": "api", "x": 620, "y": 130, "w": 200, "title": "api.atlassian.com", "icon": "🐞", "kind": "ext", "sub": "/ex/jira/{cloudId}/…, /me"},
+  {"id": "push", "x": 620, "y": 300, "w": 200, "title": "Push services", "icon": "📮", "kind": "ext", "sub": "FCM, Mozilla, Apple, MS"},
+  {"id": "pdr", "x": 620, "y": 210, "w": 200, "h": 44, "title": "Atlassian privacy API", "icon": "🛡", "kind": "ext"}
+ ],
+ "edges": [
+  {"from": "user", "to": "browser", "both": true},
+  {"from": "browser", "to": "worker", "label": "HTTPS + cookie", "both": true, "accent": true},
+  {"from": "worker", "to": "d1", "label": "SQL", "both": true},
+  {"from": "secrets", "to": "d1", "dashed": true, "label": "keys", "dx2": 90},
+  {"from": "worker", "to": "auth", "label": "token exchange"},
+  {"from": "worker", "to": "api", "label": "Bearer token", "accent": true},
+  {"from": "worker", "to": "push", "label": "encrypted push", "dashed": true, "via": [[548, 136], [548, 322]], "lpos": [600, 285]},
+  {"from": "push", "to": "browser", "dashed": true, "label": "delivers", "via": [[720, 397], [235, 397], [235, 225]], "lseg": 1},
+  {"from": "worker", "to": "pdr", "dashed": true, "label": "weekly report", "lpos": [580, 193]}
+ ]}
+</script>
+
+<h2>The components and their jobs</h2>
+<table>
+  <tr><th>Component</th><th>Responsibility</th><th>Must never</th></tr>
+  <tr><td><strong>Frontend</strong> (page)</td><td>Render dashboards, filters and charts; keep preferences; speak JARVIS announcements; ask the backend for data</td><td>hold Jira tokens; call Jira directly</td></tr>
+  <tr><td><strong>Service worker</strong></td><td>Receive push messages when no tab is open; show notifications; hand events to open tabs</td><td>speak (browsers forbid it)</td></tr>
+  <tr><td><strong>Worker: HTTP</strong> (<code>fetch</code>)</td><td>Sign-in, sessions, CSRF checks, proxying Jira for the signed-in user, settings, history, push subscriptions</td><td>accept a user id from the client; return tokens</td></tr>
+  <tr><td><strong>Worker: cron</strong> (<code>scheduled</code>)</td><td>Every minute: check due users for Jira changes, store events, send pushes, housekeeping, privacy reports</td><td>exceed the free plan's 10 ms CPU / 50 subrequests</td></tr>
+  <tr><td><strong>D1</strong></td><td>All persistent state, scoped per user</td><td>store full Jira issue payloads or plaintext tokens</td></tr>
+  <tr><td><strong>Secrets</strong></td><td>Token encryption key, OAuth client secret, VAPID private key</td><td>appear in code, Git or logs</td></tr>
+  <tr><td><strong>Shared core</strong> (<code>src/core</code>)</td><td>Jira queries and event classification, identical for Local and Cloud</td><td>depend on Node or Cloudflare APIs</td></tr>
+</table>
+
+<h2>The main data flows</h2>
+<h3>1. Reading (on demand)</h3>
+<p>Browser → <code>GET /api/mine</code> with session cookie → Worker finds the session in D1 → decrypts the user's access token → calls Jira through <code>api.atlassian.com</code> → maps the result to a small, clean shape → returns JSON → browser renders. Nothing from Jira is stored except a cache in the user's own browser. Details: <a href="flow-foryou.html">Loading "For You"</a>.</p>
+<h3>2. Watching (scheduled)</h3>
+<p>Cron → Worker loads the users due this minute (one query) → for each: one small JQL search for what changed → reads changelog/comments only for changed bugs → turns them into events → one batched write → Web Push to the user's devices. Details: <a href="flow-cron.html">The background check</a>.</p>
+<h3>3. Notifying (asynchronous)</h3>
+<p>Worker → encrypted message → browser maker's push service → the user's browser → service worker shows a notification and forwards the events to open tabs → JARVIS speaks. Details: <a href="flow-push.html">A notification's journey</a>.</p>
+<h3>4. Authorising (once, then silently)</h3>
+<p>Browser → <code>/auth/login</code> → Atlassian consent → <code>/auth/callback</code> → Worker exchanges the code for tokens, encrypts and stores them, creates a session. Later, tokens are refreshed automatically. Details: <a href="flow-signin.html">Signing in</a> and <a href="flow-token-refresh.html">Refreshing tokens</a>.</p>
+
+<h2>Deployment view</h2>
+<script type="application/json" class="diagram" data-kind="flow" data-caption="Where each piece physically runs and how it gets there.">
+{"w": 860, "h": 300,
+ "nodes": [
+  {"id": "dev", "x": 20, "y": 30, "w": 200, "title": "Your computer", "icon": "💻", "kind": "user", "lines": ["git, npm, wrangler", "tests + mocks"]},
+  {"id": "gh", "x": 20, "y": 180, "w": 200, "title": "GitHub", "icon": "🐙", "kind": "plain", "lines": ["source code", "Actions → Pages demo"]},
+  {"id": "cf", "x": 330, "y": 30, "w": 260, "title": "Cloudflare account", "icon": "☁️", "kind": "cf", "lines": ["Worker: jira-bug-dashboard-cloud", "D1: jbd-cloud (APAC)", "cron: * * * * *", "secrets (4)"]},
+  {"id": "pages", "x": 330, "y": 190, "w": 260, "title": "GitHub Pages", "icon": "🌐", "kind": "note", "sub": "static demo site"},
+  {"id": "atl", "x": 660, "y": 30, "w": 180, "title": "Atlassian console", "icon": "🔑", "kind": "ext", "lines": ["OAuth app", "client id + secret", "callback URL"]},
+  {"id": "users", "x": 660, "y": 190, "w": 180, "title": "Users' browsers", "icon": "🖥", "kind": "browser"}
+ ],
+ "edges": [
+  {"from": "dev", "to": "cf", "label": "wrangler deploy", "accent": true},
+  {"from": "dev", "to": "gh", "label": "git push"},
+  {"from": "gh", "to": "pages", "label": "Actions"},
+  {"from": "atl", "to": "cf", "dashed": true, "label": "credentials"},
+  {"from": "users", "to": "cf", "label": "workers.dev"},
+  {"from": "users", "to": "pages", "label": "github.io", "dashed": true}
+ ]}
+</script>
+
+<h2>The Local edition in the same picture</h2>
+<p>Replace "Cloudflare Worker + D1 + cron" with "a Node.js process on your computer + a JSON file + a timer", replace OAuth with your own API token, and replace Web Push with a Server-Sent Events stream. Everything else (frontend, shared core, JARVIS rules) is identical. See <a href="local-server.html">Local server internals</a>.</p>
+
+<h2>Key properties of this design</h2>
+<ul>
+  <li><strong>Stateless compute, stateful database.</strong> A Worker keeps nothing between runs. Every fact that must survive lives in D1. That is what makes it safe to run thousands of copies and to restart any time.</li>
+  <li><strong>Pull for data, push for news.</strong> Pages pull data when you look; notifications are pushed when something happens.</li>
+  <li><strong>Incremental everything.</strong> The monitor asks only "what changed since last time", writes only when something changed, and stops cleanly when it runs out of budget, resuming next minute.</li>
+  <li><strong>Least privilege.</strong> Read-only Jira scopes; each user's token is used only for that user; resource-level grants limit access to the chosen site.</li>
+</ul>
+<p>Why these choices, and what was rejected: <a href="decisions.html">Design decisions and trade-offs</a>.</p>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

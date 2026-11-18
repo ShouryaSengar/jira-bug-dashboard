@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Opening the app · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="From typing the URL to a rendered dashboard." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="flow-page-load">
+<main>
+<article class="doc">
+<h1>Opening the app</h1>
+<p class="lede">What happens between typing the address and seeing your dashboard, on the Cloud edition. About 300 milliseconds of work across your computer, Cloudflare and Atlassian.</p>
+
+<script type="application/json" class="diagram" data-kind="seq" data-caption="Opening https://jira-bug-dashboard-cloud.shouryacode2021.workers.dev/ while signed in.">
+{"gap": 150, "actors": [
+  {"id": "u", "label": "You", "kind": "user"},
+  {"id": "b", "label": "Browser", "kind": "browser"},
+  {"id": "cf", "label": "Cloudflare edge", "kind": "cf", "sub": "assets"},
+  {"id": "w", "label": "Worker", "kind": "cf", "sub": "your code"},
+  {"id": "d1", "label": "D1", "kind": "db"}
+ ],
+ "steps": [
+  {"from": "u", "to": "b", "text": "type URL"},
+  {"from": "b", "to": "cf", "text": "DNS + TLS, GET /"},
+  {"from": "cf", "to": "b", "text": "index.html (static, free)", "ret": true},
+  {"from": "b", "to": "cf", "text": "GET css, js/boot.js, js/main.js"},
+  {"from": "cf", "to": "b", "text": "files (cached)", "ret": true},
+  {"from": "b", "to": "w", "text": "GET /api/config + cookie", "accent": true},
+  {"from": "w", "to": "d1", "text": "session by hash, grant, sites"},
+  {"from": "d1", "to": "w", "text": "rows", "ret": true},
+  {"from": "w", "to": "b", "text": "{edition: cloud, signedIn, site…}", "ret": true},
+  {"from": "b", "to": "b", "text": "mode = cloud, render"},
+  {"from": "b", "to": "cf", "text": "register sw.js"},
+  {"note": "then the chosen view loads its data: see Loading For You", "over": ["b", "d1"]}
+ ]}
+</script>
+
+<h2>Step by step</h2>
+<ol class="steps-list">
+  <li><strong>Name lookup and secure connection.</strong> The browser asks DNS where <code>…workers.dev</code> is. Cloudflare answers with an address of its nearest data centre. The browser and Cloudflare set up an encrypted TLS connection (that is what the padlock means).</li>
+  <li><strong>The page itself.</strong> <code>GET /</code> matches a static asset (<code>index.html</code>), so Cloudflare serves it from its storage without running the Worker. Asset responses carry the security headers from <code>_headers</code>: Content-Security-Policy, HSTS, no framing.</li>
+  <li><strong>Before first paint.</strong> <code>boot.js</code> is a small synchronous script in <code>&lt;head&gt;</code>: it reads your saved theme and sets <code>data-theme</code> so the page never flashes white in dark mode.</li>
+  <li><strong>The app module.</strong> <code>main.js</code> loads as an ES module, which imports <code>api.js</code>, <code>foryou.js</code>, <code>jarvis.js</code>… The browser caches them.</li>
+  <li><strong>Who am I?</strong> <code>detectMode()</code> calls <code>/api/config</code>. This path is in <code>run_worker_first</code>, so the Worker runs. It hashes the session cookie, looks it up in D1 with the user, grant status and sites, and returns a description, never tokens.</li>
+  <li><strong>Mode decided</strong>: <code>cloud</code>. The page shows the sign-in landing (not signed in) or your last view (signed in). <code>initJarvis()</code> fetches status and history and registers the service worker.</li>
+  <li><strong>Data</strong>: the view fetches <code>/api/mine</code> or <code>/api/bugs</code>. While it waits, a cached copy from localStorage is shown instantly if one exists.</li>
+</ol>
+
+<h2>The same thing on other editions</h2>
+<ul>
+  <li><strong>Local</strong>: the Node server serves both the files and <code>/api/config</code> from <code>127.0.0.1</code>; no DNS, no TLS (it never leaves your computer).</li>
+  <li><strong>Demo</strong>: GitHub Pages serves the files; <code>/api/config</code> returns GitHub's 404 page (HTML, not JSON), so the page switches to demo mode and generates data itself.</li>
+</ul>
+
+<h2>Why it is fast</h2>
+<ul>
+  <li>Static files come from the nearest Cloudflare data centre and are cached by the browser.</li>
+  <li>The only Worker call before rendering is one small JSON request with one database query.</li>
+  <li>No framework to download or boot; the whole frontend is about 90 KiB before compression.</li>
+</ul>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

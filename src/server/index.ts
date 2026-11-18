@@ -100,7 +100,7 @@ function sendJson(res: http.ServerResponse, status: number, body: unknown): void
 
 function sendStatic(res: http.ServerResponse, pathname: string): boolean {
   let dir = PUBLIC_DIR;
-  let rel = pathname === '/' ? '/index.html' : pathname;
+  let rel = pathname === '/' ? '/index.html' : pathname.endsWith('/') ? `${pathname}index.html` : pathname; // folders serve their index.html (/learn/)
   if (rel.startsWith('/js/')) {
     dir = JS_DIR;
     rel = rel.slice('/js'.length);

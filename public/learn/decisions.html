@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Design decisions and trade-offs · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Why Workers, D1, polling, no framework, and more." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="decisions">
+<main>
+<article class="doc">
+<h1>Design decisions and trade-offs</h1>
+<p class="lede">Every important "why" in one place, written as short decision records: the situation, the options, the choice, and what it costs.</p>
+
+<div class="callout info"><span class="callout-title">Why write decisions down</span>Six months from now nobody remembers why something is the way it is. A decision record stops future you from "fixing" a deliberate choice, and shows what to revisit when circumstances change (for example, moving to a paid plan).</div>
+
+<h2>D1. A server is required (no browser-only app)</h2>
+<p><strong>Situation.</strong> Jira Cloud's REST API does not support cross-origin browser requests with credentials (CORS), and tokens in a page are easy to steal.<br>
+<strong>Choice.</strong> Every edition with real data has a server: Node.js locally, a Cloudflare Worker in the cloud. The demo edition has no server and no real data.<br>
+<strong>Cost.</strong> Something must be hosted. Mitigated by free hosting (Cloudflare) and the Local option.</p>
+
+<h2>D2. Cloudflare Workers + Static Assets for the Cloud edition</h2>
+<p><strong>Options.</strong> Render / Fly / Railway (a normal always-on server), Vercel/Netlify functions, Cloudflare Pages + a separate Worker, one Worker with static assets.<br>
+<strong>Choice.</strong> One Worker serving the static app <em>and</em> the API. Asset requests are free and unlimited; one deployment, one URL, one config.<br>
+<strong>Why not an always-on server?</strong> Free tiers there sleep after inactivity (so background monitoring stops) or no longer exist. Workers never sleep: the cron wakes them.<br>
+<strong>Cost.</strong> Strict per-run limits on the free plan (10 ms CPU, 50 subrequests). The design works around them (D7).</p>
+
+<h2>D3. D1 as the only database</h2>
+<p><strong>Options.</strong> KV (key-value), Durable Objects, D1 (SQL), an external database.<br>
+<strong>Choice.</strong> D1. The data is relational (users → sessions, grants, settings, events, devices), needs per-user filtering, foreign keys, indexes and atomic batches. KV is eventually consistent and lacks queries; Durable Objects are powerful but unnecessary here.<br>
+<strong>Cost.</strong> 100,000 rows written per day on the free plan, so idle checks must write nothing (they do).</p>
+
+<h2>D4. Polling Jira instead of webhooks</h2>
+<p><strong>Options.</strong> Jira webhooks (Jira calls us when something changes) or polling (we ask Jira regularly).<br>
+<strong>Choice.</strong> Polling with an incremental query. For OAuth (3LO) apps, dynamic webhooks are limited (they expire, have filter restrictions, require the app to manage registrations per user and site), and the Local edition on <code>localhost</code> cannot receive webhooks at all. One polling design serves both editions.<br>
+<strong>Cost.</strong> Up to one interval of delay (5 minutes by default in the cloud). Accepted for a bug dashboard.</p>
+
+<h2>D5. Detect events from the changelog, not from timestamps</h2>
+<p><strong>Situation.</strong> Jira's <code>updated</code> field says <em>that</em> something changed, not <em>what</em>.<br>
+<strong>Choice.</strong> <code>updated</code> is only the trigger. The changelog and comments are read, and each item's stable id is recorded in <code>seen</code>, so the same change can never be announced twice, even across restarts or overlapping windows.<br>
+<strong>Cost.</strong> Two extra API calls per changed bug. Unchanged bugs cost nothing.</p>
+
+<h2>D6. Incremental JQL window</h2>
+<p><strong>Choice.</strong> Each check runs one query:</p>
+<pre><code>issuetype in ("Bug") AND (
+  (assignee = currentUser() AND updated &gt;= -Nm)
+  OR assignee CHANGED FROM currentUser() AFTER -Nm
+) ORDER BY updated ASC</code></pre>
+<p>Relative windows (<code>-Nm</code>) avoid time-zone mistakes (absolute dates in JQL are interpreted in the user's Jira time zone). The <code>CHANGED FROM</code> part catches bugs handed to someone else without an extra lookup. A full comparison runs every 6 hours to repair drift.<br>
+<strong>Cost.</strong> Depends on Jira's assignee history being searchable (it is, on Jira Cloud).</p>
+
+<h2>D7. Budgeted, resumable cron runs</h2>
+<p><strong>Choice.</strong> Every outgoing call (Jira, Atlassian, D1, push) goes through a <code>Budget</code> object; runs are capped at 12 users; users that do not fit are marked <em>deferred</em> and handled first next minute. The checkpoint only advances when a user's changes were fully processed.<br>
+<strong>Cost.</strong> About 60 users at a 5-minute interval on the free plan. More users means slower checks, never lost events.</p>
+
+<h2>D8. Sign in with Atlassian (OAuth 3LO), no passwords</h2>
+<p><strong>Options.</strong> Users paste API tokens into the cloud; our own accounts with passwords; OAuth.<br>
+<strong>Choice.</strong> OAuth only. The Atlassian account <em>is</em> the identity. No passwords to store; scopes are read-only; users can revoke access at Atlassian.<br>
+<strong>Cost.</strong> Requires registering an app, rotating refresh tokens, and Atlassian's privacy obligations (D12).</p>
+
+<h2>D9. Encrypt tokens with a key outside the database</h2>
+<p><strong>Choice.</strong> AES-256-GCM with <code>TOKEN_ENC_KEY</code> (a Worker secret). The ciphertext is bound to the user id (additional authenticated data), so a row copied to another user cannot be decrypted.<br>
+<strong>Cost.</strong> Losing the key means everyone must sign in again. Rotation is supported with <code>TOKEN_ENC_KEY_OLD</code>.</p>
+
+<h2>D10. No frontend framework</h2>
+<p><strong>Choice.</strong> Plain TypeScript modules, HTML templates as strings (always escaped), CSS variables for themes, SVG charts drawn by hand.<br>
+<strong>Why.</strong> The app is small enough; zero dependencies means zero supply-chain risk, tiny downloads, and the same files run on three hosts without a build server. A React/PWA migration is on the roadmap as a separate phase.<br>
+<strong>Cost.</strong> Re-rendering is manual; more care is needed to keep DOM updates tidy.</p>
+
+<h2>D11. Web Push implemented by hand</h2>
+<p><strong>Choice.</strong> VAPID signing (RFC 8292) and payload encryption (RFC 8291) written with Web Crypto, about 150 lines, instead of an npm library.<br>
+<strong>Why.</strong> Popular libraries depend on Node's crypto module; Workers have Web Crypto. Fewer dependencies, smaller bundle, CPU measured at about 0.45 ms per message.<br>
+<strong>Cost.</strong> We own correctness; it is verified by decrypting real output with Node's independent crypto in the tests.</p>
+
+<h2>D12. Report personal data to Atlassian</h2>
+<p><strong>Situation.</strong> Apps that store personal data (account ids, names) must use Atlassian's Personal Data Reporting API.<br>
+<strong>Choice.</strong> Store actor account ids with history so they can be reported; report every stored account weekly; erase on <em>closed</em>, clear on <em>updated</em>; erase whole accounts 30 days after access ended.<br>
+<strong>Cost.</strong> One extra table and a few requests per week.</p>
+
+<h2>D13. Same API contract for Local and Cloud</h2>
+<p><strong>Choice.</strong> The Worker answers <code>/api/config</code>, <code>/api/bugs</code>, <code>/api/mine</code>, <code>/api/issue</code>, <code>/api/jarvis/*</code> with the same shapes as the Node server. Cloud-only features live under new paths.<br>
+<strong>Why.</strong> The frontend needed only a third "mode", not a rewrite; local behaviour stayed byte-identical (verified).</p>
+
+<h2>D14. Live delivery: SSE locally, Web Push in the cloud</h2>
+<p><strong>Situation.</strong> A Worker run ends after its request; it cannot keep a stream open for minutes waiting for the next cron run without Durable Objects.<br>
+<strong>Choice.</strong> The cloud delivers live events through push (the service worker relays them to open tabs). Opening or returning to the tab fetches anything missed. No polling loop in the browser.<br>
+<strong>Cost.</strong> If a user declines notification permission, live updates arrive when they return to the tab or press "Check now".</p>
+
+<h2>D15. Voice only while a tab is open</h2>
+<p>Browsers do not allow speech from a closed tab or a service worker, so the app does not pretend. Notifications cover the closed-browser case; voice happens when a dashboard tab is open.</p>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

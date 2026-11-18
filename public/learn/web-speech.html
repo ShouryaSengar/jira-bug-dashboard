@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Speech, notifications and browser rules · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Speech synthesis, permissions and autoplay rules." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="web-speech">
+<main>
+<article class="doc">
+<h1>Speech, notifications and browser rules</h1>
+<p class="lede">The two browser features JARVIS relies on for talking to you, and the rules browsers impose to stop websites from being annoying.</p>
+
+<h2>Speech synthesis</h2>
+<pre><code>const u = new SpeechSynthesisUtterance('Sir, a quick update.');
+u.voice = speechSynthesis.getVoices().find((v) =&gt; v.name.includes('Andrew'));
+u.rate = 1; u.volume = 0.85; u.pitch = 0.95;
+u.onend = () =&gt; nextInQueue();
+speechSynthesis.speak(u);</code></pre>
+<ul>
+  <li><strong>Voices come from your system and browser</strong>, not from the website. Edge on Windows offers Microsoft "Natural" voices (Andrew, Guy…); macOS offers Daniel, Samantha; Chrome adds Google voices. The same page lists different voices in different browsers.</li>
+  <li><strong>Voices load late</strong>: <code>getVoices()</code> may be empty at first; the <code>voiceschanged</code> event fires when they arrive (Edge's online voices take a moment).</li>
+  <li><strong>Overlapping calls queue up</strong> in the browser, but some browsers cancel or drop lines; the app keeps its own queue and waits for <code>end</code>.</li>
+  <li><strong>No speech from service workers</strong>: only pages can speak, so voice needs an open tab.</li>
+</ul>
+
+<h2>The autoplay rule</h2>
+<p>Chrome and Edge do not let a page produce sound until the user has interacted with it (a click or key press) at least once since loading. <code>navigator.userActivation.hasBeenActive</code> tells whether that happened. JARVIS holds announcements until then and shows "Click anywhere to enable voice" in the header. Lines that wait more than 2 minutes are dropped as stale.</p>
+
+<h2>Notifications</h2>
+<pre><code>if (Notification.permission === 'default') await Notification.requestPermission();   // from a click!
+const n = new Notification('ABC-1 was reopened', { body: 'Login fails on Safari', tag: 'jbd-ABC-1-reopened' });
+n.onclick = () =&gt; { window.focus(); openIssue('ABC-1'); };</code></pre>
+<table>
+  <tr><th>Permission</th><th>Meaning</th><th>What to do</th></tr>
+  <tr><td><code>default</code></td><td>not asked yet</td><td>ask from a button click</td></tr>
+  <tr><td><code>granted</code></td><td>allowed</td><td>show notifications</td></tr>
+  <tr><td><code>denied</code></td><td>blocked</td><td>cannot ask again from the page; the user must change site settings (padlock icon in the address bar)</td></tr>
+</table>
+<ul>
+  <li><code>tag</code> replaces an older notification with the same tag instead of stacking.</li>
+  <li><code>requireInteraction: true</code> keeps it until dismissed (used for high-importance events).</li>
+  <li>Android Chrome only allows notifications from a service worker (<code>registration.showNotification</code>), not <code>new Notification()</code>.</li>
+  <li>Operating-system "Focus" or "Do not disturb" modes can hide them; that is outside the browser's control.</li>
+</ul>
+
+<h2>Several tabs</h2>
+<p>Each open tab runs its own copy of the page. Without coordination, three tabs would speak the same line three times. The app uses <code>localStorage</code> heartbeats and the <strong>Web Locks API</strong> (<code>navigator.locks.request</code>), which lets tabs of the same origin take a named lock one at a time, so exactly one tab claims each batch. Details in <a href="jarvis-voice.html">JARVIS: speech and notifications</a>.</p>
+
+<h2>Testing these in automation</h2>
+<p>Headless browsers have no audio and often deny notifications. The browser tests replace <code>speechSynthesis</code> with a recorder (to assert exactly what would be said) and grant notification permission in a full (not "shell") Chromium build. Push delivery is simulated with the Chrome DevTools Protocol command <code>ServiceWorker.deliverPushMessage</code>.</p>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

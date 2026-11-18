@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Welcome: how to use these guides · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="A map of everything you can learn here." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="welcome">
+<main>
+<article class="doc">
+<h1>Welcome: how to use these guides</h1>
+<p class="lede">Everything about how Jira Bug Dashboard works, from the button you click to the computer in a data centre that answers, written so that someone new to all of it can follow.</p>
+
+<h2>What you will be able to do after reading</h2>
+<ul>
+  <li>Explain, in your own words, how the app gets your Jira bugs onto your screen.</li>
+  <li>Draw the system on a whiteboard: the browser, the server, Cloudflare, Atlassian, the database.</li>
+  <li>Find any piece of code and know why it exists.</li>
+  <li>Deploy this app, and deploy a completely different app on Cloudflare, without help.</li>
+  <li>Reason about security, privacy and cost like an engineer who built it.</li>
+</ul>
+
+<h2>How the guides are organised</h2>
+<p>The guides are grouped into categories (left sidebar). Inside a category, sub-categories group related guides. Each guide has a reading time, a table of contents on the right, and previous / next links at the bottom, so you can read in order like a book.</p>
+<table>
+  <tr><th>Category</th><th>Read it when you want to…</th></tr>
+  <tr><td><a href="big-picture.html">Start here</a></td><td>understand the whole thing quickly, and learn the vocabulary</td></tr>
+  <tr><td><a href="features.html">The product</a></td><td>know what the app does for people</td></tr>
+  <tr><td><a href="hld-overview.html">Architecture (HLD)</a></td><td>see the big boxes and why they were chosen</td></tr>
+  <tr><td><a href="code-map.html">Low-level design (LLD)</a></td><td>go into the code, tables, endpoints and algorithms</td></tr>
+  <tr><td><a href="flow-signin.html">End-to-end flows</a></td><td>follow one action, hop by hop, with sequence diagrams</td></tr>
+  <tr><td><a href="jira-api.html">Jira and Atlassian</a></td><td>understand Jira's API and how apps get permission</td></tr>
+  <tr><td><a href="cf-basics.html">Cloudflare</a></td><td>understand where the Cloud edition runs and what is free</td></tr>
+  <tr><td><a href="web-http.html">Web fundamentals</a></td><td>learn the browser basics everything relies on</td></tr>
+  <tr><td><a href="security-threats.html">Security and privacy</a></td><td>know the threats and the defences</td></tr>
+  <tr><td><a href="deploy-cloud.html">Deploy and operate</a></td><td>do it yourself: run, deploy, ship new apps, keep them healthy</td></tr>
+  <tr><td><a href="testing.html">Quality and growth</a></td><td>test and extend the app</td></tr>
+</table>
+
+<h2>Suggested reading paths</h2>
+<h3>"I am completely new to this"</h3>
+<ol>
+  <li><a href="big-picture.html">The big picture</a></li>
+  <li><a href="glossary.html">Glossary</a> (skim it; come back whenever a word is unfamiliar)</li>
+  <li><a href="web-http.html">HTTP, cookies, CORS and same-origin</a></li>
+  <li><a href="cf-basics.html">What Cloudflare is</a></li>
+  <li><a href="hld-overview.html">High-level design</a></li>
+  <li><a href="flow-signin.html">Signing in with Atlassian</a></li>
+</ol>
+<h3>"I want to deploy something on Cloudflare"</h3>
+<ol>
+  <li><a href="cf-workers.html">Workers: how your code runs</a></li>
+  <li><a href="cf-storage.html">D1, assets, cron, secrets and environments</a></li>
+  <li><a href="cf-limits.html">The free tier</a></li>
+  <li><a href="cf-playbook.html">Playbook: deploy any new app</a></li>
+  <li><a href="operate.html">Operating in production</a></li>
+</ol>
+<h3>"I want to change the code"</h3>
+<ol>
+  <li><a href="code-map.html">Code map</a></li>
+  <li><a href="frontend.html">Frontend internals</a> and <a href="worker.html">Cloud Worker internals</a></li>
+  <li><a href="database.html">Database design</a></li>
+  <li><a href="testing.html">How the app is tested</a></li>
+  <li><a href="extending.html">How to add a feature</a></li>
+</ol>
+
+<h2>The little boxes you will see</h2>
+<div class="callout eli5"><span class="callout-title">Explained simply</span>A plain-language analogy for a tricky idea. If a paragraph feels heavy, read the purple box first.</div>
+<div class="callout tip"><span class="callout-title">Tip</span>Something useful you might not discover on your own.</div>
+<div class="callout warn"><span class="callout-title">Careful</span>A mistake that is easy to make, usually one we actually made while building this.</div>
+<div class="callout info"><span class="callout-title">Good to know</span>Background that explains why something is the way it is.</div>
+
+<h2>Tracking your progress</h2>
+<p>At the bottom of each guide there is a <strong>Mark this guide as done</strong> button. Your progress is saved in this browser only (in <code>localStorage</code>, never sent anywhere) and shown in the sidebar and on the <a href="index.html">Learn home page</a>. Press <kbd>/</kbd> anywhere to search the guides.</p>
+
+<div class="callout info"><span class="callout-title">These guides describe real code</span>Every claim here is about the actual source in <a href="https://github.com/ShouryaSengar/jira-bug-dashboard">the GitHub repository</a>. When the code and a guide disagree, the code wins; please report it.</div>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

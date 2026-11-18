@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Cloud Worker internals · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Every file of the Cloudflare Worker explained." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="worker">
+<main>
+<article class="doc">
+<h1>Cloud Worker internals</h1>
+<p class="lede">Every file of the Cloudflare Worker, what it does, and how a request or a cron tick travels through it.</p>
+
+<h2>The two doors into the Worker</h2>
+<p>A Worker is a JavaScript module that exports handlers. Cloudflare calls them:</p>
+<pre><code>// cloud/src/index.ts
+export default {
+  async fetch(req, env) {                         // every HTTP request
+    const url = new URL(req.url);
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) {
+      try { assertConfigured(env); return await handleApi(req, env, url); }
+      catch (e) { return errorResponse(e); }
+    }
+    return env.ASSETS.fetch(req);                 // everything else: static files
+  },
+  async scheduled(event, env, ctx) {              // the cron trigger, every minute
+    ctx.waitUntil(runTick(env, event.scheduledTime).then(logSummary));
+  },
+};</code></pre>
+<div class="callout info"><span class="callout-title">Static files usually skip the Worker</span>With <code>run_worker_first: ["/api/*", "/auth/*"]</code> in <code>wrangler.jsonc</code>, Cloudflare serves files such as <code>/index.html</code> or <code>/js/main.js</code> directly from its asset storage. Those requests are free and do not count against the 100,000 daily Worker requests. Only API and sign-in paths run our code.</div>
+
+<h2>A request's path through the files</h2>
+<script type="application/json" class="diagram" data-kind="flow" data-caption="Request pipeline inside the Worker for GET /api/mine.">
+{"w": 820, "h": 300,
+ "nodes": [
+  {"id": "idx", "x": 20, "y": 30, "w": 160, "title": "index.ts", "kind": "cf", "sub": "route + config check"},
+  {"id": "csrf", "x": 220, "y": 30, "w": 170, "title": "http.ts", "kind": "cf", "sub": "assertSameOrigin()"},
+  {"id": "sess", "x": 430, "y": 30, "w": 170, "title": "auth.ts", "kind": "cf", "sub": "requireSession()"},
+  {"id": "rl", "x": 640, "y": 30, "w": 160, "title": "http.ts", "kind": "cf", "sub": "rateLimit(user)"},
+  {"id": "tok", "x": 640, "y": 150, "w": 160, "title": "auth.ts", "kind": "cf", "sub": "accessToken()"},
+  {"id": "api", "x": 430, "y": 150, "w": 170, "title": "auth.ts", "kind": "cf", "sub": "cloudApi() → JiraApi"},
+  {"id": "core", "x": 220, "y": 150, "w": 170, "title": "core/jira.ts", "kind": "db", "sub": "getMyBugs()"},
+  {"id": "resp", "x": 20, "y": 150, "w": 160, "title": "http.ts", "kind": "cf", "sub": "json(result)"},
+  {"id": "d1", "x": 430, "y": 250, "w": 170, "h": 36, "title": "D1", "icon": "🗄", "kind": "db"},
+  {"id": "jira", "x": 220, "y": 250, "w": 170, "h": 36, "title": "api.atlassian.com", "icon": "🐞", "kind": "ext"}
+ ],
+ "edges": [
+  {"from": "idx", "to": "csrf"},
+  {"from": "csrf", "to": "sess"},
+  {"from": "sess", "to": "rl"},
+  {"from": "rl", "to": "tok"},
+  {"from": "tok", "to": "api"},
+  {"from": "api", "to": "core"},
+  {"from": "core", "to": "resp"},
+  {"from": "sess", "to": "d1", "dashed": true, "via": [[410, 110], [410, 268]]},
+  {"from": "tok", "to": "d1", "dashed": true},
+  {"from": "core", "to": "jira", "accent": true}
+ ]}
+</script>
+
+<h2>File by file</h2>
+<h3><code>env.ts</code>: configuration</h3>
+<p>Declares every binding (<code>DB</code>, <code>ASSETS</code>), variable (<code>APP_ORIGIN</code>, <code>ATLASSIAN_CLIENT_ID</code>, <code>PUSH_ENDPOINT_HOSTS</code>, limits) and secret (<code>ATLASSIAN_CLIENT_SECRET</code>, <code>TOKEN_ENC_KEY</code>, <code>VAPID_PRIVATE_KEY</code>, <code>VAPID_SUBJECT</code>). <code>assertConfigured()</code> answers <em>503 "Cloud edition is not configured: missing …"</em> (names only, never values) until everything is set, so a half-configured deployment cannot accept sign-ins.</p>
+
+<h3><code>http.ts</code>: the web plumbing</h3>
+<ul>
+  <li><code>json()</code>, <code>redirect()</code> add security headers (<code>nosniff</code>, <code>DENY</code> framing, no referrer, <code>no-store</code>, HSTS).</li>
+  <li><code>errorResponse()</code> turns known errors into clean JSON, and unknown ones into a generic 500 (the details go to the log, not to the user).</li>
+  <li><code>cookie()</code> always sets <code>Path=/; HttpOnly; Secure; SameSite=Lax</code> for <code>__Host-</code> cookies.</li>
+  <li><code>assertSameOrigin()</code>: the CSRF guard (Origin, Sec-Fetch-Site, <code>X-JBD: 1</code>).</li>
+  <li><code>readJson()</code>: refuses bodies over 16 KB and invalid JSON.</li>
+  <li><code>rateLimit()</code>: a per-isolate token counter (a speed bump, not a global quota).</li>
+</ul>
+
+<h3><code>crypto.ts</code>: small, careful helpers</h3>
+<p>base64url encoding, random tokens (<code>crypto.getRandomValues</code>), SHA-256, constant-time comparison, and <code>encryptJson</code>/<code>decryptJson</code> with AES-256-GCM, a random 12-byte IV per encryption and additional authenticated data <code>grant:&lt;userId&gt;</code>. See <a href="security-crypto.html">The cryptography, simply</a>.</p>
+
+<h3><code>auth.ts</code>: identity and tokens</h3>
+<ul>
+  <li><code>startLogin()</code>: per-IP sign-in limit (D1), random <code>state</code> in an HttpOnly cookie, redirect to <code>auth.atlassian.com/authorize</code> with four scopes.</li>
+  <li><code>finishLogin()</code>: checks state (constant time), exchanges the code, checks the granted scopes, reads <code>/me</code> and <code>accessible-resources</code>, then in <em>one batch</em> upserts the user, stores the encrypted grant, replaces the sites, creates settings and a session.</li>
+  <li><code>getSession()</code>: hashes the cookie, finds the session; enforces 30-day absolute and 7-day idle expiry; slides the idle timer at most once an hour.</li>
+  <li><code>accessToken()</code>: returns a valid access token, refreshing with a lease and a version check (<a href="flow-token-refresh.html">details</a>).</li>
+  <li><code>cloudApi()</code>: the cloud implementation of the core's <code>JiraApi</code>, retrying once after forcing a refresh on 401.</li>
+</ul>
+
+<h3><code>api.ts</code>: the endpoints</h3>
+<p>One router (<code>handleApi</code>) with a <code>switch</code> on <code>"METHOD /path"</code>. Sign-in routes come first (they are top-level navigations), then the CSRF check, then <code>/api/config</code> (works signed-out), then <code>requireSession()</code> and a per-user rate limit for everything else. All endpoints are listed in the <a href="api-reference.html">API reference</a>.</p>
+
+<h3><code>monitor.ts</code>: the cron engine</h3>
+<p><code>runTick()</code> loads due users in one query, checks each (<code>checkUser</code>), defers whoever does not fit, retries pending pushes, runs the privacy report at minute :37 and housekeeping at minute :13. Each user check is incremental and writes nothing when idle. Complete walkthrough: <a href="flow-cron.html">The background check</a> and <a href="jarvis-engine.html">JARVIS engine</a>.</p>
+
+<h3><code>budget.ts</code>: staying under 50 subrequests</h3>
+<pre><code>export class Budget {
+  used = 0;
+  constructor(public readonly size: number) {}
+  get left() { return this.size - this.used; }
+  has(n: number) { return this.left &gt;= n; }
+  take(n = 1) { if (this.used + n &gt; this.size) throw new BudgetExhausted(); this.used += n; }
+}</code></pre>
+<p>Every fetch to Atlassian or a push service and every D1 call calls <code>budget.take()</code> first. If a user's work does not fit, <code>BudgetExhausted</code> is caught, the user is marked deferred, and nothing half-done is committed.</p>
+
+<h3><code>push.ts</code>: Web Push</h3>
+<p><code>endpointAllowed()</code> (HTTPS + allow-listed push hosts), <code>vapidJwt()</code> (ES256-signed, cached 12 hours per push origin), <code>encryptPayload()</code> (RFC 8291) and <code>sendPush()</code> (maps 404/410 to "gone" so dead subscriptions are deleted). See <a href="web-push.html">Service workers and Web Push</a>.</p>
+
+<h3><code>privacy.ts</code>: Personal Data Reporting</h3>
+<p>Lists every stored account id, reports up to 90 per request to Atlassian, erases on <em>closed</em>, clears on <em>updated</em>. See <a href="privacy-lifecycle.html">Privacy and the data life cycle</a>.</p>
+
+<h3><code>cloud/public/sw.js</code>: the service worker</h3>
+<p>Not part of the Worker (it runs in the browser), but deployed with it. Handles <code>push</code> (show notifications, forward events to open tabs), <code>notificationclick</code> (focus or open the dashboard at the bug), and <code>pushsubscriptionchange</code> (re-register).</p>
+
+<h2>Configuration file: <code>wrangler.jsonc</code></h2>
+<pre><code>{
+  "name": "jira-bug-dashboard-cloud",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "./dist-assets", "binding": "ASSETS", "run_worker_first": ["/api/*", "/auth/*"] },
+  "env": {
+    "dev":        { "vars": { … mock URLs … }, "d1_databases": [ … local … ], "triggers": { "crons": ["* * * * *"] } },
+    "production": { "vars": { "APP_ORIGIN": "https://…workers.dev", "ATLASSIAN_CLIENT_ID": "…", … },
+                    "d1_databases": [{ "binding": "DB", "database_name": "jbd-cloud", "database_id": "…" }],
+                    "triggers": { "crons": ["* * * * *"] } }
+  }
+}</code></pre>
+<p>Each environment has its own bindings, variables and triggers (they are not inherited). Secrets are not in this file at all. More in <a href="cf-storage.html">D1, assets, cron, secrets and environments</a>.</p>
+
+<h2>What the Worker never does</h2>
+<ul>
+  <li>Return or log tokens (the logs show request URLs with the OAuth code and state redacted by Cloudflare).</li>
+  <li>Trust a user id or site id from the client: the site must belong to the session's user.</li>
+  <li>Store Jira issue contents beyond what monitoring and history need.</li>
+  <li>Keep state between runs in memory (except harmless caches such as the VAPID JWT).</li>
+</ul>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

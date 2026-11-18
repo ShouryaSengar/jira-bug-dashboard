@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Local server internals · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="The Node.js server, its routes, storage and live stream." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="local-server">
+<main>
+<article class="doc">
+<h1>Local server internals</h1>
+<p class="lede">The Local edition's backend: a single Node.js process on your own computer that serves the page, talks to Jira with your API token, and runs JARVIS in the background.</p>
+
+<h2>What starts when you run <code>npm start</code></h2>
+<ol class="steps-list">
+  <li><code>tsc</code> compiles <code>src/</code> into <code>dist/</code>.</li>
+  <li><code>node dist/server/index.js</code> starts an HTTP server on <code>127.0.0.1:4545</code> (only your own computer can reach it).</li>
+  <li><code>monitor.start()</code> schedules the first JARVIS check 1.5 seconds later, then every 60 seconds.</li>
+  <li>It prints which credentials it uses: environment variables or <code>~/.jira-bug-dashboard/config.json</code>.</li>
+</ol>
+
+<script type="application/json" class="diagram" data-kind="flow" data-caption="Inside the Local edition.">
+{"w": 860, "h": 330,
+ "zones": [
+  {"x": 190, "y": 14, "w": 420, "h": 300, "label": "node dist/server/index.js (127.0.0.1:4545)", "kind": "server"}
+ ],
+ "nodes": [
+  {"id": "br", "x": 20, "y": 120, "w": 150, "title": "Browser tab", "icon": "🖥", "kind": "browser"},
+  {"id": "router", "x": 210, "y": 50, "w": 180, "title": "Router + guard", "kind": "server", "lines": ["Host / Origin check", "X-JBD header", "static files"]},
+  {"id": "mine", "x": 410, "y": 50, "w": 180, "title": "mine.ts / jira.ts", "kind": "server", "lines": ["For You, detail, epics", "Basic auth client"]},
+  {"id": "mon", "x": 410, "y": 190, "w": 180, "title": "Monitor (jarvis.ts)", "kind": "server", "lines": ["timer every 60 s", "snapshot diff", "SSE clients"]},
+  {"id": "files", "x": 210, "y": 190, "w": 180, "title": "Config files", "icon": "📁", "kind": "db", "lines": ["~/.jira-bug-dashboard/", "config.json (0600)", "jarvis.json (0600)"]},
+  {"id": "jira", "x": 680, "y": 110, "w": 160, "title": "Jira Cloud", "icon": "🐞", "kind": "ext"},
+  {"id": "os", "x": 680, "y": 240, "w": 160, "title": "OS notifications", "icon": "🔔", "kind": "note"}
+ ],
+ "edges": [
+  {"from": "br", "to": "router", "label": "HTTP", "both": true},
+  {"from": "router", "to": "mine"},
+  {"from": "mine", "to": "jira", "accent": true},
+  {"from": "mon", "to": "jira", "accent": true},
+  {"from": "mon", "to": "files", "both": true},
+  {"from": "mon", "to": "br", "dashed": true, "label": "SSE events", "via": [[500, 300], [95, 300]]},
+  {"from": "mon", "to": "os", "dashed": true, "label": "no tab open"}
+ ]}
+</script>
+
+<h2>Routes</h2>
+<table>
+  <tr><th>Route</th><th>Purpose</th></tr>
+  <tr><td><code>GET /</code>, <code>/css/*</code>, <code>/js/*</code>, <code>/learn/*</code></td><td>Static files from <code>public/</code> and <code>dist/client/</code> (path traversal blocked)</td></tr>
+  <tr><td><code>GET /api/config</code></td><td>Is Jira configured? Never returns the token.</td></tr>
+  <tr><td><code>POST /api/config</code></td><td>Save URL, email, token; verified against <code>/rest/api/3/myself</code> first</td></tr>
+  <tr><td><code>DELETE /api/config</code></td><td>Delete saved credentials</td></tr>
+  <tr><td><code>GET /api/bugs?key=</code></td><td>Epics view</td></tr>
+  <tr><td><code>GET /api/mine</code>, <code>GET /api/issue?key=</code></td><td>For You and detail</td></tr>
+  <tr><td><code>GET /api/jarvis/status</code>, <code>/events</code>, <code>/stream</code></td><td>Monitor status, history, live Server-Sent Events</td></tr>
+  <tr><td><code>POST /api/jarvis/prefs</code>, <code>/read</code>, <code>/clear</code>, <code>/sync</code></td><td>Settings, read state, clear history, check now</td></tr>
+</table>
+
+<h2>How it protects you even on localhost</h2>
+<ul>
+  <li><strong>Binds to 127.0.0.1</strong>: other machines on your Wi-Fi cannot connect.</li>
+  <li><strong>Host check</strong>: requests must say <code>Host: localhost:4545</code> or <code>127.0.0.1:4545</code>. This defeats "DNS rebinding", a trick where a malicious website points its own domain at 127.0.0.1.</li>
+  <li><strong>Origin + custom header</strong> on every non-GET request, so another website open in your browser cannot change settings.</li>
+  <li><strong>Credentials file</strong> in your home folder with permission 0600 (only your user can read it), never in the project folder, so it cannot be committed to Git.</li>
+  <li><strong>System notifications</strong> are sent with <code>execFile</code> and an argument list, never through a shell, so text from Jira cannot become a command.</li>
+</ul>
+
+<h2>The local monitor (<code>src/server/jarvis.ts</code>)</h2>
+<p>A simpler cousin of the cloud monitor, because it runs for one user with no strict limits:</p>
+<ol>
+  <li>Every interval (30 s to 15 min, default 60 s): one paginated search lists every bug assigned to you.</li>
+  <li>The list is compared with the previous snapshot: new keys → <code>classifyNew</code>; changed <code>updated</code> → read changelog and comments → <code>classifyChanges</code>; keys that disappeared → look the issue up → <code>classifyAway</code>.</li>
+  <li>Events get increasing ids, are appended to the history (max 500), and are written with the snapshot and <code>seen</code> ids to <code>jarvis.json</code> atomically (write a temporary file, then rename).</li>
+  <li>Each connected browser tab receives the events over its open SSE connection; status updates are sent too.</li>
+  <li>If no tab is connected and you enabled it, macOS (<code>osascript</code>) or Linux (<code>notify-send</code>) shows a system notification.</li>
+  <li>Failures back off exponentially (honouring Jira's <code>Retry-After</code>); bad credentials wait 10 minutes.</li>
+</ol>
+<p>The classification functions are the shared ones in <code>src/core/detect.ts</code>, so both editions announce exactly the same things. See <a href="jarvis-engine.html">JARVIS: how changes are detected</a>.</p>
+
+<h2>Server-Sent Events in 30 seconds</h2>
+<p>The browser opens <code>new EventSource('api/jarvis/stream')</code>. The server answers with <code>Content-Type: text/event-stream</code> and never closes the response. Whenever it has news it writes:</p>
+<pre><code>id: 42
+event: jarvis
+data: {"id":42,"type":"comment","key":"ABC-1",…}
+
+</code></pre>
+<p>The browser reconnects automatically if the connection drops and sends <code>Last-Event-ID</code>, so the server replays what was missed. A comment line (<code>: ping</code>) every 25 seconds keeps proxies from closing the idle connection.</p>
+
+<h2>Configuration options</h2>
+<table>
+  <tr><th>Variable</th><th>Effect</th></tr>
+  <tr><td><code>PORT</code></td><td>Port (default 4545)</td></tr>
+  <tr><td><code>JIRA_URL</code>, <code>JIRA_USERNAME</code>, <code>JIRA_API_TOKEN</code></td><td>Use these instead of the saved file (never written to disk)</td></tr>
+  <tr><td><code>SEVERITY_FIELDS</code>, <code>ISSUE_TYPES</code></td><td>Override severity field names and issue types</td></tr>
+  <tr><td><code>JBD_CONFIG_DIR</code></td><td>Where to keep config.json and jarvis.json (tests use a temporary folder)</td></tr>
+</table>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

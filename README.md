@@ -6,6 +6,8 @@ filters, markers and a sortable table. It works on phones.
 
 **Your Jira credentials never leave your computer.** They go only from your machine to your own Jira site.
 
+**Learn how it works:** the app has a built-in guide section (`/learn/`, also linked from the header) with 47 articles: architecture, diagrams, database, Jira and Cloudflare basics, and a step-by-step playbook for deploying a similar app.
+
 ## Run it on your computer
 
 Live demo (sample data only): https://shouryasengar.github.io/jira-bug-dashboard/

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>What Cloudflare is and how the edge works · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Data centres, the edge and why it is fast." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="cf-basics">
+<main>
+<article class="doc">
+<h1>What Cloudflare is and how the edge works</h1>
+<p class="lede">Cloudflare runs one of the world's largest networks of data centres. Websites put Cloudflare in front of them for speed and protection, and developers run code on it. Here is what that means, from zero.</p>
+
+<h2>The internet in one paragraph</h2>
+<p>Your computer and a website's computer (a <em>server</em>) talk by sending small packets across many networks. Distance matters: a packet from Mumbai to a server in Virginia and back takes about 200 milliseconds just travelling. A page that needs ten round trips takes two seconds before any work is done.</p>
+
+<h2>What Cloudflare adds</h2>
+<div class="callout eli5"><span class="callout-title">Explained simply</span>Instead of one shop in a faraway city, imagine a chain with a branch in every neighbourhood. You walk to the nearest one. Small things (bread, milk = static files) are on the shelf there. For special orders, the local branch can cook it on the spot (run your code), and it has a pantry (database) it can reach.</div>
+<ul>
+  <li><strong>The edge</strong>: hundreds of data centres in cities around the world. Your request goes to the nearest one, chosen automatically by a routing technique called Anycast (many locations share the same IP address).</li>
+  <li><strong>CDN</strong> (content delivery network): static files are kept close to users.</li>
+  <li><strong>Protection</strong>: DDoS mitigation, TLS (the padlock), firewall rules.</li>
+  <li><strong>Developer platform</strong>: <em>Workers</em> (your code), <em>D1</em> (database), KV, R2 (file storage), Queues, Durable Objects, cron triggers, and more.</li>
+</ul>
+
+<script type="application/json" class="diagram" data-kind="flow" data-caption="Traditional hosting (top) vs the edge (bottom).">
+{"w": 820, "h": 330,
+ "zones": [{"x": 10, "y": 10, "w": 800, "h": 140, "label": "Traditional: one server far away", "kind": "note"}, {"x": 10, "y": 170, "w": 800, "h": 150, "label": "Edge: code and files near every user", "kind": "cf"}],
+ "nodes": [
+  {"id": "u1", "x": 40, "y": 60, "w": 140, "title": "User in Mumbai", "icon": "🙂", "kind": "user"},
+  {"id": "s1", "x": 620, "y": 60, "w": 170, "title": "Server in Virginia", "icon": "🖥", "kind": "server"},
+  {"id": "u2", "x": 40, "y": 230, "w": 140, "title": "User in Mumbai", "icon": "🙂", "kind": "user"},
+  {"id": "e2", "x": 260, "y": 220, "w": 200, "title": "Cloudflare Mumbai", "icon": "☁️", "kind": "cf", "lines": ["files + your Worker"]},
+  {"id": "d2", "x": 600, "y": 220, "w": 190, "title": "D1 (one region)", "icon": "🗄", "kind": "db", "lines": ["e.g. APAC"]}
+ ],
+ "edges": [
+  {"from": "u1", "to": "s1", "label": "~200 ms per round trip", "both": true},
+  {"from": "u2", "to": "e2", "label": "~10 ms", "both": true, "accent": true},
+  {"from": "e2", "to": "d2", "label": "only when data is needed", "dashed": true, "both": true}
+ ]}
+</script>
+
+<h2>The pieces this app uses</h2>
+<table>
+  <tr><th>Cloudflare product</th><th>In plain words</th><th>Used for</th></tr>
+  <tr><td>Workers</td><td>your JavaScript, run on demand in every data centre</td><td>the API, sign-in, the monitor</td></tr>
+  <tr><td>Workers Static Assets</td><td>files uploaded with the Worker and served for free</td><td>the web page, these guides</td></tr>
+  <tr><td>D1</td><td>a SQL database (SQLite) managed by Cloudflare</td><td>users, sessions, encrypted tokens, history</td></tr>
+  <tr><td>Cron Triggers</td><td>run the Worker on a schedule</td><td>JARVIS checks every minute</td></tr>
+  <tr><td>Secrets and variables</td><td>settings given to the Worker; secrets are encrypted and hidden</td><td>keys, client id, origin</td></tr>
+  <tr><td>workers.dev</td><td>a free web address for your Worker</td><td><code>jira-bug-dashboard-cloud.shouryacode2021.workers.dev</code></td></tr>
+  <tr><td>Observability / tail</td><td>logs of each request and run</td><td>debugging, verifying the privacy report</td></tr>
+</table>
+
+<h2>Your account, organised</h2>
+<ul>
+  <li><strong>Account</strong>: everything belongs to an account (yours has an account id like <code>87d5ce15…</code>).</li>
+  <li><strong>Workers &amp; Pages</strong>: each Worker has a name, versions (every deploy is a version), triggers (routes, cron), settings (variables, secrets, bindings) and metrics.</li>
+  <li><strong>D1</strong>: each database has a name, an id, a region and a console where you can run SQL.</li>
+  <li><strong>Zones</strong> (domains): only needed if you use your own domain name. With workers.dev you do not need one.</li>
+</ul>
+
+<h2>Why Cloudflare for this project</h2>
+<ul>
+  <li><strong>Free tier that never sleeps</strong>: other free hosts pause idle apps, which would stop background monitoring.</li>
+  <li><strong>Cron included</strong>: no separate scheduler service.</li>
+  <li><strong>A database included</strong>: D1, with free daily allowances.</li>
+  <li><strong>Global and fast</strong>: the page is served from the data centre nearest each user.</li>
+  <li><strong>One tool</strong>: Wrangler does local development, databases, secrets, deploys and logs.</li>
+</ul>
+<p>Next: <a href="cf-workers.html">Workers: how your code runs</a>.</p>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Git, GitHub and GitHub Pages · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Branches, tags, pushes and the demo site." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="github">
+<main>
+<article class="doc">
+<h1>Git, GitHub and GitHub Pages</h1>
+<p class="lede">How the source code is versioned and published, the branches and tags this project uses, how the free demo site is deployed by GitHub Actions, and safe habits that protect working code.</p>
+
+<h2>Git in five ideas</h2>
+<ol>
+  <li><strong>Repository</strong>: a folder whose full history Git remembers.</li>
+  <li><strong>Commit</strong>: a saved snapshot with a message (<code>git commit -m "…"</code>). Each has an id like <code>dcb9cb2</code>.</li>
+  <li><strong>Branch</strong>: a movable name pointing at a line of commits (<code>main</code>, <code>feature/…</code>).</li>
+  <li><strong>Tag</strong>: a fixed name for one commit, used to mark releases (<code>v1-local-stable</code>).</li>
+  <li><strong>Remote</strong>: a copy elsewhere (GitHub, called <code>origin</code>); <code>git push</code> sends commits there, <code>git pull</code> fetches them.</li>
+</ol>
+
+<h2>This project's branches and tags</h2>
+<table>
+  <tr><th>Name</th><th>Kind</th><th>Purpose</th></tr>
+  <tr><td><code>main</code></td><td>branch</td><td>stable Local edition and the Pages demo; every push deploys the demo</td></tr>
+  <tr><td><code>v1-local-stable</code></td><td>tag</td><td>the exact working state before the Cloud edition began</td></tr>
+  <tr><td><code>backup/local-stable</code></td><td>branch</td><td>a second safety copy of that state</td></tr>
+  <tr><td><code>feature/cloudflare-web-edition</code></td><td>branch</td><td>the Cloud edition, developed separately until merged</td></tr>
+</table>
+<script type="application/json" class="diagram" data-kind="flow" data-caption="Branches. The feature branch started from the tagged commit and has not changed main.">
+{"w": 820, "h": 200,
+ "nodes": [
+  {"id": "c1", "x": 20, "y": 40, "w": 110, "h": 34, "title": "bb1ed8a", "kind": "plain"},
+  {"id": "c2", "x": 160, "y": 40, "w": 110, "h": 34, "title": "ccdfde7", "kind": "plain"},
+  {"id": "c3", "x": 300, "y": 40, "w": 130, "h": 50, "title": "dcb9cb2", "kind": "browser", "sub": "main · tag v1"},
+  {"id": "f1", "x": 470, "y": 130, "w": 100, "h": 34, "title": "e9b9341", "kind": "cf"},
+  {"id": "f2", "x": 590, "y": 130, "w": 100, "h": 34, "title": "…", "kind": "cf"},
+  {"id": "f3", "x": 710, "y": 120, "w": 100, "h": 50, "title": "latest", "kind": "cf", "sub": "feature/…"}
+ ],
+ "edges": [{"from": "c1", "to": "c2"}, {"from": "c2", "to": "c3"}, {"from": "c3", "to": "f1"}, {"from": "f1", "to": "f2"}, {"from": "f2", "to": "f3"}]}
+</script>
+<p>The feature branch was checked out in a separate folder with <code>git worktree</code>, so the running local app (served from the main folder) was never disturbed while the Cloud edition was built.</p>
+<pre><code>git tag -a v1-local-stable -m "Stable local edition"
+git branch backup/local-stable
+git worktree add -b feature/cloudflare-web-edition ../jira-bug-dashboard-cloud main</code></pre>
+
+<h2>Everyday commands</h2>
+<pre><code>git status                         # what changed
+git add path/to/file               # stage specific files (avoid "git add ." without looking)
+git commit -m "Explain the change"
+git push origin feature/…          # publish the branch
+git log --oneline -5               # recent history
+git diff --cached                  # review what you are about to commit</code></pre>
+
+<h2>Safe habits</h2>
+<ul>
+  <li>Never commit secrets. <code>.gitignore</code> lists <code>.dev.vars</code>, <code>node_modules</code>, <code>dist</code>, <code>site</code>, <code>dist-assets</code>, <code>.wrangler</code>. Before each commit, review <code>git diff --cached</code>.</li>
+  <li>Never force-push shared branches, never reset away commits you did not make.</li>
+  <li>Tag before big changes; work on a branch; merge only after tests pass.</li>
+  <li>Ask before pushing if someone else owns the repository (pushing is visible to everyone).</li>
+</ul>
+
+<h2>GitHub Pages: the free demo</h2>
+<p><code>.github/workflows/pages.yml</code> runs on every push to <code>main</code>:</p>
+<pre><code>on: { push: { branches: [main] } }
+jobs:
+  deploy:
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+      - run: npm run build:site          # tsc + copy public/ and dist/client/ into site/
+      - uses: actions/upload-pages-artifact@v3   (path: site)
+      - uses: actions/deploy-pages@v4</code></pre>
+<p>One-time setup: repository <em>Settings → Pages → Source: GitHub Actions</em>. Without that, the deploy step fails with "Ensure GitHub Pages has been enabled" (exactly what happened the first time). Result: <code>https://shouryasengar.github.io/jira-bug-dashboard/</code>. Because there is no server there, the page runs in demo mode.</p>
+<div class="callout tip"><span class="callout-title">Pushing a feature branch does not deploy</span>The workflow only runs for <code>main</code>, so pushing <code>feature/cloudflare-web-edition</code> changes nothing on the live demo. The Cloud edition is deployed separately with Wrangler.</div>
+
+<h2>Merging the feature branch (when ready)</h2>
+<pre><code>git checkout main
+git merge --no-ff feature/cloudflare-web-edition
+npm install &amp;&amp; npm run build &amp;&amp; (run the local tests)
+git push origin main             # also redeploys the Pages demo</code></pre>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

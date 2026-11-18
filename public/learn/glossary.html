@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Glossary: every term in plain words · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="From API to VAPID, explained like you are ten." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="glossary">
+<main>
+<article class="doc">
+<h1>Glossary: every term in plain words</h1>
+<p class="lede">Each word is explained first simply, then precisely, with where it appears in this app. Use your browser's find (<kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>F</kbd>) to jump to a term.</p>
+
+<h2>A to C</h2>
+<dl>
+<dt><strong>API</strong> (Application Programming Interface)</dt>
+<dd>A menu for programs. A website has pages for people; an API has "endpoints" for programs. Jira's API lets a program ask "give me issue ABC-123" and get data back as JSON instead of a web page. This app calls Jira's REST API, and itself offers an API (<code>/api/...</code>) to its own page. See <a href="api-reference.html">API reference</a>.</dd>
+
+<dt><strong>Access token</strong></dt>
+<dd>A temporary key that proves "this request is allowed to act as this person". Atlassian's access tokens expire after about an hour. Sent in the <code>Authorization: Bearer …</code> header.</dd>
+
+<dt><strong>AES-GCM</strong></dt>
+<dd>A way to lock data so only someone with the key can read it, and to detect if anyone tampered with it. The Cloud edition stores Atlassian tokens encrypted with AES-256-GCM. See <a href="security-crypto.html">The cryptography, simply</a>.</dd>
+
+<dt><strong>ADF</strong> (Atlassian Document Format)</dt>
+<dd>Jira stores rich text (descriptions, comments) as a JSON tree, not plain text. The app's <code>adfToText</code> function flattens it into readable text.</dd>
+
+<dt><strong>Asset (static asset)</strong></dt>
+<dd>A file that is sent to the browser as it is: HTML, CSS, JavaScript, images. On Cloudflare, static assets are served for free without running your code.</dd>
+
+<dt><strong>Atlassian</strong></dt>
+<dd>The company that makes Jira and Confluence. Its sign-in service (<code>auth.atlassian.com</code>) and API gateway (<code>api.atlassian.com</code>) are used by the Cloud edition.</dd>
+
+<dt><strong>Backend / frontend</strong></dt>
+<dd>The frontend is what runs in your browser (the page, buttons, charts). The backend is what runs on a server (talking to Jira, storing data). In this app the frontend is in <code>src/client</code> and <code>public</code>; the backends are <code>src/server</code> (Local) and <code>cloud/src</code> (Cloud).</dd>
+
+<dt><strong>Baseline</strong></dt>
+<dd>JARVIS's first look at your bugs. It records what exists without announcing anything, so you are not flooded with old history. Later checks compare against it.</dd>
+
+<dt><strong>Binding</strong></dt>
+<dd>A Cloudflare term: a named connection from your Worker's code to a resource. <code>env.DB</code> is the binding to the D1 database; <code>env.ASSETS</code> to the static files.</dd>
+
+<dt><strong>Browser storage (localStorage)</strong></dt>
+<dd>A small notebook each website gets inside your browser. The app keeps preferences, filters and cached results there. Never tokens.</dd>
+
+<dt><strong>Budget (subrequest budget)</strong></dt>
+<dd>The app's own counter of outgoing calls during one Worker run, because Cloudflare's free plan allows only 50 per run. See <a href="cf-limits.html">The free tier</a>.</dd>
+
+<dt><strong>Callback URL (redirect URI)</strong></dt>
+<dd>The address Atlassian sends the user back to after they agree to give access. For this app: <code>…/auth/callback</code>. It must match exactly what is registered in the Atlassian developer console.</dd>
+
+<dt><strong>Changelog</strong></dt>
+<dd>Jira's history of an issue: who changed which field, from what, to what, when. JARVIS reads it to know exactly what happened.</dd>
+
+<dt><strong>Cloud ID</strong></dt>
+<dd>Atlassian's internal id for a Jira site. OAuth requests go to <code>api.atlassian.com/ex/jira/{cloudId}/…</code> instead of the site's own address.</dd>
+
+<dt><strong>Cookie</strong></dt>
+<dd>A small value a website asks your browser to keep and send back on every request to that site. The Cloud edition's session cookie <code>__Host-jbd_sid</code> is how it knows you are signed in. See <a href="web-http.html">HTTP, cookies and CORS</a>.</dd>
+
+<dt><strong>CORS</strong> (Cross-Origin Resource Sharing)</dt>
+<dd>A browser safety rule: a page from site A cannot read responses from site B unless site B says it is OK. Jira does not allow this for its API, which is why every edition needs a server in the middle.</dd>
+
+<dt><strong>Cron / Cron Trigger</strong></dt>
+<dd>An alarm clock for programs. <code>* * * * *</code> means "every minute". Cloudflare runs the Worker's <code>scheduled()</code> function on that schedule.</dd>
+
+<dt><strong>CSP</strong> (Content Security Policy)</dt>
+<dd>A list the server gives the browser saying "only run scripts from here, only connect to there". It blocks many attacks even if something malicious sneaks into the page.</dd>
+
+<dt><strong>CSRF</strong> (Cross-Site Request Forgery)</dt>
+<dd>A trick where a bad website makes your browser send a request to a good website you are signed in to. Defended by checking the <code>Origin</code> header and a custom <code>X-JBD</code> header. See <a href="security-threats.html">Threat model</a>.</dd>
+</dl>
+
+<h2>D to L</h2>
+<dl>
+<dt><strong>D1</strong></dt>
+<dd>Cloudflare's database, based on SQLite. Data is stored in tables (rows and columns) and read with SQL. The Cloud edition's database is named <code>jbd-cloud</code>.</dd>
+
+<dt><strong>Data centre / edge</strong></dt>
+<dd>A building full of servers. Cloudflare has hundreds around the world; "the edge" means "the one closest to you". Your request is handled near you, which is fast.</dd>
+
+<dt><strong>Deploy</strong></dt>
+<dd>Copying your code to where it runs for real users. <code>wrangler deploy</code> uploads the Worker and its assets to Cloudflare.</dd>
+
+<dt><strong>ECDH / ECDSA</strong></dt>
+<dd>Two kinds of elliptic-curve cryptography. ECDSA makes digital signatures (used to sign the VAPID token for push). ECDH lets two parties agree a shared secret over a public channel (used to encrypt push messages).</dd>
+
+<dt><strong>Edition</strong></dt>
+<dd>One of the three ways this app runs: Local, Cloud, Demo. See <a href="editions.html">Editions</a>.</dd>
+
+<dt><strong>Endpoint</strong></dt>
+<dd>One address of an API, such as <code>GET /api/mine</code>.</dd>
+
+<dt><strong>Environment (dev / production)</strong></dt>
+<dd>Separate copies of the same app with different settings. <code>dev</code> runs on your computer with a fake Atlassian; <code>production</code> is the real one on the internet.</dd>
+
+<dt><strong>Epic</strong></dt>
+<dd>A big Jira issue that groups smaller ones. The Epics view shows every bug linked to or under an epic.</dd>
+
+<dt><strong>Event (JARVIS event)</strong></dt>
+<dd>One meaningful thing that happened to one of your bugs: <em>assigned, status, reopened, resolved, closed, comment, priority, severity, reassigned away, unassigned, updated</em>.</dd>
+
+<dt><strong>Grant</strong></dt>
+<dd>The permission a user gives an app on Atlassian's consent screen. Stored as tokens.</dd>
+
+<dt><strong>Hash (SHA-256)</strong></dt>
+<dd>A one-way fingerprint of data. Easy to compute, impossible to reverse. The database stores only a hash of your session cookie, so a database leak does not leak sessions.</dd>
+
+<dt><strong>HKDF</strong></dt>
+<dd>A recipe for turning one secret into several strong keys. Used inside Web Push encryption.</dd>
+
+<dt><strong>HLD / LLD</strong></dt>
+<dd>High-level design (the big boxes and how they connect) and low-level design (the inside of each box: modules, tables, functions).</dd>
+
+<dt><strong>HTTP / HTTPS</strong></dt>
+<dd>The language browsers and servers speak. HTTPS is HTTP inside an encrypted tunnel. Requests have a method (<code>GET</code>, <code>POST</code>), a path, headers and sometimes a body; responses have a status code (200 OK, 404 Not Found…).</dd>
+
+<dt><strong>HttpOnly / Secure / SameSite</strong></dt>
+<dd>Cookie safety flags. HttpOnly: page scripts cannot read it. Secure: only sent over HTTPS. SameSite=Lax: not sent on most cross-site requests.</dd>
+
+<dt><strong>IDOR</strong> (Insecure Direct Object Reference)</dt>
+<dd>A bug where changing an id in a request shows someone else's data. Prevented by always filtering by the signed-in user.</dd>
+
+<dt><strong>Isolate</strong></dt>
+<dd>How Cloudflare runs your Worker: a tiny, separate JavaScript sandbox that starts in milliseconds. Many isolates share one machine safely.</dd>
+
+<dt><strong>JQL</strong> (Jira Query Language)</dt>
+<dd>Jira's search language, like <code>assignee = currentUser() AND issuetype = Bug</code>. See <a href="jira-api.html">How Jira's REST API works</a>.</dd>
+
+<dt><strong>JSON</strong></dt>
+<dd>A text format for data: <code>{"key": "ABC-1", "status": "Open"}</code>. Almost all APIs speak it.</dd>
+
+<dt><strong>JWT</strong> (JSON Web Token)</dt>
+<dd>A signed, compact token: <code>header.payload.signature</code>. The VAPID token for Web Push is a JWT.</dd>
+
+<dt><strong>Lease</strong></dt>
+<dd>A short, self-expiring lock. Before refreshing a token, the Worker takes a 30-second lease so two parallel requests do not both refresh.</dd>
+</dl>
+
+<h2>M to R</h2>
+<dl>
+<dt><strong>Migration</strong></dt>
+<dd>A numbered SQL file that changes the database structure (<code>0001_init.sql</code>, <code>0002_…</code>). D1 remembers which ones ran, so each runs exactly once.</dd>
+
+<dt><strong>Mock</strong></dt>
+<dd>A fake version of a real service, used in tests. <code>mock-atlassian.mjs</code> pretends to be Atlassian, Jira and a push service.</dd>
+
+<dt><strong>Node.js</strong></dt>
+<dd>A program that runs JavaScript outside the browser. The Local edition's server runs on Node.js.</dd>
+
+<dt><strong>OAuth 2.0 (3LO)</strong></dt>
+<dd>A standard way for a user to let an app act on their behalf without giving the app their password. "3LO" (three-legged OAuth) means three parties: the user, the app, and Atlassian. See <a href="flow-signin.html">Signing in with Atlassian</a>.</dd>
+
+<dt><strong>Origin</strong></dt>
+<dd>The scheme + host + port of a URL: <code>https://jira-bug-dashboard-cloud.shouryacode2021.workers.dev</code>. The browser's security rules are built around origins.</dd>
+
+<dt><strong>Pagination</strong></dt>
+<dd>Getting a long list in pages (for example 100 issues at a time) using a "next page" token.</dd>
+
+<dt><strong>Personal Data Reporting API</strong></dt>
+<dd>An Atlassian API that apps storing personal data must call regularly, so Atlassian can say "this account was closed, erase it". See <a href="privacy-lifecycle.html">Privacy and the data life cycle</a>.</dd>
+
+<dt><strong>Polling</strong></dt>
+<dd>Asking repeatedly "anything new?". JARVIS polls Jira on a schedule because Jira cannot push changes to a private app easily.</dd>
+
+<dt><strong>Push service / Web Push</strong></dt>
+<dd>A service run by the browser maker (Google, Mozilla, Apple, Microsoft) that delivers messages to a browser even when no tab is open. See <a href="web-push.html">Service workers and Web Push</a>.</dd>
+
+<dt><strong>Rate limit</strong></dt>
+<dd>A cap on how many requests are allowed in a time window. Jira, Atlassian and Cloudflare all have them; the app has its own too.</dd>
+
+<dt><strong>Refresh token / rotation</strong></dt>
+<dd>A long-lived key used only to get new access tokens. Atlassian <em>rotates</em> it: each use returns a new one and disables the old. See <a href="flow-token-refresh.html">Refreshing and rotating tokens</a>.</dd>
+
+<dt><strong>REST</strong></dt>
+<dd>A common style of HTTP API: things are "resources" at URLs (<code>/rest/api/3/issue/ABC-1</code>), and methods say what to do with them.</dd>
+
+<dt><strong>Route</strong></dt>
+<dd>One path the server answers (<code>GET /api/mine</code>), or, in Cloudflare, a URL pattern a Worker runs on.</dd>
+</dl>
+
+<h2>S to Z</h2>
+<dl>
+<dt><strong>Scope</strong></dt>
+<dd>One specific permission requested from Atlassian: <code>read:jira-work</code>, <code>read:jira-user</code>, <code>read:me</code>, <code>offline_access</code>. The app asks only for read scopes.</dd>
+
+<dt><strong>Secret (Worker secret)</strong></dt>
+<dd>A setting whose value is hidden: stored encrypted by Cloudflare, available to the Worker, never shown again. Examples: <code>TOKEN_ENC_KEY</code>, <code>ATLASSIAN_CLIENT_SECRET</code>.</dd>
+
+<dt><strong>Server-Sent Events (SSE)</strong></dt>
+<dd>A long-lived HTTP response where the server keeps sending small messages. The Local edition streams JARVIS events to the page this way.</dd>
+
+<dt><strong>Service worker</strong></dt>
+<dd>A small script a website installs in the browser that can run in the background, for example to receive push messages. File: <code>cloud/public/sw.js</code>.</dd>
+
+<dt><strong>Session</strong></dt>
+<dd>"You are signed in" remembered between requests, via a cookie. Expires after 30 days, or 7 days without use.</dd>
+
+<dt><strong>Snapshot</strong></dt>
+<dd>JARVIS's saved list of your bugs and when each was last updated. New results are compared against it.</dd>
+
+<dt><strong>SQL</strong></dt>
+<dd>The language for databases: <code>SELECT name FROM users WHERE id = ?</code>.</dd>
+
+<dt><strong>SSRF</strong> (Server-Side Request Forgery)</dt>
+<dd>Tricking a server into calling an address it should not (for example internal cloud metadata). Push endpoints are checked against an allow-list to prevent it.</dd>
+
+<dt><strong>Status category</strong></dt>
+<dd>Jira groups every status (whatever its name) into three categories: <em>new</em> (to do), <em>indeterminate</em> (in progress), <em>done</em>. JARVIS uses this to tell "reopened" from "moved".</dd>
+
+<dt><strong>TypeScript</strong></dt>
+<dd>JavaScript with types. All the app's code is TypeScript, compiled to JavaScript by <code>tsc</code> (or bundled by Wrangler for the Worker).</dd>
+
+<dt><strong>VAPID</strong></dt>
+<dd>A way for a server to prove to push services who it is, using a signed JWT and a public key. Keys are generated by <code>gen-vapid.mjs</code>.</dd>
+
+<dt><strong>Worker (Cloudflare Worker)</strong></dt>
+<dd>Your code running on Cloudflare's network. It wakes up for each request (or each cron tick), does its work in milliseconds, and goes back to sleep. See <a href="cf-workers.html">Workers</a>.</dd>
+
+<dt><strong>Wrangler</strong></dt>
+<dd>Cloudflare's command-line tool for Workers: run locally, create databases, set secrets, deploy, read logs. See <a href="cf-wrangler.html">Wrangler cheat sheet</a>.</dd>
+
+<dt><strong>workers.dev</strong></dt>
+<dd>A free web address Cloudflare gives every account: <code>&lt;worker&gt;.&lt;subdomain&gt;.workers.dev</code>.</dd>
+</dl>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

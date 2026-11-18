@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>How to add a feature · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="A worked example from idea to deploy." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="extending">
+<main>
+<article class="doc">
+<h1>How to add a feature</h1>
+<p class="lede">A worked example: making JARVIS announce when a bug's <em>due date</em> changes. It touches every layer, so it is a map of where things go.</p>
+
+<h2>1. Decide where each part lives</h2>
+<table>
+  <tr><th>Part</th><th>File</th></tr>
+  <tr><td>Event type name</td><td><code>src/shared/types.ts</code> (<code>JarvisEventType</code>)</td></tr>
+  <tr><td>Detection (from the changelog)</td><td><code>src/core/detect.ts</code> (<code>classifyChanges</code>, <code>IMPORTANCE</code>)</td></tr>
+  <tr><td>Words and notification text</td><td><code>src/client/jarvis-core.ts</code> (templates, <code>EVENT_LABEL</code>, <code>notificationFor</code>, <code>describeEvent</code>)</td></tr>
+  <tr><td>Labels in history and For You</td><td><code>src/core/detect.ts</code> (<code>eventLabel</code>), <code>src/client/jarvis.ts</code> (badge colour)</td></tr>
+  <tr><td>Server-side push rules</td><td>nothing to do: event types are validated against <code>EVENT_TYPES</code> automatically</td></tr>
+  <tr><td>Tests</td><td>mocks (<code>mock-jira.mjs</code>, <code>mock-atlassian.mjs</code>) + suites</td></tr>
+</table>
+
+<h2>2. Type</h2>
+<pre><code>// src/shared/types.ts
+export type JarvisEventType = 'assigned' | … | 'updated' | 'due';</code></pre>
+<p>TypeScript will now point at every place that must handle the new value (records keyed by event type will fail to compile until filled in). That is the main benefit of strict types.</p>
+
+<h2>3. Detection</h2>
+<pre><code>// src/core/detect.ts, inside the loop over changelog items
+} else if (fid === 'duedate') {
+  out.push(draft(c.siteUrl, i, 'due', { occurredAt, actor, actorId, from, to, own }));
+}
+// and in IMPORTANCE:  due: 'normal'</code></pre>
+
+<h2>4. Words</h2>
+<pre><code>// src/client/jarvis-core.ts
+due: [
+  (c) =&gt; `${c.pre}the due date of ${c.k} moved to ${c.to}.`,
+  (c) =&gt; `${c.k} has a new deadline${c.post}: ${c.to}.`,
+],
+// EVENT_LABEL: due: 'Due date change'
+// notificationFor: case 'due': return { title: `${e.key}: due ${e.to ?? 'removed'}`, body: e.summary };</code></pre>
+
+<h2>5. Test it</h2>
+<ol>
+  <li>Add a control to the mock: <code>case 'due': hist(i, BOB, [{ field: 'duedate', fieldId: 'duedate', fromString: …, toString: a.to }])</code>.</li>
+  <li>Add a step to <code>test-jarvis.mjs</code> and <code>test-e2e.mjs</code>: <code>await step('due date change', () =&gt; mock('due', {key: 'ABC-2', to: '2026-12-01'}), 'due:ABC-2')</code>.</li>
+  <li>Add a template test to <code>test-core.mjs</code>.</li>
+  <li>Run all suites (both editions use the core).</li>
+</ol>
+
+<h2>6. Ship it</h2>
+<pre><code>git checkout -b feature/due-date-events
+git add -p                       # review each change
+git commit -m "JARVIS: announce due date changes"
+npm run build &amp;&amp; (cd cloud &amp;&amp; npm run deploy:dry)
+# after review: merge, push, cloud: npm run deploy</code></pre>
+
+<h2>General rules for changes</h2>
+<ul>
+  <li><strong>Shared logic goes in <code>src/core</code></strong> (no Node or Cloudflare APIs), so both editions get it.</li>
+  <li><strong>Keep the API contract</strong>: if the Local server and the Worker both serve an endpoint, change both and the shared type.</li>
+  <li><strong>Mind the free tier</strong> in the cloud: every new Jira call in the monitor costs subrequests for every user, every interval.</li>
+  <li><strong>Database changes = a new migration file</strong>, additive.</li>
+  <li><strong>Escape everything</strong> you render (<code>esc()</code>), validate everything you receive.</li>
+  <li><strong>Update these guides</strong> when behaviour changes.</li>
+</ul>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

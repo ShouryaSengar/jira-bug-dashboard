@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>JARVIS: speech and notifications · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Templates, grouping, quiet hours, voices and tabs." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="jarvis-voice">
+<main>
+<article class="doc">
+<h1>JARVIS: speech and notifications</h1>
+<p class="lede">How events become words and notifications: the templates, the grouping rules, quiet hours, voice selection, the browser's rules, and how several open tabs avoid talking over each other.</p>
+
+<h2>From events to announcements: <code>plan()</code></h2>
+<p><code>plan(batch, prefs, now)</code> in <code>src/client/jarvis-core.ts</code> is a pure function: given a batch of events and the user's preferences, it returns what to show and say. The browser and the Worker (for push text) both use it.</p>
+<ol class="steps-list">
+  <li><strong>Silence checks</strong>: during quiet hours → nothing. Drop own actions and disabled event types. In "important only" mode keep only high-importance events plus resolutions.</li>
+  <li><strong>Collapse repeats</strong>: same bug + same type → one item with a count ("ABC-1: 3 new comments").</li>
+  <li><strong>Sort</strong> by importance, then time.</li>
+  <li><strong>Decide speech</strong>: up to 2 items are spoken one by one; 3 or more become one briefing (in digest mode already from 2). Low-importance items are never spoken.</li>
+  <li><strong>Decide notifications</strong>: at most 2 individual notifications plus one summary ("4 more updates on your bugs") when there are more than 3 items.</li>
+</ol>
+<pre><code>// a burst of 6 updates becomes:
+"ABC-1: new comment · Bob"            (notification)
+"ABC-2: priority raised to Highest"   (notification)
+"4 more updates on your bugs"         (notification)
+"Sir, a quick briefing. 6 updates across 4 bugs: 1 new assignment, 3 new comments, … Most notable: A B C 7, newly assigned."  (speech)</code></pre>
+
+<h2>The templates</h2>
+<p>Each event type has several hand-written variations; the same one is never used twice in a row (<code>pickVariant</code> remembers the last choice). Placeholders are filled from the event:</p>
+<table>
+  <tr><th>Event</th><th>Example</th></tr>
+  <tr><td>assigned</td><td>"Good evening, sir. A new bug has landed on your desk. A B C 123, Login button does not respond, has just been assigned to you. Shall we take a look?"</td></tr>
+  <tr><td>status</td><td>"Sir, a quick update. A B C 123 has moved to In Progress."</td></tr>
+  <tr><td>comment</td><td>"Bob Builder has weighed in on A B C 123, sir."</td></tr>
+  <tr><td>priority up</td><td>"Attention, sir. The priority of A B C 123 has just been escalated to Highest."</td></tr>
+  <tr><td>reopened</td><td>"Well, sir. A B C 123 is back from the dead. The issue has been reopened."</td></tr>
+  <tr><td>resolved</td><td>"Excellent work, sir. A B C 123 has been marked as resolved. One less problem on the board."</td></tr>
+  <tr><td>closed</td><td>"Mission accomplished, sir. A B C 123 is officially closed."</td></tr>
+</table>
+<ul>
+  <li><strong>Spoken keys</strong>: <code>ABC-123</code> becomes "A B C 123" so the voice spells the project instead of reading "abc" as a word.</li>
+  <li><strong>Spoken summaries</strong>: links become "a link", markup is stripped, long summaries are cut at a word boundary (70 characters).</li>
+  <li><strong>Address</strong>: "sir", "ma'am", "boss" or nothing, chosen in settings; the greeting follows the time of day.</li>
+  <li><strong>"While you were away"</strong>: when the app opens and finds unread events newer than the last announced id, it gives one briefing instead of replaying each.</li>
+</ul>
+<div class="callout info"><span class="callout-title">No AI involved</span>All wording comes from fixed templates. There are no network calls, no model, no cost, and the output is predictable and testable (33 tests cover the rules).</div>
+
+<h2>The speaker (<code>speech.ts</code>)</h2>
+<ul>
+  <li><strong>One voice at a time</strong>: a queue of up to 5 lines; each waits for the previous one's <code>end</code> event, plus 350 ms of pause.</li>
+  <li><strong>Stale lines are dropped</strong>: anything waiting more than 2 minutes (except test announcements).</li>
+  <li><strong>Safety timer</strong>: some browsers never fire <code>end</code>; a timeout based on text length moves on anyway.</li>
+  <li><strong>Voice choice</strong>: your pick in settings, otherwise the best available English voice in this order: Microsoft Andrew (Natural), other Microsoft Natural voices, Daniel (macOS British), Google UK English Male, and other fallbacks.</li>
+  <li><strong>The "click first" rule</strong>: Chrome and Edge refuse to speak until the user has interacted with the page once. Lines wait until the first click or key press; the header shows "Click anywhere to enable voice".</li>
+</ul>
+
+<h2>Notifications</h2>
+<ul>
+  <li><strong>In-page</strong> (all editions): <code>new Notification(title, {body, tag})</code> while the tab is open, if permission is granted. Clicking opens the bug's detail. High-importance ones stay until dismissed.</li>
+  <li><strong>Push</strong> (cloud): the service worker shows them, even with the browser closed. When a push already showed a notification, the page does not show a second one for the same events.</li>
+  <li><strong>System</strong> (local): macOS/Linux notifications from the Node server when no tab is connected.</li>
+  <li>Permission is only requested from a click (browsers require a user gesture).</li>
+</ul>
+
+<h2>Several tabs</h2>
+<p>If you have three dashboard tabs open, only one should speak. Each tab writes a heartbeat to localStorage every 5 seconds, saying whether it is allowed to speak. When events arrive:</p>
+<ol>
+  <li>A tab that cannot speak yet steps aside if another able tab is alive.</li>
+  <li>Otherwise it tries to <em>claim</em> the batch (highest event id) inside a Web Lock, so two tabs cannot claim the same batch at the same moment.</li>
+  <li>Claims expire after 20 seconds; tabs remove their heartbeat when closed.</li>
+</ol>
+
+<h2>Server-side rules for push (cloud)</h2>
+<p>When the browser is closed, the browser's preferences are not available, so the page copies the relevant ones to the server (<code>POST /api/jarvis/notify</code>): enabled event types, frequency, quiet hours and your time zone. The Worker applies them with <code>pushPlan()</code>, computing "now" in your time zone with <code>Intl.DateTimeFormat</code>. Events silenced by quiet hours are still recorded as unread.</p>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>

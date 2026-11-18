@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'" />
+<meta name="color-scheme" content="light dark" />
+<title>Wrangler cheat sheet · Learn · Jira Bug Dashboard</title>
+<meta name="description" content="Every command you will need, with examples." />
+<link rel="icon" href="../icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../css/app.css" />
+<link rel="stylesheet" href="learn.css" />
+<script src="../js/boot.js"></script>
+</head>
+<body data-slug="cf-wrangler">
+<main>
+<article class="doc">
+<h1>Wrangler cheat sheet</h1>
+<p class="lede">Wrangler is Cloudflare's command-line tool. These are the commands used for this app, grouped by task, with what each one does and when to use it.</p>
+
+<div class="callout tip"><span class="callout-title">Running Wrangler</span>Install it per project (<code>npm install -D wrangler</code>) and run it with <code>npx wrangler …</code> from the folder containing <code>wrangler.jsonc</code> (here: <code>cloud/</code>). Add <code>--env production</code> or <code>--env dev</code> to pick the environment. Set <code>WRANGLER_SEND_METRICS=false</code> to turn off usage telemetry.</div>
+
+<h2>Account</h2>
+<table>
+  <tr><th>Command</th><th>What it does</th></tr>
+  <tr><td><code>npx wrangler login</code></td><td>Opens Cloudflare in the browser to authorise Wrangler (OAuth). Add <code>--browser=false</code> to print the link instead, then open it yourself in the browser you use.</td></tr>
+  <tr><td><code>npx wrangler whoami</code></td><td>Shows the account, its id and the token's permissions</td></tr>
+  <tr><td><code>npx wrangler logout</code></td><td>Removes the saved login from this computer</td></tr>
+</table>
+<div class="callout warn"><span class="callout-title">Login gotcha we hit</span>If the login link opens in one browser and you approve in another (or in an old tab), Cloudflare answers "No CSRF value available in the session cookie" and Wrangler warns "query string parameter doesn't match". Close old tabs, start a new login, and approve in the same browser that opened the link.</div>
+
+<h2>Local development</h2>
+<table>
+  <tr><th>Command</th><th>What it does</th></tr>
+  <tr><td><code>npx wrangler dev --env dev</code></td><td>Runs the Worker locally (workerd) with local D1, hot reload on file changes</td></tr>
+  <tr><td><code>… --test-scheduled</code></td><td>Enables <code>/__scheduled?cron=…</code> to trigger the cron handler by hand</td></tr>
+  <tr><td><code>… --port 8787 --ip 127.0.0.1</code></td><td>Where to listen (this repo wraps it in <code>scripts/dev-server.sh</code>)</td></tr>
+  <tr><td><code>npx wrangler types</code></td><td>Generates TypeScript types for your bindings</td></tr>
+</table>
+
+<h2>D1 database</h2>
+<table>
+  <tr><th>Command</th><th>What it does</th></tr>
+  <tr><td><code>npx wrangler d1 create jbd-cloud</code></td><td>Creates a database; prints its <code>database_id</code> for <code>wrangler.jsonc</code></td></tr>
+  <tr><td><code>npx wrangler d1 list</code></td><td>Lists databases, sizes, table counts</td></tr>
+  <tr><td><code>npx wrangler d1 migrations apply DB --local --env dev</code></td><td>Applies new migration files to the local copy</td></tr>
+  <tr><td><code>npx wrangler d1 migrations apply DB --remote --env production</code></td><td>…to the real database (asks for confirmation)</td></tr>
+  <tr><td><code>npx wrangler d1 migrations list DB --remote --env production</code></td><td>Shows which migrations have run</td></tr>
+  <tr><td><code>npx wrangler d1 execute DB --remote --env production --command "SQL"</code></td><td>Runs one SQL statement; add <code>--json</code> for machine-readable output, or <code>--file x.sql</code></td></tr>
+  <tr><td><code>npx wrangler d1 export jbd-cloud --remote --output backup.sql</code></td><td>Exports schema and data</td></tr>
+  <tr><td><code>npx wrangler d1 time-travel restore jbd-cloud --timestamp …</code></td><td>Restores the database to a past moment (7 days on Free)</td></tr>
+  <tr><td><code>npx wrangler d1 delete jbd-cloud</code></td><td>Deletes a database (irreversible)</td></tr>
+</table>
+
+<h2>Secrets</h2>
+<table>
+  <tr><th>Command</th><th>What it does</th></tr>
+  <tr><td><code>npx wrangler secret put NAME --env production</code></td><td>Prompts for a value (hidden) and stores it; also reads from standard input: <code>printf '%s' "$V" | npx wrangler secret put NAME --env production</code></td></tr>
+  <tr><td><code>npx wrangler secret list --env production</code></td><td>Shows secret names (never values)</td></tr>
+  <tr><td><code>npx wrangler secret delete NAME --env production</code></td><td>Removes a secret</td></tr>
+</table>
+
+<h2>Deploying</h2>
+<table>
+  <tr><th>Command</th><th>What it does</th></tr>
+  <tr><td><code>npx wrangler deploy --env production --dry-run --outdir .wrangler/dry</code></td><td>Bundles and validates without uploading; shows size and bindings</td></tr>
+  <tr><td><code>npx wrangler deploy --env production</code></td><td>Uploads code and assets, creates a new version, applies triggers</td></tr>
+  <tr><td><code>npx wrangler deployments list --env production</code></td><td>Recent deployments</td></tr>
+  <tr><td><code>npx wrangler versions list --env production</code></td><td>All versions with ids</td></tr>
+  <tr><td><code>npx wrangler rollback --env production</code></td><td>Makes the previous version live again (you may pass a version id)</td></tr>
+  <tr><td><code>npx wrangler delete --env production</code></td><td>Deletes the Worker and its triggers</td></tr>
+</table>
+
+<h2>Observing</h2>
+<table>
+  <tr><th>Command</th><th>What it does</th></tr>
+  <tr><td><code>npx wrangler tail --env production</code></td><td>Live log stream: each request, each cron run, every <code>console.log</code></td></tr>
+  <tr><td><code>… --format pretty</code> / <code>--format json</code></td><td>Readable or machine output</td></tr>
+  <tr><td><code>… --status error</code></td><td>Only failed invocations</td></tr>
+</table>
+
+<h2>This repo's npm shortcuts (in <code>cloud/</code>)</h2>
+<pre><code>npm run build              # compile the shared frontend and assemble dist-assets
+npm run db:migrate:local   # local migrations
+npm run dev                # build + migrate + wrangler dev
+npm run vapid              # print new production keys
+npm run deploy:dry         # build + dry-run deploy
+npm run deploy             # build + remote migrations + deploy</code></pre>
+</article>
+</main>
+<script src="learn.js"></script>
+</body>
+</html>
