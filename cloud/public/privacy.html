@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy policy · Jira Bug Dashboard (Cloud edition)</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  .policy { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; line-height: 1.6; }
+  .policy h1 { font-size: 28px; margin-bottom: 4px; }
+  .policy h2 { font-size: 18px; margin: 28px 0 8px; }
+  .policy table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 14px; }
+  .policy th, .policy td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; white-space: normal; }
+  .policy th { background: var(--card-2); }
+  .policy ul { padding-left: 20px; }
+</style>
+</head>
+<body>
+<main class="policy">
+  <p><a href="./">← Back to the dashboard</a></p>
+  <h1>Privacy policy</h1>
+  <p class="muted">Jira Bug Dashboard, Cloud edition · Last updated 18 November 2026</p>
+
+  <p>Jira Bug Dashboard is an open-source tool that shows the Jira bugs assigned to you and notifies you when they
+  change. This page explains what the hosted Cloud edition at
+  <code>jira-bug-dashboard-cloud.shouryacode2021.workers.dev</code> stores, why, and for how long.
+  The source code is public at <a href="https://github.com/ShouryaSengar/jira-bug-dashboard">github.com/ShouryaSengar/jira-bug-dashboard</a>,
+  so you can check every statement below.</p>
+
+  <h2>Who runs it</h2>
+  <p>The service is operated by Shourya Singh Sengar as an individual open-source project. Contact:
+  <a href="mailto:shouryacode2021@gmail.com">shouryacode2021@gmail.com</a>.</p>
+
+  <h2>What access the app asks for</h2>
+  <p>When you sign in with Atlassian you grant these <strong>read-only</strong> permissions, for the Jira site you choose on Atlassian's consent screen:</p>
+  <ul>
+    <li><code>read:jira-work</code>: read issues, comments and change history you can already see in Jira</li>
+    <li><code>read:jira-user</code>: read user names shown on those issues</li>
+    <li><code>read:me</code>: your Atlassian name, e-mail and avatar, to identify your account</li>
+    <li><code>offline_access</code>: lets the service keep checking for changes while you are away</li>
+  </ul>
+  <p>The app cannot create, edit or delete anything in Jira. It only sees what your own Jira permissions allow.</p>
+
+  <h2>What is stored</h2>
+  <table>
+    <tr><th>Data</th><th>Why</th><th>Kept for</th></tr>
+    <tr><td>Atlassian account id, name, e-mail, avatar URL</td><td>identify you when you sign in</td><td>until you delete your account</td></tr>
+    <tr><td>Jira site name and URL</td><td>know which site to query</td><td>until you disconnect or delete</td></tr>
+    <tr><td>Atlassian access and refresh tokens, <strong>encrypted</strong> (AES-256-GCM, key held separately from the database)</td><td>call Jira on your behalf</td><td>until you disconnect, delete, or Atlassian revokes them</td></tr>
+    <tr><td>Monitoring checkpoint: keys, summaries and last-updated times of bugs assigned to you, plus ids of changes already seen</td><td>detect new activity without announcing it twice</td><td>until you disconnect or delete</td></tr>
+    <tr><td>Notification history: issue key, summary, change type, who made it, old/new value, up to 160 characters of a new comment</td><td>show your history and send notifications</td><td>30 days</td></tr>
+    <tr><td>Settings (site, issue types, interval, quiet hours, time zone, notification types)</td><td>apply your preferences</td><td>until you delete your account</td></tr>
+    <tr><td>Push subscription per device (an address issued by your browser's push service, its encryption keys, a label such as "Chrome on macOS")</td><td>deliver notifications to that device</td><td>until you turn notifications off, the browser invalidates it, or you delete</td></tr>
+    <tr><td>Sessions: a hash of your session cookie, browser user-agent</td><td>keep you signed in</td><td>up to 30 days, or 7 days without use</td></tr>
+    <tr><td>A one-way hash of your IP address</td><td>limit repeated sign-in attempts</td><td>about 10 minutes</td></tr>
+  </table>
+  <p>Full Jira issue contents (descriptions, attachments, complete comments) are <strong>not</strong> stored. They are
+  fetched live from Jira when you open them and passed straight to your browser.</p>
+  <p>Your browser also keeps a local copy of your settings and the last loaded results (in <code>localStorage</code>) so the page opens quickly.
+  Signing out, disconnecting or deleting your account clears it. Tokens are never stored in the browser.</p>
+
+  <h2>What is not done</h2>
+  <ul>
+    <li>No advertising, tracking or analytics scripts.</li>
+    <li>No selling or sharing of your data with anyone except the services below, and only for the purpose stated.</li>
+    <li>No AI or machine-learning processing of your data. Notification wording comes from fixed templates.</li>
+  </ul>
+
+  <h2>Services involved</h2>
+  <ul>
+    <li><strong>Cloudflare</strong> hosts the app and its database (Workers, D1; database region: Asia-Pacific).
+      Cloudflare keeps short-lived request logs (URLs without sign-in codes, status codes, error messages) for operating the service.</li>
+    <li><strong>Atlassian</strong> provides sign-in and the Jira data. See <a href="https://www.atlassian.com/legal/privacy-policy">Atlassian's privacy policy</a>.</li>
+    <li><strong>Your browser's push service</strong> (Google for Chrome/Edge/Android, Mozilla for Firefox, Apple for Safari, Microsoft for Edge on Windows)
+      relays notifications. Their content is end-to-end encrypted to your device, so the push service cannot read it.</li>
+  </ul>
+
+  <h2>Security</h2>
+  <p>Tokens are encrypted at rest with a key stored outside the database, sign-in uses the OAuth state check, sessions use
+  HttpOnly, Secure, SameSite cookies, and every database query is limited to the signed-in user. No system is perfectly secure;
+  if you believe something is wrong, please e-mail the address above.</p>
+
+  <h2>Your choices</h2>
+  <ul>
+    <li><strong>Turn off notifications or monitoring</strong> any time in the JARVIS panel.</li>
+    <li><strong>Disconnect Jira</strong> (Settings): deletes your tokens, site, monitoring data, devices and sessions immediately.</li>
+    <li><strong>Delete account</strong> (Settings): permanently deletes everything stored about you.</li>
+    <li><strong>Revoke access at Atlassian</strong>: <a href="https://id.atlassian.com/manage-profile/apps">id.atlassian.com → Connected apps</a>.</li>
+    <li>For a copy of your data or any other request, e-mail the address above.</li>
+  </ul>
+
+  <h2>Changes</h2>
+  <p>If this policy changes, the date above is updated and the change is visible in the public source repository.</p>
+</main>
+</body>
+</html>
