@@ -1,0 +1,60 @@
+// Cloudflare configuration for the Cloud edition. Bindings, vars and triggers are per environment.
+// Nothing secret lives here: secrets are set with `wrangler secret put` (production) or .dev.vars (local).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jira-bug-dashboard-cloud",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./dist-assets",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/auth/*"]
+  },
+  "observability": { "enabled": true },
+
+  "env": {
+    // Local development (`npm run dev`): local D1, mock Atlassian on :4710, mock push service allowed.
+    "dev": {
+      "name": "jira-bug-dashboard-cloud-dev",
+      "vars": {
+        "APP_ORIGIN": "http://localhost:8787",
+        "ATLASSIAN_CLIENT_ID": "dev-client-id",
+        "ATLASSIAN_AUTH_BASE": "http://127.0.0.1:4710",
+        "ATLASSIAN_API_BASE": "http://127.0.0.1:4710",
+        "VAPID_SUBJECT": "mailto:dev@example.com",
+        "VAPID_PUBLIC_KEY": "REPLACE_WITH_OUTPUT_OF_npm_run_vapid",
+        "PUSH_ENDPOINT_HOSTS": "fcm.googleapis.com,updates.push.services.mozilla.com,push.services.mozilla.com,web.push.apple.com,notify.windows.com,127.0.0.1",
+        "MONITOR_SUBREQUEST_BUDGET": "45",
+        "MONITOR_MAX_USERS_PER_RUN": "12",
+        "MIN_INTERVAL_MIN": "1",
+        "ALLOW_INSECURE_PUSH": "1"
+      },
+      "d1_databases": [
+        { "binding": "DB", "database_name": "jbd-cloud-dev", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+      ],
+      "triggers": { "crons": ["* * * * *"] }
+    },
+
+    // Production. Replace the REPLACE_ values (see cloud/README.md, "Deployment checklist").
+    "production": {
+      "name": "jira-bug-dashboard-cloud",
+      "vars": {
+        "APP_ORIGIN": "REPLACE_WITH_https://jira-bug-dashboard-cloud.<your-subdomain>.workers.dev",
+        "ATLASSIAN_CLIENT_ID": "REPLACE_WITH_ATLASSIAN_CLIENT_ID",
+        "ATLASSIAN_AUTH_BASE": "https://auth.atlassian.com",
+        "ATLASSIAN_API_BASE": "https://api.atlassian.com",
+        "VAPID_SUBJECT": "REPLACE_WITH_mailto:you@example.com",
+        "VAPID_PUBLIC_KEY": "REPLACE_WITH_OUTPUT_OF_npm_run_vapid",
+        "PUSH_ENDPOINT_HOSTS": "fcm.googleapis.com,updates.push.services.mozilla.com,push.services.mozilla.com,web.push.apple.com,notify.windows.com",
+        "MONITOR_SUBREQUEST_BUDGET": "45",
+        "MONITOR_MAX_USERS_PER_RUN": "12",
+        "MIN_INTERVAL_MIN": "5"
+      },
+      "d1_databases": [
+        { "binding": "DB", "database_name": "jbd-cloud", "database_id": "REPLACE_WITH_D1_DATABASE_ID", "migrations_dir": "migrations" }
+      ],
+      "triggers": { "crons": ["* * * * *"] }
+    }
+  }
+}

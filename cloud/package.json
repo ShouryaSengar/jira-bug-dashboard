@@ -1,0 +1,23 @@
+{
+  "name": "jira-bug-dashboard-cloud",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloud edition of Jira Bug Dashboard: Cloudflare Worker + D1 + Cron + Web Push, Atlassian OAuth 2.0 (3LO).",
+  "license": "MIT",
+  "scripts": {
+    "build": "npm --prefix .. run build && node scripts/build-assets.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local --env dev",
+    "dev": "npm run build && wrangler d1 migrations apply DB --local --env dev && wrangler dev --env dev --test-scheduled",
+    "vapid": "node scripts/gen-vapid.mjs",
+    "test": "node scripts/test-unit.mjs && node scripts/test-e2e.mjs",
+    "deploy:dry": "npm run build && wrangler deploy --env production --dry-run --outdir .wrangler/dry",
+    "deploy": "npm run build && wrangler d1 migrations apply DB --remote --env production && wrangler deploy --env production"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261118.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.164.0"
+  }
+}

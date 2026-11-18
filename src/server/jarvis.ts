@@ -20,10 +20,8 @@ import type http from 'node:http';
 import type { JarvisEvent, JarvisEventType, JarvisServerPrefs, JarvisState, JarvisStatus, MyBug } from '../shared/types.js';
 import { CONFIG_DIR, loadConfig, type Config } from './config.js';
 import { HttpError, iso, jira, resolveSeverityFieldIds, allFields } from './jira.js';
-import {
-  BASE_FIELDS, adfToText, assignedJql, getMe, getPriorityRank, getStatusMap, recentChangelog, recentComments, searchAll,
-  severityRank, type Me,
-} from './mine.js';
+import { BASE_FIELDS, assignedJql, getMe, getPriorityRank, getStatusMap, recentChangelog, recentComments, searchAll } from './mine.js';
+import { classifyAway, classifyChanges, classifyNew, eventLabel, type DetectCtx, type Draft } from '../core/detect.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Json = any;
@@ -67,31 +65,7 @@ function loadState(): Persisted {
   }
 }
 
-const IMPORTANCE: Record<JarvisEventType, 'high' | 'normal' | 'low'> = {
-  assigned: 'high', reopened: 'high', priority: 'normal', severity: 'normal', status: 'normal', comment: 'normal',
-  resolved: 'normal', closed: 'normal', reassigned_away: 'normal', unassigned: 'normal', updated: 'low',
-};
-const NOISY_FIELDS = new Set(['rank', 'lastviewed', 'remoteissuelink', 'worklogid', 'timespent']);
-
-type Draft = Omit<JarvisEvent, 'id' | 'at' | 'read'>;
-
-/** Short text for the "latest activity" column. */
-export function eventLabel(e: JarvisEvent): string {
-  const who = e.actor ? ` by ${e.actor}` : '';
-  switch (e.type) {
-    case 'assigned': return `Assigned to you${who}`;
-    case 'reassigned_away': return `Reassigned to ${e.to ?? 'someone else'}`;
-    case 'unassigned': return 'Unassigned';
-    case 'status': return `Status: ${e.from ?? '?'} → ${e.to ?? '?'}`;
-    case 'reopened': return `Reopened${who}`;
-    case 'resolved': return `Resolved${who}`;
-    case 'closed': return `Closed${who}`;
-    case 'comment': return `Comment${who}`;
-    case 'priority': return `Priority ${e.escalated ? 'raised' : 'lowered'} to ${e.to ?? '?'}`;
-    case 'severity': return `Severity ${e.escalated ? 'raised' : 'changed'} to ${e.to ?? '?'}`;
-    default: return `Updated: ${e.detail ?? 'details'}`;
-  }
-}
+export { eventLabel };
 
 async function mapLimit<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length);
@@ -346,7 +320,13 @@ export class Monitor {
     const prevSnap = this.st.snapshot;
     const drafts: Draft[] = [];
     const seen = new Set(this.st.seen);
-    const ctx = { cfg, me, sev, seen, statusMap: await getStatusMap(cfg), prank: await getPriorityRank(cfg) };
+    const statusMap = await getStatusMap(cfg);
+    const sevIds = new Set(sev);
+    const severityNames = new Set((await allFields(cfg).catch(() => [] as Json[])).filter((f) => sevIds.has(f.id)).map((f) => String(f.name).toLowerCase()));
+    const ctx: Ctx = {
+      cfg,
+      dc: { siteUrl: cfg.jiraUrl, meId: me.accountId, severityIds: sevIds, severityNames, seen, statusCat: (id) => statusMap.get(id)?.cat, priorityRank: await getPriorityRank(cfg) },
+    };
 
     // 1) newly assigned
     const fresh = [...current.keys()].filter((k) => !prevSnap[k]);
@@ -404,95 +384,14 @@ export class Monitor {
     if (list.length > 3) osNotify('JARVIS', `${list.length - 3} more updates on your bugs`);
   }
 
-  private draft(i: Json, type: JarvisEventType, o: Partial<Draft> & { occurredAt: string }): Draft {
-    const f = i.fields;
-    return {
-      type, key: i.key, summary: String(f.summary ?? ''), project: String(f.project?.key ?? ''),
-      url: '', actor: null, from: null, to: null, detail: null, escalated: false,
-      importance: IMPORTANCE[type], own: false, ...o,
-    };
-  }
-
   private async onNew(c: Ctx, i: Json): Promise<Draft[]> {
-    const done = i.fields.status?.statusCategory?.key === 'done';
     const hist = await recentChangelog(c.cfg, i.key, 100).catch(() => [] as Json[]);
-    // The assignment itself, if Jira shows it: the newest change that set the assignee to me.
-    const h = [...hist].reverse().find((x) => (x.items || []).some((it: Json) => it.field === 'assignee' && it.to === c.me.accountId));
-    const lastSync = Date.parse(this.st.lastSyncAt ?? '') || 0;
-    const when = h ? Date.parse(iso(h.created)) : Date.parse(iso(i.fields.updated));
-    // A closed bug that merely re-entered the window is not a new assignment.
-    if (done && !(h && when > lastSync - 5000)) return [];
-    const d = this.draft(i, 'assigned', {
-      occurredAt: new Date(when).toISOString(),
-      actor: h?.author?.displayName ?? null,
-      own: h?.author?.accountId === c.me.accountId,
-    });
-    const id = `${i.key}:assigned:${h?.id ?? iso(i.fields.updated)}`;
-    if (c.seen.has(id)) return [];
-    c.seen.add(id);
-    for (const hh of hist) markSeen(c, i.key, hh); // history before this point is not news
-    return [d];
+    return classifyNew(c.dc, i, hist, Date.parse(this.st.lastSyncAt ?? '') || 0);
   }
 
   private async onChanged(c: Ctx, i: Json, prev: Snap): Promise<Draft[]> {
-    const since = Date.parse(prev.updated) - 1500;
     const [hist, comments] = await Promise.all([recentChangelog(c.cfg, i.key, 100), recentComments(c.cfg, i.key, 15)]);
-    const out: Draft[] = [];
-    const sevIds = new Set(c.sev);
-    const sevNames = new Set((await allFields(c.cfg).catch(() => [] as Json[])).filter((f) => sevIds.has(f.id)).map((f) => String(f.name).toLowerCase()));
-
-    for (const h of hist) {
-      const created = Date.parse(iso(h.created));
-      if (!(created > since)) continue;
-      const own = h.author?.accountId === c.me.accountId;
-      const actor = h.author?.displayName ?? null;
-      const occurredAt = new Date(created).toISOString();
-      const other: string[] = [];
-      for (const it of h.items || []) {
-        const fid = String(it.fieldId ?? it.field);
-        const sid = `${i.key}:h${h.id}:${fid}`;
-        if (c.seen.has(sid)) continue;
-        c.seen.add(sid);
-        const field = String(it.field ?? '');
-        const from = it.fromString ?? null, to = it.toString ?? null;
-        if (fid === 'status') {
-          const fc = c.statusMap.get(String(it.from))?.cat, tc = c.statusMap.get(String(it.to))?.cat ?? (to === i.fields.status?.name ? i.fields.status?.statusCategory?.key : undefined);
-          let type: JarvisEventType = 'status';
-          if (fc === 'done' && tc !== 'done') type = 'reopened';
-          else if (/re-?open/i.test(to ?? '')) type = 'reopened';
-          else if (tc === 'done' && fc !== 'done') type = /clos/i.test(to ?? '') ? 'closed' : 'resolved';
-          out.push(this.draft(i, type, { occurredAt, actor, from, to, own }));
-        } else if (fid === 'priority') {
-          out.push(this.draft(i, 'priority', { occurredAt, actor, from, to, own, escalated: c.prank(to) < c.prank(from), importance: c.prank(to) < c.prank(from) ? 'high' : 'normal' }));
-        } else if (sevIds.has(fid) || sevNames.has(field.toLowerCase())) {
-          const up = severityRank(to) < severityRank(from);
-          out.push(this.draft(i, 'severity', { occurredAt, actor, from, to, own, escalated: up, importance: up ? 'high' : 'normal' }));
-        } else if (fid === 'assignee') {
-          // Handed to me while the bug was already in my list (for example it left and came back between two checks).
-          // Handing it to someone else is covered by the "missing" path.
-          if (String(it.to) === c.me.accountId && String(it.from) !== c.me.accountId) out.push(this.draft(i, 'assigned', { occurredAt, actor, own }));
-        } else if (!NOISY_FIELDS.has(field.toLowerCase())) {
-          other.push(field);
-        }
-      }
-      if (other.length) out.push(this.draft(i, 'updated', { occurredAt, actor, own, detail: [...new Set(other)].join(', ') }));
-    }
-
-    let n = 0;
-    for (const cm of comments) {
-      const created = Date.parse(iso(cm.created));
-      if (!(created > since)) continue;
-      const sid = `${i.key}:c${cm.id}`;
-      if (c.seen.has(sid)) continue;
-      c.seen.add(sid);
-      if (++n > 5) continue;
-      out.push(this.draft(i, 'comment', {
-        occurredAt: new Date(created).toISOString(), actor: cm.author?.displayName ?? null,
-        own: cm.author?.accountId === c.me.accountId, detail: adfToText(cm.body).replace(/\s+/g, ' ').trim().slice(0, 160),
-      }));
-    }
-    for (const d of out) d.url = `${c.cfg.jiraUrl}/browse/${d.key}`;
-    return out;
+    return classifyChanges(c.dc, i, hist, comments, Date.parse(prev.updated));
   }
 
   private async onMissing(c: Ctx, key: string, prev: Snap): Promise<Draft | null> {
@@ -503,28 +402,13 @@ export class Monitor {
       if (e instanceof HttpError && (e.status === 404 || e.status === 403)) return null; // deleted, moved or no longer visible
       throw e;
     }
-    const a = i.fields.assignee;
-    if (a?.accountId === c.me.accountId) return null; // still mine; it just aged out of the window or changed type
-    const d = this.draft(i, a ? 'reassigned_away' : 'unassigned', { occurredAt: iso(i.fields.updated), to: a?.displayName ?? null, summary: prev.summary });
-    d.url = `${c.cfg.jiraUrl}/browse/${key}`;
-    const sid = `${key}:away:${iso(i.fields.updated)}`;
-    if (c.seen.has(sid)) return null;
-    c.seen.add(sid);
-    return d;
+    return classifyAway(c.dc, i, prev.summary);
   }
 }
 
 interface Ctx {
   cfg: Config;
-  me: Me;
-  sev: string[];
-  seen: Set<string>;
-  statusMap: Map<string, { name: string; cat: string }>;
-  prank: (n: string | null) => number;
-}
-
-function markSeen(c: Ctx, key: string, h: Json): void {
-  for (const it of h.items || []) c.seen.add(`${key}:h${h.id}:${String(it.fieldId ?? it.field)}`);
+  dc: DetectCtx;
 }
 
 /** Errors that should abort the whole sync (and trigger backoff) instead of skipping one issue. */

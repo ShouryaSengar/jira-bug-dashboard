@@ -49,7 +49,7 @@ export async function showForYou(): Promise<void> {
   renderShell();
   if (!loaded) {
     loaded = true;
-    if (deps.mode() === 'local') {
+    if (deps.mode() !== 'demo') {
       data = loadMineCache();
       if (data) render();
     }
@@ -59,7 +59,7 @@ export async function showForYou(): Promise<void> {
 
 export async function refreshForYou(): Promise<void> {
   if ($('foryouView').hidden) return;
-  if (deps.mode() === 'local' && !deps.configured()) return renderShell();
+  if (deps.mode() !== 'demo' && !deps.configured()) return renderShell();
   const mine = ++seq;
   $('refreshBtn').classList.add('spin');
   if (!data) show('fyLoading', true);
@@ -67,13 +67,13 @@ export async function refreshForYou(): Promise<void> {
     const r = await fetchMine(deps.mode());
     if (mine !== seq) return;
     data = r;
-    if (deps.mode() === 'local') saveMineCache(r);
+    if (deps.mode() !== 'demo') saveMineCache(r);
     show('fyError', false);
     render();
   } catch (e) {
     if (mine !== seq) return;
     const msg = (e as Error).message;
-    if (/not set up/i.test(msg)) return renderShell();
+    if (/not set up/i.test(msg) || ['signin', 'reauth'].includes((e as { code?: string }).code ?? '')) return renderShell();
     $('fyError').innerHTML = `<span>Could not load your bugs: ${esc(msg)}. ${data ? `Showing saved data from ${esc(timeAgo(data.fetchedAt))}.` : ''}</span> <button class="link" data-fy="retry">Retry</button>`;
     show('fyError', true);
     if (data) render();
@@ -86,7 +86,7 @@ export async function refreshForYou(): Promise<void> {
 }
 
 function renderShell(): void {
-  const needsJira = deps.mode() === 'local' && !deps.configured();
+  const needsJira = deps.mode() !== 'demo' && !deps.configured();
   show('fyConnect', needsJira);
   show('fyBody', !needsJira && data !== null);
   if (needsJira) show('fyLoading', false);

@@ -1,8 +1,9 @@
-// JARVIS in the browser: receives events from the local server (or simulates them in the demo),
+// JARVIS in the browser: receives events from the local server (live stream), the Cloud edition (Web Push via
+// the service worker), or simulates them in the demo;
 // decides what to say and show, and renders the header indicator and the control panel.
 
 import type { JarvisEvent, JarvisEventType, JarvisServerPrefs, JarvisStatus } from '../shared/types.js';
-import { jarvisEvents, jarvisPost, jarvisStatus, setJarvisPrefs, type Mode } from './api.js';
+import { cloudNotifyPrefs, cloudSync, jarvisEvents, jarvisEventsAfter, jarvisPost, jarvisStatus, pushDevices, pushSubscribe, pushTest, pushUnsubscribe, setJarvisPrefs, type Mode } from './api.js';
 import { simulateEvent, demoMine } from './demo.js';
 import {
   EVENT_LABEL, EVENT_TYPES, describeEvent, inQuietHours, plan, speechFor, welcomeBack, type Address, type Frequency, type JarvisPrefs,
@@ -11,7 +12,7 @@ import { Speaker, englishVoices, notifyPermission, pickVoice, requestNotifyPermi
 import {
   DEFAULT_SIM, loadAnnounced, loadDemoEvents, loadJarvisPrefs, loadSim, saveAnnounced, saveDemoEvents, saveJarvisPrefs, saveSim,
 } from './store.js';
-import { $, esc, timeAgo, toast } from './util.js';
+import { $, debounce, esc, timeAgo, toast } from './util.js';
 
 export interface Hooks {
   /** Open the in-app detail view of an issue. */
@@ -24,6 +25,14 @@ export interface Hooks {
 
 let mode: Mode = 'demo';
 let configured = false;
+/** Cloud edition settings from /api/config. */
+let cloud: { vapidPublicKey: string; minIntervalMin: number } | null = null;
+type PushState = 'unsupported' | 'off' | 'on' | 'denied' | 'busy';
+let pushState: PushState = 'off';
+let deviceCount = 0;
+/** Events the service worker already showed as system notifications, so the page does not show them twice. */
+const viaPush = new Set<number>();
+let lastCatchUp = 0;
 let hooks: Hooks;
 let prefs: JarvisPrefs = loadJarvisPrefs();
 let sim: JarvisServerPrefs = DEFAULT_SIM;
@@ -43,8 +52,9 @@ const speaker = new Speaker(() => prefs);
 
 // ------------------------------------------------------------------ public API
 
-export function initJarvis(m: Mode, isConfigured: boolean, h: Hooks): void {
+export function initJarvis(m: Mode, isConfigured: boolean, h: Hooks, cloudOpts?: { vapidPublicKey: string; minIntervalMin: number }): void {
   mode = m;
+  cloud = cloudOpts ?? null;
   configured = isConfigured;
   hooks = h;
   sim = loadSim();
@@ -117,7 +127,129 @@ async function start(): Promise<void> {
   }
   welcomeIfMissed();
   renderIndicator();
+  if (mode === 'cloud') {
+    lastCatchUp = Date.now();
+    void setupServiceWorker();
+    syncNotifyOnce();
+    return;
+  }
   openStream();
+}
+
+// ------------------------------------------------------------------ Cloud edition: service worker & Web Push
+
+async function setupServiceWorker(): Promise<void> {
+  if (!('serviceWorker' in navigator)) {
+    pushState = 'unsupported';
+    return;
+  }
+  navigator.serviceWorker.addEventListener('message', (m: MessageEvent) => {
+    const d = m.data as { type?: string; events?: JarvisEvent[]; key?: string; ids?: number[] } | null;
+    if (d?.type === 'jbd-push') {
+      for (const e of d.events ?? []) {
+        viaPush.add(e.id);
+        ingest(e, true);
+      }
+    } else if (d?.type === 'jbd-open' && d.key) {
+      if (d.ids?.length) markRead(d.ids);
+      hooks.openIssue(d.key);
+    }
+  });
+  // Opening or returning to the tab fetches what happened meanwhile. This is event-driven, not a polling loop:
+  // background detection runs on the server, and live updates arrive by push.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && Date.now() - lastCatchUp > 30_000) void catchUp();
+  });
+  try {
+    const reg = await navigator.serviceWorker.register('sw.js');
+    if (!('PushManager' in window)) pushState = 'unsupported';
+    else if (notifyPermission() === 'denied') pushState = 'denied';
+    else pushState = (await reg.pushManager.getSubscription()) ? 'on' : 'off';
+  } catch {
+    pushState = 'unsupported';
+  }
+  if ($<HTMLDialogElement>('jarvisPanel').open) renderBody();
+}
+
+async function catchUp(): Promise<void> {
+  lastCatchUp = Date.now();
+  try {
+    const last = history.reduce((m, e) => Math.max(m, e.id), 0);
+    const [fresh, st] = await Promise.all([jarvisEventsAfter(last), jarvisStatus()]);
+    status = st;
+    for (const e of fresh) ingest(e, false);
+    welcomeIfMissed();
+    renderIndicator();
+    if ($<HTMLDialogElement>('jarvisPanel').open && tab !== 'settings') renderBody();
+  } catch {
+    /* offline or signed out: the indicator shows it on the next status */
+  }
+}
+
+const b64urlBytes = (s: string): Uint8Array => {
+  const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4));
+  return Uint8Array.from(b, (c) => c.charCodeAt(0));
+};
+
+function deviceLabel(): string {
+  const ua = navigator.userAgent;
+  const browser = /Edg\//.test(ua) ? 'Edge' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+  const os = /Windows/.test(ua) ? 'Windows' : /Mac OS X/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Linux/.test(ua) ? 'Linux' : '';
+  return `${browser}${os ? ` on ${os}` : ''}`;
+}
+
+/** Must run inside a click: browsers only allow the permission prompt from a user gesture. */
+async function enablePush(): Promise<void> {
+  if (!cloud || pushState === 'unsupported') return void toast('This browser does not support background notifications. On iPhone, add the app to the Home Screen first.', 'error');
+  pushState = 'busy';
+  renderBody();
+  try {
+    const perm = await requestNotifyPermission();
+    if (perm !== 'granted') {
+      pushState = perm === 'denied' ? 'denied' : 'off';
+      toast(perm === 'denied' ? 'Notifications are blocked for this site in your browser settings.' : 'Notifications were not allowed.', 'error');
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription()) ??
+      (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64urlBytes(cloud.vapidPublicKey) as BufferSource }));
+    await pushSubscribe({ ...sub.toJSON(), label: deviceLabel() });
+    pushState = 'on';
+    savePrefs({ desktop: true });
+    syncNotify();
+    toast('Background notifications are on for this device');
+  } catch (e) {
+    pushState = 'off';
+    toast(`Could not enable notifications: ${(e as Error).message}`, 'error');
+  } finally {
+    if (pushState === 'busy') pushState = 'off';
+    renderBody();
+  }
+}
+
+async function disablePush(): Promise<void> {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      await pushUnsubscribe(sub.endpoint).catch(() => undefined);
+      await sub.unsubscribe();
+    }
+  } finally {
+    pushState = notifyPermission() === 'denied' ? 'denied' : 'off';
+    renderBody();
+  }
+}
+
+/** The server applies event types, quiet hours and frequency to pushes sent while no tab is open. */
+const syncNotify = debounce(() => {
+  if (mode !== 'cloud' || !configured) return;
+  void cloudNotifyPrefs({ types: prefs.types, quiet: prefs.quiet, frequency: prefs.frequency, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }).catch(() => undefined);
+}, 800);
+function syncNotifyOnce(): void {
+  if (sessionStorage.getItem('jbd.notifySynced')) return;
+  sessionStorage.setItem('jbd.notifySynced', '1');
+  syncNotify();
 }
 
 function openStream(): void {
@@ -230,7 +362,7 @@ async function flush(): Promise<void> {
   if (real.length) saveAnnounced(Math.max(loadAnnounced(), ...real.map((e) => e.id)));
   for (const a of plan(events, prefs, new Date())) {
     const first = a.events[a.events.length - 1] as JarvisEvent;
-    if (a.notify && prefs.desktop) {
+    if (a.notify && prefs.desktop && !a.events.every((e) => viaPush.has(e.id))) {
       showNotification({
         title: a.title,
         body: a.body,
@@ -305,8 +437,8 @@ interface View {
 
 function view(): View {
   const s = status;
-  if (mode === 'local' && !configured) return { label: 'Offline', detail: 'Connect Jira to start monitoring.', tone: 'off' };
-  if (!s) return { label: 'Offline', detail: 'Cannot reach the local server.', tone: 'err' };
+  if (mode !== 'demo' && !configured) return { label: 'Offline', detail: mode === 'cloud' ? 'Sign in with Atlassian to start monitoring.' : 'Connect Jira to start monitoring.', tone: 'off' };
+  if (!s) return { label: 'Offline', detail: mode === 'cloud' ? 'Cannot reach the server.' : 'Cannot reach the local server.', tone: 'err' };
   if (mode === 'local' && !streamUp) return { label: 'Reconnecting', detail: 'Lost the connection to the local server. Retrying…', tone: 'warn' };
   switch (s.state) {
     case 'off': return { label: 'Off', detail: 'JARVIS is switched off.', tone: 'off' };
@@ -314,7 +446,7 @@ function view(): View {
     case 'backoff': return { label: 'Retrying', detail: s.lastError ?? 'Jira did not respond. Retrying with a delay.', tone: 'warn' };
     case 'syncing': return { label: 'Syncing', detail: 'Checking Jira now…', tone: 'ok' };
     case 'unconfigured': return { label: 'Offline', detail: 'Connect Jira to start monitoring.', tone: 'off' };
-    default: return { label: 'Online', detail: mode === 'demo' ? 'Demo: events are simulated.' : `Watching ${s.monitored} bug${s.monitored === 1 ? '' : 's'}.`, tone: 'ok' };
+    default: return { label: 'Online', detail: mode === 'demo' ? 'Demo: events are simulated.' : `Watching ${s.monitored} bug${s.monitored === 1 ? '' : 's'}${mode === 'cloud' ? `, checked every ${Math.round(s.prefs.intervalSec / 60)} min in the cloud` : ''}.`, tone: 'ok' };
   }
 }
 
@@ -377,7 +509,9 @@ function overviewHtml(): string {
   const cap =
     mode === 'demo'
       ? 'This is the hosted demo. Events here are simulated so you can try the voice and notifications. Run the app on your computer to monitor real Jira bugs.'
-      : 'JARVIS checks Jira from your local server, so detection keeps running while no tab is open. Voice and in-browser notifications need a tab open; optional system notifications cover the rest.';
+      : mode === 'cloud'
+        ? 'JARVIS checks Jira from the cloud, so detection keeps running while this page and even the browser are closed. Background notifications reach this device through Web Push. Voice needs this tab open: browsers cannot speak from the background.'
+        : 'JARVIS checks Jira from your local server, so detection keeps running while no tab is open. Voice and in-browser notifications need a tab open; optional system notifications cover the rest.';
   return `
   <section class="jp-card jp-status tone-${v.tone}">
     <div class="jp-dot" aria-hidden="true"></div>
@@ -391,7 +525,7 @@ function overviewHtml(): string {
   </dl>
   <div class="row jp-actions">
     ${canControl && enabled ? `<button class="btn" data-j="${paused ? 'resume' : 'pause'}">${paused ? 'Resume' : 'Pause'}</button>` : ''}
-    ${canControl && enabled && mode === 'local' ? '<button class="btn" data-j="sync">Check now</button>' : ''}
+    ${canControl && enabled && mode !== 'demo' ? '<button class="btn" data-j="sync">Check now</button>' : ''}
     ${canControl ? `<button class="btn" data-j="${enabled ? 'off' : 'on'}">${enabled ? 'Turn off' : 'Turn on'}</button>` : '<button class="btn primary" data-j="connect">Connect Jira</button>'}
   </div>
   ${notifyPrompt()}
@@ -419,6 +553,11 @@ function overviewHtml(): string {
 }
 
 function notifyPrompt(): string {
+  if (mode === 'cloud' && configured) {
+    if (pushState === 'on' || pushState === 'unsupported') return '';
+    if (pushState === 'denied') return '<p class="note small warn-text">Notifications are blocked for this site. Allow them in your browser\'s site settings to get alerts while the dashboard is closed.</p>';
+    return `<section class="jp-card jp-nudge"><div><b>Background notifications are off on this device</b><p class="muted small">Turn them on to hear about new bugs even when this page and your browser are closed.</p></div><button class="btn primary" data-j="enable-push" ${pushState === 'busy' ? 'disabled' : ''}>Enable</button></section>`;
+  }
   const perm = notifyPermission();
   if (perm === 'unsupported' || (prefs.desktop && perm === 'granted')) return '';
   if (perm === 'denied') return '<p class="note small warn-text">Desktop notifications are blocked for this site. Allow them in your browser\'s site settings to get alerts when this tab is in the background.</p>';
@@ -428,6 +567,25 @@ function notifyPrompt(): string {
 function voicePrompt(): string {
   if (!speechSupported || !prefs.voice || speaker.ready) return '';
   return '<p class="note small warn-text">Your browser lets JARVIS speak only after you click or press a key on this page once. Click anywhere on the page, then press Test announcement.</p>';
+}
+
+function intervalOptions(): number[] {
+  if (mode !== 'cloud') return [30, 60, 120, 300, 600, 900];
+  const min = cloud?.minIntervalMin ?? 5;
+  return [...new Set([min, 5, 10, 15, 30, 60].filter((m) => m >= min))].sort((a, b) => a - b).map((m) => m * 60);
+}
+
+function pushSettingsHtml(): string {
+  const label: Record<PushState, string> = {
+    on: 'On for this device. Notifications arrive even when the dashboard is closed.',
+    off: 'Off for this device.',
+    busy: 'Working…',
+    denied: 'Blocked by the browser. Allow notifications for this site in its site settings, then reload.',
+    unsupported: 'Not supported in this browser. On iPhone and iPad, add the app to the Home Screen first (iOS 16.4+).',
+  };
+  return `<label class="sw"><input type="checkbox" id="js-push" ${pushState === 'on' ? 'checked' : ''} ${pushState === 'unsupported' || pushState === 'busy' ? 'disabled' : ''}/><span><b>Background notifications (Web Push)</b><small class="muted">${esc(label[pushState])}</small></span></label>
+    <div class="row"><button class="btn small" data-j="push-test" type="button" ${pushState === 'on' ? '' : 'disabled'}>Send a test push</button><span class="muted small" id="js-devices">${deviceCount ? `${deviceCount} device${deviceCount === 1 ? '' : 's'} subscribed` : ''}</span></div>
+    <p class="muted small">Your event types, quiet hours and "how often" setting below also apply to these.</p>`;
 }
 
 function historyHtml(): string {
@@ -462,14 +620,15 @@ function settingsHtml(): string {
     ${sw('js-enabled', sp.enabled, 'JARVIS enabled')}
     ${sw('js-paused', sp.paused, 'Pause monitoring', 'Nothing is checked while paused.')}
     <label>Check Jira every
-      <select id="js-interval" ${mode === 'demo' ? 'disabled' : ''}>${[30, 60, 120, 300, 600, 900].map((n) => `<option value="${n}" ${sp.intervalSec === n ? 'selected' : ''}>${n < 60 ? n + ' seconds' : n / 60 + (n === 60 ? ' minute' : ' minutes')}</option>`).join('')}</select>
+      <select id="js-interval" ${mode === 'demo' ? 'disabled' : ''}>${intervalOptions().map((n) => `<option value="${n}" ${sp.intervalSec === n ? 'selected' : ''}>${n < 60 ? n + ' seconds' : n / 60 + (n === 60 ? ' minute' : ' minutes')}</option>`).join('')}</select>
     </label>
-    <p class="muted small">${mode === 'demo' ? 'Polling does not apply to the demo.' : 'Shorter intervals notice changes sooner but use more of your Jira rate limit. One minute is a good default.'}</p>
+    <p class="muted small">${mode === 'demo' ? 'Polling does not apply to the demo.' : mode === 'cloud' ? `Checks run on a shared schedule on Cloudflare's free tier. Every ${cloud?.minIntervalMin ?? 5} minutes is the fastest.` : 'Shorter intervals notice changes sooner but use more of your Jira rate limit. One minute is a good default.'}</p>
   </section>
   <section class="jp-card">
     <h3>Desktop notifications</h3>
     ${sw('js-desktop', prefs.desktop && perm === 'granted', 'Show desktop notifications', 'Clicking one opens the bug in the dashboard.')}
     <p class="small ${perm === 'denied' ? 'warn-text' : 'muted'}" id="js-permnote">${esc(permNote)}</p>
+    ${mode === 'cloud' ? pushSettingsHtml() : ''}
     ${mode === 'local' && status?.osNotifySupported ? sw('js-os', sp.osNotify, 'Also use system notifications when no browser tab is open', 'Sent by the local server (macOS or Linux). They cannot speak.') : ''}
   </section>
   <section class="jp-card">
@@ -510,6 +669,7 @@ function settingsHtml(): string {
 function savePrefs(patch: Partial<JarvisPrefs>): void {
   prefs = { ...prefs, ...patch };
   saveJarvisPrefs(prefs);
+  if ('types' in patch || 'quiet' in patch || 'frequency' in patch) syncNotify();
 }
 
 async function serverPrefs(patch: Partial<JarvisServerPrefs>): Promise<void> {
@@ -535,6 +695,13 @@ function bind(): void {
     $(`jpTab-${t}`).addEventListener('click', () => {
       tab = t;
       renderBody();
+      if (t === 'settings' && mode === 'cloud' && configured) {
+        void pushDevices().then((d) => {
+          deviceCount = d.length;
+          const el = document.getElementById('js-devices');
+          if (el) el.textContent = deviceCount ? `${deviceCount} device${deviceCount === 1 ? '' : 's'} subscribed` : '';
+        }, () => undefined);
+      }
     });
   }
   const panel = $('jpBody');
@@ -562,8 +729,24 @@ function bind(): void {
       case 'off': return void serverPrefs({ enabled: false });
       case 'on': return void serverPrefs({ enabled: true, paused: false });
       case 'sync':
+        if (mode === 'cloud') {
+          toast('Checking Jira…');
+          void cloudSync().then((r) => {
+            status = r.status;
+            for (const e of r.events) ingest(e, true);
+            if (r.result.outcome === 'error' || r.result.outcome === 'reauth') toast(r.result.error ?? 'The check failed', 'error');
+            else if (!r.events.length) toast('No new activity');
+            renderIndicator();
+            renderBody();
+          }, (err) => toast((err as Error).message, 'error'));
+          return;
+        }
         void jarvisPost('sync').then(() => toast('Checking Jira…'), (err) => toast((err as Error).message, 'error'));
         return;
+      case 'enable-push':
+        return void enablePush();
+      case 'push-test':
+        return void pushTest().then((r) => toast(r.outcomes.includes('ok') ? 'Test push sent. It should appear in a moment.' : 'No device accepted the test push.', r.outcomes.includes('ok') ? 'info' : 'error'), (err) => toast((err as Error).message, 'error'));
       case 'connect': $<HTMLDialogElement>('jarvisPanel').close(); return hooks.openConnect();
       case 'test': return testAnnouncement();
       case 'enable-notify':
@@ -605,6 +788,7 @@ function bind(): void {
     if (id === 'js-paused') return void serverPrefs({ paused: t.checked });
     if (id === 'js-interval') return void serverPrefs({ intervalSec: Number(t.value) });
     if (id === 'js-os') return void serverPrefs({ osNotify: t.checked });
+    if (id === 'js-push') return void (t.checked ? enablePush() : disablePush());
     if (id === 'js-desktop') {
       if (t.checked) {
         const p = await requestNotifyPermission(); // runs inside the click, as browsers require

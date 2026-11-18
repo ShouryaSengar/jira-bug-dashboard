@@ -44,13 +44,22 @@ export interface BugsResponse {
 /** What the browser may know about the saved connection. Never includes the token. */
 export interface PublicConfig {
   configured: boolean;
-  source?: 'env' | 'file';
+  source?: 'env' | 'file' | 'cloud';
   jiraUrl?: string;
   email?: string;
   displayName?: string | null;
   severityFields?: string;
   issueTypes?: string;
   configFile?: string | null;
+  // ---- Cloud edition only
+  edition?: 'cloud';
+  signedIn?: boolean;
+  needsReauth?: boolean;
+  user?: { name: string; email: string | null; picture: string | null };
+  site?: { cloudId: string; name: string; url: string } | null;
+  sites?: { cloudId: string; name: string; url: string }[];
+  vapidPublicKey?: string;
+  minIntervalMin?: number;
 }
 
 export interface ConfigUpdate {

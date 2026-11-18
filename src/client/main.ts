@@ -1,5 +1,5 @@
 import type { Bug, BugsResponse, PublicConfig } from '../shared/types.js';
-import { deleteConfig, detectMode, fetchBugs, saveConfig, type Mode } from './api.js';
+import { ApiFailure, cloudDeleteAccount, cloudLogout, cloudSettings, deleteConfig, detectMode, fetchBugs, saveConfig, type Mode } from './api.js';
 import {
   AGE_BUCKETS, ageHistogram, ageLevel, ageMs, applyFilters, assigneeOf, changeOf, countBy, isDone, isOverdue, isStale,
   makeBaseline, priorityLabel, severityColor, severityLabel, sortBugs, statusColor, trend, type Ctx,
@@ -209,7 +209,7 @@ async function refreshData(): Promise<void> {
     data = resp;
     fromCache = false;
     lastFetchAt = Date.now();
-    if (mode === 'local') saveCache(key, resp);
+    if (mode !== 'demo') saveCache(key, resp);
     if (!baseline) {
       baseline = makeBaseline(resp.bugs);
       saveBaseline(key, baseline);
@@ -225,7 +225,12 @@ async function refreshData(): Promise<void> {
   } catch (e) {
     if (mine !== seq) return;
     const msg = (e as Error).message;
-    if (/not set up/i.test(msg)) {
+    const code = e instanceof ApiFailure ? e.code : undefined;
+    if (code === 'signin' || code === 'reauth') {
+      showBanner('warn', code === 'reauth'
+        ? 'Jira access was revoked or has expired. <a href="auth/login">Reconnect with Atlassian</a>'
+        : 'Sign in with Atlassian to load your Jira data. <a href="auth/login">Sign in</a>');
+    } else if (/not set up/i.test(msg)) {
       showBanner('warn', 'Connect your Jira account to load real data. <button class="link" data-action="settings">Open settings</button>');
       openSettings();
     } else {
@@ -502,8 +507,10 @@ function clearFilters(): void {
 function openSettings(): void {
   const dlg = $<HTMLDialogElement>('settings');
   const local = mode === 'local';
-  show('demoNote', !local);
+  show('demoNote', mode === 'demo');
   $('connForm').hidden = !local;
+  show('cloudConn', mode === 'cloud');
+  if (mode === 'cloud') renderCloudConn();
   const env = config.source === 'env';
   $<HTMLInputElement>('fUrl').value = config.jiraUrl ?? '';
   $<HTMLInputElement>('fEmail').value = config.email ?? '';
@@ -532,6 +539,62 @@ function renderAccents(): void {
   $('pAccent').innerHTML = ACCENTS.map(
     (a) => `<button type="button" class="swatch" data-accent="${a}" role="radio" aria-checked="${prefs.accent === a}" aria-label="${a}" style="--s:var(--sw-${a})"></button>`
   ).join('');
+}
+
+// ------------------------------------------------------------------ Cloud edition: account & connection
+function renderCloudConn(): void {
+  const signedIn = !!config.signedIn;
+  show('cloudOut', !signedIn);
+  show('cloudIn', signedIn);
+  if (!signedIn) return;
+  $('cUser').textContent = config.user?.name ?? config.displayName ?? 'Signed in';
+  $('cEmail').textContent = config.user?.email ?? '';
+  show('cReauth', !!config.needsReauth);
+  const sel = $<HTMLSelectElement>('cSite');
+  sel.innerHTML = (config.sites ?? []).map((x) => `<option value="${esc(x.cloudId)}">${esc(x.name)} (${esc(x.url.replace(/^https:\/\//, ''))})</option>`).join('');
+  if (config.site) sel.value = config.site.cloudId;
+  sel.disabled = (config.sites ?? []).length < 2;
+  $<HTMLInputElement>('cSev').value = config.severityFields ?? 'Defect Severity, Severity';
+  $<HTMLInputElement>('cTypes').value = config.issueTypes ?? 'Bug';
+  show('cMsg', false);
+}
+
+async function saveCloudSettings(): Promise<void> {
+  const msg = $('cMsg');
+  const btn = $<HTMLButtonElement>('cSave');
+  btn.disabled = true;
+  try {
+    const siteChanged = config.site?.cloudId !== $<HTMLSelectElement>('cSite').value;
+    config = await cloudSettings({
+      activeCloudId: $<HTMLSelectElement>('cSite').value,
+      severityFields: $<HTMLInputElement>('cSev').value,
+      issueTypes: $<HTMLInputElement>('cTypes').value,
+    });
+    msg.className = 'msg ok';
+    msg.textContent = 'Saved.';
+    msg.hidden = false;
+    if (siteChanged) {
+      // Cached results and tracked issues belong to the previous site.
+      clearData();
+      location.href = location.pathname + '?view=foryou';
+      return;
+    }
+    if (view === 'foryou') void refreshForYou();
+    else if (activeKey) void refreshData();
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = (err as Error).message;
+    msg.hidden = false;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/** Removes this browser's cached Jira data and leaves (used by sign out, disconnect and delete). */
+function leaveCloud(message: string): void {
+  clearData();
+  sessionStorage.setItem('jbd.flash', message);
+  location.href = location.pathname;
 }
 
 async function submitConnection(e: SubmitEvent): Promise<void> {
@@ -610,7 +673,7 @@ function wire(): void {
     toast(`Theme: ${next}`);
   });
   $('settingsBtn').addEventListener('click', openSettings);
-  $('heroConnect').addEventListener('click', openSettings);
+  $('heroConnect').addEventListener('click', () => (mode === 'cloud' && !config.signedIn ? void (location.href = 'auth/login') : openSettings()));
   $('heroGet').addEventListener('click', openGetApp);
   $('getBtn').addEventListener('click', openGetApp);
   document.addEventListener('click', (e) => {
@@ -624,7 +687,7 @@ function wire(): void {
   });
   $('heroDemo').addEventListener('click', () => {
     // Demo keys are separate from real ones so sample data never mixes with Jira data.
-    if (mode === 'local') location.href = '?demo&key=DEMO-1';
+    if (mode !== 'demo') location.href = '?demo&key=DEMO-1';
     else void track('DEMO-1');
   });
 
@@ -750,6 +813,32 @@ function wire(): void {
 
   // settings
   $('connForm').addEventListener('submit', (e) => void submitConnection(e as SubmitEvent));
+  $('cSave').addEventListener('click', () => void saveCloudSettings());
+  $('cSignOut').addEventListener('click', async () => {
+    try {
+      await cloudLogout();
+    } finally {
+      leaveCloud('Signed out.');
+    }
+  });
+  $('cDisconnect').addEventListener('click', async () => {
+    if (!confirm('Disconnect Jira? Your tokens, sites, devices and sessions are deleted from this service and monitoring stops.')) return;
+    try {
+      await deleteConfig();
+      leaveCloud('Jira disconnected. Your tokens were deleted.');
+    } catch (err) {
+      toast((err as Error).message, 'error');
+    }
+  });
+  $('cDelete').addEventListener('click', async () => {
+    if (prompt('This permanently deletes your account, history and settings. Type DELETE to confirm.') !== 'DELETE') return;
+    try {
+      await cloudDeleteAccount();
+      leaveCloud('Your account and all its data were deleted.');
+    } catch (err) {
+      toast((err as Error).message, 'error');
+    }
+  });
   $('connOut').addEventListener('click', async () => {
     if (!confirm('Delete the saved Jira credentials from this computer?')) return;
     try {
@@ -827,6 +916,41 @@ function closeMenus(): void {
 }
 
 // ------------------------------------------------------------------ start
+const AUTH_ERRORS: Record<string, string> = {
+  state: 'The sign-in link expired or was started in another tab. Please try again.',
+  denied: 'Sign-in was cancelled on the Atlassian consent screen.',
+  code: 'Atlassian returned an incomplete response. Please try again.',
+  exchange: 'Atlassian did not accept the sign-in. Please try again.',
+  offline: 'Offline access is required so JARVIS can monitor your bugs in the background.',
+  scopes: 'Some permissions were not granted. The app needs read access to Jira and your profile.',
+  profile: 'Could not read your Atlassian profile. Please try again.',
+  nosite: 'Your Atlassian account has no Jira Cloud site that this app was granted access to.',
+};
+
+/** Cloud edition: adjust wording that describes the local edition, and report sign-in results. */
+function cloudBoot(params: URLSearchParams): void {
+  document.querySelector('#empty p')!.textContent =
+    'Enter a Jira epic, story or any issue key to chart every linked or child bug, or open For You to see everything assigned to you. Sign in with Atlassian: access is read-only, and your tokens are encrypted on the server and never reach the browser.';
+  $('heroConnect').textContent = config.signedIn ? 'Jira settings' : 'Sign in with Atlassian';
+  show('getBtn', false);
+  show('heroGet', false);
+  const reason = params.get('auth');
+  if (reason) showBanner('error', esc(AUTH_ERRORS[reason] ?? 'Sign-in failed. Please try again.') + ' <a href="auth/login">Try again</a>');
+  else if (config.needsReauth) showBanner('warn', 'Jira access was revoked or has expired. <a href="auth/login">Reconnect with Atlassian</a>');
+  if (params.get('connected')) toast(`Connected to ${config.site?.name ?? 'Jira'}`);
+  const flash = sessionStorage.getItem('jbd.flash');
+  if (flash) {
+    sessionStorage.removeItem('jbd.flash');
+    toast(flash);
+  }
+  if (reason || params.get('connected')) {
+    const url = new URL(location.href);
+    url.searchParams.delete('auth');
+    url.searchParams.delete('connected');
+    history.replaceState(null, '', url);
+  }
+}
+
 async function init(): Promise<void> {
   applyTheme();
   wire();
@@ -842,8 +966,10 @@ async function init(): Promise<void> {
   const issueKey = parseKey(params.get('issue') ?? '');
   const wantView: ViewName = urlKey ? 'epics' : params.get('view') === 'foryou' || issueKey ? 'foryou' : loadView();
 
-  initForYou({ mode: () => mode, configured: () => config.configured, prefs: () => prefs, openConnect: openSettings });
-  initJarvis(mode, config.configured, { openIssue: openIssueEverywhere, onActivity, openConnect: openSettings });
+  if (mode === 'cloud') cloudBoot(params);
+  const openConnect = (): void => (mode === 'cloud' && !config.signedIn ? void (location.href = 'auth/login') : openSettings());
+  initForYou({ mode: () => mode, configured: () => config.configured, prefs: () => prefs, openConnect });
+  initJarvis(mode, config.configured, { openIssue: openIssueEverywhere, onActivity, openConnect }, mode === 'cloud' ? { vapidPublicKey: config.vapidPublicKey ?? '', minIntervalMin: config.minIntervalMin ?? 5 } : undefined);
   scheduleAuto();
   renderTabs();
 

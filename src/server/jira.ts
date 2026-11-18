@@ -1,26 +1,13 @@
-// Jira Cloud REST client and the "bugs of an issue" query.
+// Local edition: Jira Cloud client using the user's own email + API token (Basic auth), plus the
+// "bugs of an issue" query. The Jira logic itself lives in ../core and is shared with the Cloud edition.
 
-import type { Bug, BugsResponse, Person, StatusCategory } from '../shared/types.js';
+import type { BugsResponse } from '../shared/types.js';
 import type { Config } from './config.js';
+import { HttpError, getBugs as coreGetBugs, matchSeverityFields, split, type JiraApi, type Json } from '../core/jira.js';
 
-export class HttpError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-    public retryAfter?: number
-  ) {
-    super(message);
-  }
-}
+export { HttpError, iso, mapBug as coreMapBug, severityOf, split, userOf } from '../core/jira.js';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-type Json = any; // Jira payloads are large and vary per site; only the fields read below matter.
-
-export async function jira(
-  cfg: Pick<Config, 'jiraUrl' | 'email' | 'apiToken'>,
-  apiPath: string,
-  init: RequestInit = {}
-): Promise<Json> {
+export async function jira(cfg: Pick<Config, 'jiraUrl' | 'email' | 'apiToken'>, apiPath: string, init: RequestInit = {}): Promise<Json> {
   let res: Response;
   try {
     res = await fetch(cfg.jiraUrl + apiPath, {
@@ -58,11 +45,15 @@ export async function jira(
   return res.json();
 }
 
-export const split = (s: string): string[] =>
-  String(s || '')
-    .split(',')
-    .map((x) => x.trim())
-    .filter(Boolean);
+/** Adapts the local Basic-auth client to the shared core interface. */
+export function localApi(cfg: Pick<Config, 'jiraUrl' | 'email' | 'apiToken'>): JiraApi {
+  return {
+    siteUrl: cfg.jiraUrl,
+    cacheKey: cfg.jiraUrl,
+    request: (path, init) =>
+      jira(cfg, path, init?.body !== undefined ? { method: init.method ?? 'POST', body: JSON.stringify(init.body) } : { method: init?.method ?? 'GET' }),
+  };
+}
 
 // Field name -> id lookups, cached per Jira site.
 const fieldCache = new Map<string, Json[]>();
@@ -77,106 +68,12 @@ export async function allFields(cfg: Config): Promise<Json[]> {
   return all;
 }
 
-/** Jira sends "+0530"; Safari only parses "+05:30". Normalise so every browser can read the dates. */
-export const iso = (s: string | null | undefined): string => (s ? s.replace(/([+-]\d{2})(\d{2})$/, '$1:$2') : '');
-
-export const typesJql = (cfg: Config): string =>
-  split(cfg.issueTypes)
-    .map((t) => `"${t.replace(/["\\]/g, '')}"`)
-    .join(',');
-
-export function mapBug(cfg: Config, i: Json, severityIds: string[], relation: string): Bug {
-  const f = i.fields;
-  return {
-    key: i.key,
-    url: `${cfg.jiraUrl}/browse/${i.key}`,
-    summary: f.summary,
-    type: f.issuetype?.name,
-    status: f.status?.name ?? 'Unknown',
-    statusCategory: f.status?.statusCategory?.key as StatusCategory | undefined,
-    priority: f.priority?.name || null,
-    severity: severityOf(f, severityIds),
-    reporter: userOf(f.reporter),
-    assignee: userOf(f.assignee),
-    created: iso(f.created),
-    updated: iso(f.updated),
-    resolved: f.resolutiondate ? iso(f.resolutiondate) : null,
-    relation,
-  };
-}
-
 export async function resolveSeverityFieldIds(cfg: Config): Promise<string[]> {
   const wanted = split(cfg.severityFields);
   if (wanted.every((w) => /^customfield_\d+$/.test(w))) return wanted;
-  const all = await allFields(cfg);
-  const ids: string[] = [];
-  for (const w of wanted) {
-    if (/^customfield_\d+$/.test(w)) ids.push(w);
-    else ids.push(...all.filter((f) => String(f.name).toLowerCase() === w.toLowerCase()).map((f) => f.id as string));
-  }
-  return [...new Set(ids)];
-}
-
-export const userOf = (u: Json): Person | null => (u ? { name: u.displayName, email: u.emailAddress || null } : null);
-
-export function severityOf(fields: Json, ids: string[]): string | null {
-  for (const id of ids) {
-    const v = fields[id];
-    if (v == null) continue;
-    if (typeof v === 'string') return v;
-    if (v.value) return v.value;
-    if (v.name) return v.name;
-  }
-  return null;
+  return matchSeverityFields(cfg.severityFields, await allFields(cfg));
 }
 
 export async function getBugs(cfg: Config, key: string): Promise<BugsResponse> {
-  // 1) The tracked issue, plus how each linked issue relates to it.
-  const parent = await jira(
-    cfg,
-    `/rest/api/3/issue/${encodeURIComponent(key)}?fields=summary,status,issuetype,issuelinks`
-  );
-  const relation: Record<string, string> = {};
-  for (const l of parent.fields.issuelinks || []) {
-    if (l.outwardIssue) relation[l.outwardIssue.key] = l.type.outward;
-    if (l.inwardIssue) relation[l.inwardIssue.key] = l.type.inward;
-  }
-
-  // 2) Every bug linked to it or parented by it. `key` is regex-validated; types are quoted.
-  const severityIds = await resolveSeverityFieldIds(cfg);
-  const types = typesJql(cfg);
-  const jql = `(issue in linkedIssues("${key}") OR parent = "${key}") AND issuetype in (${types}) ORDER BY created DESC`;
-  const fields = [
-    'summary', 'status', 'priority', 'reporter', 'assignee', 'created', 'updated',
-    'resolutiondate', 'issuetype', 'parent', ...severityIds,
-  ];
-
-  const issues: Json[] = [];
-  let nextPageToken: string | undefined;
-  do {
-    const page = await jira(cfg, '/rest/api/3/search/jql', {
-      method: 'POST',
-      body: JSON.stringify({ jql, fields, maxResults: 100, nextPageToken }),
-    });
-    issues.push(...(page.issues || []));
-    nextPageToken = page.isLast ? undefined : page.nextPageToken;
-  } while (nextPageToken && issues.length < 2000);
-
-  const bugs: Bug[] = issues.map((i) =>
-    mapBug(cfg, i, severityIds, relation[i.key] || (i.fields.parent?.key === key ? 'child of' : 'linked'))
-  );
-
-  return {
-    parent: {
-      key: parent.key,
-      url: `${cfg.jiraUrl}/browse/${parent.key}`,
-      summary: parent.fields.summary,
-      status: parent.fields.status?.name,
-      type: parent.fields.issuetype?.name,
-    },
-    bugs,
-    severityFieldsUsed: severityIds,
-    jql,
-    fetchedAt: new Date().toISOString(),
-  };
+  return coreGetBugs(localApi(cfg), key, { severityIds: await resolveSeverityFieldIds(cfg), issueTypes: cfg.issueTypes });
 }

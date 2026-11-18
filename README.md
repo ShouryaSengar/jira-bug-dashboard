@@ -161,23 +161,27 @@ There is no analytics or telemetry. Nothing secret is in the repo.
 Under *Settings → Jira connection → Advanced* you can change the issue types and the severity field names
 (default `Defect Severity, Severity`, first match wins).
 
-## Free hosting
+## Editions and free hosting
 
-Real Jira data cannot be shown from a purely static site. Jira Cloud blocks calls from browsers (CORS), and a hosted proxy
-would mean your token passes through someone else's server. So there are two parts:
+| Edition | For | Where your Jira credentials live | Cost |
+|---|---|---|---|
+| **Local** (this README) | you, on your computer | `~/.jira-bug-dashboard/config.json` on your machine | free |
+| **Cloud** ([cloud/README.md](cloud/README.md)) | a team or anyone you share a URL with; nothing to install | Atlassian OAuth tokens, encrypted on your own Cloudflare Worker | free tier (about 60 monitored users at a 5-minute interval) |
+| **Demo** | trying it out | none: sample data only | free (GitHub Pages) |
 
-| Part | Where | Cost |
-|---|---|---|
-| **Live demo and landing page** (static, sample data, auto-detected when no server is present) | GitHub Pages (workflow included), Cloudflare Pages, Netlify or Vercel | Free |
-| **Real use** | On each user's own computer (`npm start`) | Free |
+Jira Cloud blocks API calls from browsers (CORS), so real data always needs a server: your computer (Local) or a
+Cloudflare Worker you deploy (Cloud). The Cloud edition signs people in with Atlassian instead of asking for API
+tokens, monitors in the background with a Cron Trigger, and sends Web Push notifications when the browser is closed.
+Setup, security model, free-tier limits and a deployment checklist are in [cloud/README.md](cloud/README.md).
 
-GitHub Pages: push to a public repo, set *Settings → Pages → Source: GitHub Actions*; `.github/workflows/pages.yml` does the rest.
-Any other host: run `npm run build:site` and publish the `site/` folder. Open `?demo` on a local run to preview demo mode.
+Demo on GitHub Pages: push to a public repo, set *Settings → Pages → Source: GitHub Actions*; `.github/workflows/pages.yml`
+does the rest. Any other static host: run `npm run build:site` and publish the `site/` folder. Open `?demo` on a local
+run to preview demo mode.
 
 ## Roadmap
 
 - Phase 2: migrate the UI to React + TypeScript and ship it as an installable PWA.
-- Phase 3 (optional): a self-hostable multi-user mode with its own login, for teams who want one shared instance.
+- Phase 3: the multi-user Cloud edition (see `cloud/`). Done on the `feature/cloudflare-web-edition` branch; needs your Atlassian and Cloudflare accounts to deploy.
 
 ## Project layout
 
@@ -186,9 +190,11 @@ src/server/   Node server: Jira client, credential storage, static files,
               mine.ts (For You queries), jarvis.ts (monitor and event stream)
 src/client/   Browser app (TypeScript modules, no framework).
               foryou.ts, jarvis.ts (panel and stream), jarvis-core.ts (messages and rules), speech.ts
-src/shared/   Types shared by both
+src/core/     Jira logic shared by the Local and Cloud editions (search, For You, detail, event classification)
+src/shared/   Types shared by server, client and Worker
 public/       index.html, css, icon
 scripts/      build-site.mjs (static demo bundle), mock-jira.mjs and test-*.mjs
+cloud/        Cloud edition: Cloudflare Worker, D1 migrations, service worker, mocks and tests (own package.json)
 ```
 
 MIT licensed.
