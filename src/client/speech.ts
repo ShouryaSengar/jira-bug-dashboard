@@ -12,8 +12,17 @@ export const speechSupported = typeof window !== 'undefined' && 'speechSynthesis
 
 // ------------------------------------------------------------------ voices
 
-/** English voices, best candidates first. macOS "Daniel" and Google UK English Male suit JARVIS well. */
-const PREFERRED = [/daniel/i, /google uk english male/i, /arthur/i, /oliver/i, /microsoft (george|ryan|mark)/i, /\bben\b/i, /alex/i, /fred/i];
+/**
+ * Default voice order when the user has not picked one. Microsoft's "Natural" voices (Edge, Windows 11)
+ * sound the most human, so Andrew comes first, then other Natural English voices, then the older
+ * macOS / Chrome voices that suit JARVIS ("Daniel" is a good British one).
+ */
+const PREFERRED = [
+  /andrew.*(natural|multilingual)|(natural|multilingual).*andrew/i,
+  /\bandrew\b/i,
+  /(ryan|guy|brian|davis|christopher|eric|roger).*natural|natural.*(ryan|guy|brian|davis|christopher|eric|roger)/i,
+  /daniel/i, /google uk english male/i, /arthur/i, /oliver/i, /microsoft (george|ryan|mark)/i, /\bben\b/i, /alex/i, /fred/i,
+];
 
 export function englishVoices(): SpeechSynthesisVoice[] {
   if (!speechSupported) return [];
