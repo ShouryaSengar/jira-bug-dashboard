@@ -83,6 +83,10 @@ export class Speaker {
     window.speechSynthesis.getVoices(); // starts loading the voice list
   }
 
+  /** True when the browser will let us speak (or when there is no speech at all, so nothing to wait for). */
+  get ready(): boolean {
+    return !speechSupported || this.unlocked;
+  }
   get blocked(): boolean {
     return speechSupported && !this.unlocked && this.queue.length > 0;
   }

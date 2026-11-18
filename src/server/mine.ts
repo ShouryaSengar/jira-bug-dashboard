@@ -53,14 +53,20 @@ export async function getStatusMap(cfg: Config): Promise<Map<string, { name: str
   return map;
 }
 
-const FALLBACK_PRIORITIES = ['blocker', 'highest', 'critical', 'high', 'major', 'medium', 'normal', 'low', 'minor', 'lowest', 'trivial'];
-/** Lower rank = more urgent. Jira returns priorities from most to least urgent. */
+const KNOWN_PRIORITIES = ['blocker', 'highest', 'critical', 'urgent', 'high', 'major', 'medium', 'normal', 'low', 'minor', 'lowest', 'trivial'];
+/**
+ * Lower rank = more urgent. Jira's priority list is in the admin's chosen order, which is not always urgency
+ * (one real site lists "Blocker" last). When every priority name is a familiar one, rank by meaning; otherwise
+ * (custom names such as P1, P2) trust the order Jira returns.
+ */
 export async function getPriorityRank(cfg: Config): Promise<(name: string | null) => number> {
   let hit = priorityCache.get(cfg.jiraUrl);
   if (!hit || Date.now() - hit.at >= TTL) {
     const rank = new Map<string, number>();
     try {
-      ((await jira(cfg, '/rest/api/3/priority')) as Json[]).forEach((p, i) => rank.set(String(p.name).toLowerCase(), i));
+      const names = ((await jira(cfg, '/rest/api/3/priority')) as Json[]).map((p) => String(p.name).toLowerCase());
+      const byMeaning = names.length > 0 && names.every((n) => KNOWN_PRIORITIES.includes(n));
+      names.forEach((n, i) => rank.set(n, byMeaning ? KNOWN_PRIORITIES.indexOf(n) : i));
     } catch {
       /* fall through to the name heuristic */
     }
@@ -71,10 +77,7 @@ export async function getPriorityRank(cfg: Config): Promise<(name: string | null
   return (name) => {
     if (!name) return 99;
     const n = name.toLowerCase();
-    const r = rank.get(n);
-    if (r !== undefined) return r;
-    const f = FALLBACK_PRIORITIES.indexOf(n);
-    return f >= 0 ? f : 50;
+    return rank.get(n) ?? (KNOWN_PRIORITIES.includes(n) ? KNOWN_PRIORITIES.indexOf(n) : 50);
   };
 }
 

@@ -8,7 +8,7 @@ const PORT = Number(process.env.MOCK_PORT || 4700);
 const ME = { accountId: 'acc-me', displayName: 'Me Tester', emailAddress: 'me@x.com' };
 const OTHER = { accountId: 'acc-bob', displayName: 'Bob Builder' };
 const STATUSES = { 1: ['To Do', 'new'], 2: ['In Progress', 'indeterminate'], 3: ['Done', 'done'], 4: ['Reopened', 'new'] };
-const PRIORITIES = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
+const PRIORITIES = ['Highest', 'High', 'Medium', 'Low', 'Lowest', 'Blocker']; // Blocker last, as on some real sites
 let clock = Date.now() - 3600_000;
 const tick = () => new Date((clock += 1000)).toISOString().replace('Z', '+0000');
 let hid = 100, cid = 500;

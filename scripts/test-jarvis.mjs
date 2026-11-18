@@ -29,6 +29,8 @@ let es = await events(0); const pr = es.find((e) => e.type === 'priority');
 check('priority flagged escalated', pr?.escalated === true && pr.from === 'Medium' && pr.to === 'Highest');
 await step('priority lowered is not escalated', () => mock('priority', { key: 'ABC-2', to: 'Low' }), 'priority:ABC-2');
 check('lowered priority escalated=false', (await events(0)).filter((e) => e.type === 'priority').at(-1)?.escalated === false);
+await step('priority to Blocker (listed last by Jira) is an escalation', () => mock('priority', { key: 'ABC-2', to: 'Blocker' }), 'priority:ABC-2');
+check('Blocker counts as escalated even though Jira lists it last', (await events(0)).filter((e) => e.type === 'priority').at(-1)?.escalated === true);
 await step('severity escalated', () => mock('severity', { key: 'ABC-1', to: '1 - Critical' }), 'severity:ABC-1');
 await step('comment from someone else', () => mock('comment', { key: 'ABC-1', text: 'Can you check the logs?' }), 'comment:ABC-1');
 check('comment excerpt captured', (await events(0)).at(-1)?.detail === 'Can you check the logs?');
@@ -37,6 +39,7 @@ await step('resolved', () => mock('status', { key: 'ABC-1', to: 3 }), 'resolved:
 await step('reopened', () => mock('status', { key: 'ABC-1', to: 4 }), 'reopened:ABC-1');
 await step('reassigned away', () => mock('assign', { key: 'ABC-2', to: 'bob' }), 'reassigned_away:ABC-2');
 await step('unassigned', () => mock('assign', { key: 'ABC-3', to: null }), 'unassigned:ABC-3');
+await step('bounced away and back between two checks -> still announced', async () => { await mock('assign', { key: 'ABC-1', to: 'bob' }); await mock('assign', { key: 'ABC-1', to: 'me' }); }, 'assigned:ABC-1');
 await step('assigned back', () => mock('assign', { key: 'ABC-2', to: 'me' }), 'assigned:ABC-2');
 await step('other field edit -> low importance "updated"', () => mock('edit', { key: 'ABC-1', summary: 'Login fails on Safari 17' }), 'updated:ABC-1');
 await step('two changes at once -> two events, one sync', async () => { await mock('status', { key: 'ABC-2', to: 2 }); await mock('comment', { key: 'ABC-2' }); }, 'status:ABC-2, comment:ABC-2');

@@ -468,7 +468,9 @@ export class Monitor {
           const up = severityRank(to) < severityRank(from);
           out.push(this.draft(i, 'severity', { occurredAt, actor, from, to, own, escalated: up, importance: up ? 'high' : 'normal' }));
         } else if (fid === 'assignee') {
-          /* assignment to someone else is handled by the "missing" path; back to me is covered by `assigned` */
+          // Handed to me while the bug was already in my list (for example it left and came back between two checks).
+          // Handing it to someone else is covered by the "missing" path.
+          if (String(it.to) === c.me.accountId && String(it.from) !== c.me.accountId) out.push(this.draft(i, 'assigned', { occurredAt, actor, own }));
         } else if (!NOISY_FIELDS.has(field.toLowerCase())) {
           other.push(field);
         }

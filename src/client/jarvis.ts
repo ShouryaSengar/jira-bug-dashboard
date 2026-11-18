@@ -53,8 +53,14 @@ export function initJarvis(m: Mode, isConfigured: boolean, h: Hooks): void {
   };
   speaker.onBlocked = (b) => {
     speakerBlocked = b;
+    beat();
     renderIndicator();
   };
+  beat();
+  setInterval(beat, 5000);
+  window.addEventListener('pagehide', leave);
+  window.addEventListener('pointerdown', () => window.setTimeout(() => { beat(); renderIndicator(); }, 0), { capture: true, once: true });
+  window.addEventListener('keydown', () => window.setTimeout(() => { beat(); renderIndicator(); }, 0), { capture: true, once: true });
   if (speechSupported) window.speechSynthesis.addEventListener?.('voiceschanged', () => $<HTMLDialogElement>('jarvisPanel').open && tab === 'settings' && renderBody());
   bind();
   void start();
@@ -166,9 +172,10 @@ async function claim(id: number): Promise<boolean> {
   const run = (): boolean => {
     try {
       const k = 'jbd.jarvis.claim';
-      const cur = JSON.parse(localStorage.getItem(k) || 'null') as { id: number; tab: string } | null;
-      if (cur && cur.id >= id && cur.tab !== TAB_ID) return false;
-      localStorage.setItem(k, JSON.stringify({ id, tab: TAB_ID }));
+      const cur = JSON.parse(localStorage.getItem(k) || 'null') as { id: number; tab: string; t?: number } | null;
+      // A claim only matters while another tab is announcing the same burst, so old ones expire.
+      if (cur && cur.id >= id && cur.tab !== TAB_ID && Date.now() - (cur.t ?? 0) < 20_000) return false;
+      localStorage.setItem(k, JSON.stringify({ id, tab: TAB_ID, t: Date.now() }));
     } catch {
       /* storage blocked: announce anyway */
     }
@@ -178,12 +185,48 @@ async function claim(id: number): Promise<boolean> {
   return run();
 }
 
+// ---- several tabs: exactly one should speak, and it must be one the browser lets speak.
+// Each tab writes a heartbeat; a tab that cannot speak yet steps aside when another tab can.
+const PRESENCE = 'jbd.jarvis.tabs';
+function beat(): void {
+  try {
+    const now = Date.now();
+    const all = JSON.parse(localStorage.getItem(PRESENCE) || '{}') as Record<string, { t: number; able: boolean }>;
+    for (const k of Object.keys(all)) if (now - (all[k] as { t: number }).t > 15_000) delete all[k];
+    all[TAB_ID] = { t: now, able: speaker.ready };
+    localStorage.setItem(PRESENCE, JSON.stringify(all));
+  } catch {
+    /* storage blocked: every tab announces */
+  }
+}
+function leave(): void {
+  try {
+    const all = JSON.parse(localStorage.getItem(PRESENCE) || '{}') as Record<string, unknown>;
+    delete all[TAB_ID];
+    localStorage.setItem(PRESENCE, JSON.stringify(all));
+  } catch {
+    /* ignore */
+  }
+}
+function otherAbleTab(): boolean {
+  try {
+    const all = JSON.parse(localStorage.getItem(PRESENCE) || '{}') as Record<string, { t: number; able: boolean }>;
+    return Object.entries(all).some(([id, v]) => id !== TAB_ID && v.able && Date.now() - v.t < 12_000);
+  } catch {
+    return false;
+  }
+}
+
 async function flush(): Promise<void> {
   const events = batch;
   batch = [];
   if (!events.length) return;
   const real = events.filter((e) => !e.simulated);
-  if (real.length && !(await claim(Math.max(...real.map((e) => e.id))))) return;
+  if (real.length) {
+    beat();
+    if (!speaker.ready && otherAbleTab()) return; // a tab that can already speak will handle it
+    if (!(await claim(Math.max(...real.map((e) => e.id))))) return;
+  }
   if (real.length) saveAnnounced(Math.max(loadAnnounced(), ...real.map((e) => e.id)));
   for (const a of plan(events, prefs, new Date())) {
     const first = a.events[a.events.length - 1] as JarvisEvent;
@@ -286,7 +329,7 @@ function renderIndicator(): void {
   const badge = $('jarvisBadge');
   badge.hidden = n === 0;
   badge.textContent = n > 99 ? '99+' : String(n);
-  $('jarvisHint').hidden = !speakerBlocked;
+  $('jarvisHint').hidden = !(prefs.voice && speechSupported && !speaker.ready);
 }
 
 // ------------------------------------------------------------------ control panel
@@ -351,6 +394,8 @@ function overviewHtml(): string {
     ${canControl && enabled && mode === 'local' ? '<button class="btn" data-j="sync">Check now</button>' : ''}
     ${canControl ? `<button class="btn" data-j="${enabled ? 'off' : 'on'}">${enabled ? 'Turn off' : 'Turn on'}</button>` : '<button class="btn primary" data-j="connect">Connect Jira</button>'}
   </div>
+  ${notifyPrompt()}
+  ${voicePrompt()}
   <section class="jp-card">
     <h3>Pending announcements</h3>
     ${pending.length ? `<ol class="jp-pending">${pending.map((p, i) => `<li>${i === 0 && speaker.pending().length ? '<span class="speaking" aria-hidden="true"></span>' : ''}${esc(p)}</li>`).join('')}</ol>` : '<p class="muted small">Nothing waiting.</p>'}
@@ -371,6 +416,18 @@ function overviewHtml(): string {
     ${recent.length ? `<ul class="ev-list">${recent.map(eventRow).join('')}</ul>` : '<p class="muted small">No events yet. New activity on your bugs will show up here.</p>'}
   </section>
   <p class="note small">${esc(cap)}</p>`;
+}
+
+function notifyPrompt(): string {
+  const perm = notifyPermission();
+  if (perm === 'unsupported' || (prefs.desktop && perm === 'granted')) return '';
+  if (perm === 'denied') return '<p class="note small warn-text">Desktop notifications are blocked for this site. Allow them in your browser\'s site settings to get alerts when this tab is in the background.</p>';
+  return '<section class="jp-card jp-nudge"><div><b>Desktop notifications are off</b><p class="muted small">Turn them on to be alerted while this tab is in the background. You will not miss a new bug.</p></div><button class="btn primary" data-j="enable-notify">Enable</button></section>';
+}
+
+function voicePrompt(): string {
+  if (!speechSupported || !prefs.voice || speaker.ready) return '';
+  return '<p class="note small warn-text">Your browser lets JARVIS speak only after you click or press a key on this page once. Click anywhere on the page, then press Test announcement.</p>';
 }
 
 function historyHtml(): string {
@@ -509,6 +566,13 @@ function bind(): void {
         return;
       case 'connect': $<HTMLDialogElement>('jarvisPanel').close(); return hooks.openConnect();
       case 'test': return testAnnouncement();
+      case 'enable-notify':
+        return void requestNotifyPermission().then((p) => {
+          savePrefs({ desktop: p === 'granted' });
+          if (p === 'granted') showNotification({ title: 'JARVIS is online', body: 'Desktop notifications are on.', tag: 'jbd-welcome', silent: true, onClick: () => undefined });
+          else toast('Notifications were not allowed by the browser.', 'error');
+          renderBody();
+        });
       case 'simulate': return simulate($<HTMLSelectElement>('jpSimType').value as JarvisEventType);
       case 'burst': return simulate('status', 7);
       case 'readall': return markRead('all');
